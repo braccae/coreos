@@ -7,5 +7,6 @@ RUN dnf install -y \
     fuse \
     rclone \
     rsync && \
-    dnf clean all
+    dnf clean all && \
+    rm -rf /var/*
 RUN bootc container lint
