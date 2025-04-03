@@ -9,4 +9,8 @@ RUN dnf install -y \
     rsync && \
     dnf clean all && \
     rm -rf /var/*
-RUN bootc container lint
+
+RUN systemctl enable qemu-guest-agent \
+    && systemctl enable tailscaled
+
+#RUN bootc container lint
