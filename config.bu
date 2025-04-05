@@ -1,8 +1,7 @@
 variant: fcos
 version: 1.4.0
-  
-filesystems:
-  
+
+
 
 storage:
   files:
