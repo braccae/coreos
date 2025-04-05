@@ -48,5 +48,3 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-time:
-  timezone: UTC
