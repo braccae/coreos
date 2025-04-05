@@ -1,5 +1,5 @@
 variant: fcos
-version: 1.6.0
+version: 1.4.0
   
 filesystems:
   
@@ -28,7 +28,7 @@ passwd:
         
 systemd:
   units:
-  
+
     - name: qemu-guest-agent.service
       enabled: true
     - name: tailscaled.service
