@@ -1,2 +1,5 @@
-*.butane
+
+## Butane and Ignition to prevent any accidental leaks
+*.bu
+!config.bu
 *.ign

@@ -1,0 +1,51 @@
+name: Build, ignite, and push qcow2 image
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Install Butane
+        run: |
+          BUTANE_VERSION="v0.17.0"
+          curl -L https://github.com/coreos/butane/releases/download/${BUTANE_VERSION}/butane-x86_64-unknown-linux-gnu -o butane
+          chmod +x butane
+          sudo mv butane /usr/local/bin/
+
+      - name: Process Butane config with secrets
+        run: |
+          # Install envsubst if not already available
+          sudo apt-get update && sudo apt-get install -y gettext-base
+          
+          # Create a temporary file with secrets replaced
+          # Using printf to avoid issues with special characters in secrets
+          TAILSCALE_KEY="${{ secrets.TAILSCALE_AUTHKEY }}"
+          
+          # Replace the placeholder in the Butane config
+          cp config.bu /tmp/config_with_secrets.bu
+          sed -i "s|\${TAILSCALE_AUTHKEY}|${TAILSCALE_KEY}|g" /tmp/config_with_secrets.bu
+          
+          # Validate the config
+          butane --strict /tmp/config_with_secrets.bu > /dev/null
+          
+          # Convert to ignition format
+          butane --strict /tmp/config_with_secrets.bu > /tmp/config.ign
+          
+          # Clean up the temporary file with secrets
+          rm /tmp/config_with_secrets.bu
+          
+          # Make the ignition file available to subsequent steps
+          echo "IGNITION_PATH=/tmp/config.ign" >> $GITHUB_ENV

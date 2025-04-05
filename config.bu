@@ -1,0 +1,53 @@
+variant: fcos
+version: 1.6.0
+  
+filesystems:
+  
+
+storage:
+  files:
+    - path: /etc/containers/storage.conf
+      mode: 0644
+      contents:
+        inline: |
+          [storage]
+          runroot = "/run/containers/storage"
+          graphroot = "/var/lib/containers/storage"
+          driver = "btrfs"
+
+passwd:
+  users:
+    - name: ansible
+      gecos: Ansible User
+      ssh_authorized_keys:
+      groups:
+        - adm
+        - sudo
+        - systemd-journal
+        - wheel
+        
+systemd:
+  units:
+  
+    - name: qemu-guest-agent.service
+      enabled: true
+    - name: tailscaled.service
+      enabled: true
+
+    - name: tailscale-up.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Tailscale Up
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/tailscale up --authkey=${TAILSCALE_AUTHKEY}
+        
+        [Install]
+        WantedBy=multi-user.target
+
+time:
+  timezone: UTC
