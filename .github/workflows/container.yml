@@ -3,6 +3,8 @@ name: Build and Publish Container
 on:
   push:
     branches: ['main']
+    paths:
+      - 'Containerfile'
   workflow_dispatch:
   # schedule:
   #   - cron: '0 0 * * 0'
