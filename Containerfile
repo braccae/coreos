@@ -4,13 +4,12 @@ RUN dnf install -y \
     qemu-guest-agent \
     tailscale \
     cockpit-bridge \
+    borgmatic \
     fuse \
     rclone \
     rsync && \
     dnf clean all && \
     rm -rf /var/*
 
-RUN systemctl enable qemu-guest-agent \
-    && systemctl enable tailscaled
 
-#RUN bootc container lint
+RUN bootc container lint
