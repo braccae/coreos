@@ -3,3 +3,6 @@
 *.bu
 !config.bu
 *.ign
+
+## scratch dir for temporary files
+scratch/*
