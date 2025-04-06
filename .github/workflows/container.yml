@@ -135,9 +135,18 @@ jobs:
           
       - name: Create and push manifest
         run: |
+          # Enable Docker CLI experimental features for manifest command
+          mkdir -p ~/.docker
+          echo '{"experimental": "enabled"}' > ~/.docker/config.json
+          
           BASE_TAG="${{ needs.build-metadata.outputs.tags }}"
           AMD64_TAG="${BASE_TAG}-amd64"
           ARM64_TAG="${BASE_TAG}-arm64"
           
+          # Create and annotate the manifest with architecture info
           docker manifest create $BASE_TAG $AMD64_TAG $ARM64_TAG
-          docker manifest push $BASE_TAG
+          docker manifest annotate $BASE_TAG $AMD64_TAG --os linux --arch amd64
+          docker manifest annotate $BASE_TAG $ARM64_TAG --os linux --arch arm64
+          
+          # Push the manifest
+          docker manifest push --purge $BASE_TAG
