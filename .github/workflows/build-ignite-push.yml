@@ -59,6 +59,7 @@ jobs:
     
   build-qcow2-amd64:
     runs-on: ubuntu-latest
+    needs: hydrate-butane
     permissions:
       contents: read
       packages: write
@@ -103,8 +104,102 @@ jobs:
             --filesystem=btrfs \
             /dev/nbd0
             
-      - name: Unmount disk image
+      - name: Ignite image
+        id: ignite
+        env: 
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY}}
+          ENCRYPTED_IGNITION: ${{ needs.hydrate-butane.outputs.ignition-encrypted }}
         run: |
-          sudo qemu-nbd -d /dev/nbd0
-          sudo rmmod nbd
+          config_file_path=./config.ign
+          MOUNT_POINT=$(mktemp -d)
+
+          IGNITION=$(printf $ENCRYPTED_IGNITION | openssl enc -a -in config.ign -pbkdf2 -salt -pass "pass:$ENCRYPTION_KEY")
+
+          # Find the boot partition using lsblk
+          boot_part=$(lsblk -n -o NAME,LABEL /dev/nbd0 | grep -i boot | awk '{print $1}' | head -1)
+          if [ -z "$boot_part" ]; then
+              # Default to the first partition
+              boot_part="nbd0p1"
+          fi
+          sudo mount /dev/$boot_part $MOUNT_POINT
+          sudo mkdir -p $MOUNT_POINT/ignition
+          sudo printf $IGNITION >> $MOUNT_POINT/ignition/config.ign 2>/dev/null > /dev/null
+          sudo sync
+          sudo umount $MOUNT_POINT
+          sudo rmdir $MOUNT_POINT
+
+      - name: Detach disk image
+        run: sudo qemu-nbd -d /dev/nbd0
+        
+      - name: Push qcow2 image to Oracle Cloud
+        uses: oracle-actions/run-oci-cli-command@v1.3.2
+        env:
+          OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+          OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+          OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+          OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
+        with:
+          command: 'os object put -bn custom-images -- file coreos-$(uname -m).qcow2'
+
+      - name: Look for old images
+        id: list-old-image
+        continue-on-error: true
+        uses: oracle-actions/run-oci-cli-command@v1.3.2
+        env:
+          OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+          OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+          OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+          OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
+          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
+          OCI_OS_NAMESPACE: ${{ secrets.OCI_OS_NAMESPACE }}
+        with:
+          command: |
+            compute image list -c $OCI_COMPARTMENT_ID \
+              --display-name 'Fedora CoreOS $(uname -m)' \
+          query: data[*].id
+
+      - name: Remove old image
+        id: rm-old-image
+        continue-on-error: true
+        uses: oracle-actions/run-oci-cli-command@v1.3.2
+        env:
+          OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+          OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+          OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+          OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
+          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
+          OCI_OS_NAMESPACE: ${{ secrets.OCI_OS_NAMESPACE }}
+        with:
+          command: |
+            compute image delete \
+              --image-id ${{ steps.list-old-image.outputs.output }} \
+                --wait-for-state DELETED
+              
+        
+      - name: Add custom vm image with new qcow2 image
+        uses: oracle-actions/run-oci-cli-command@v1.3.2
+        env:
+          OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+          OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+          OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+          OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
+          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
+          OCI_OS_NAMESPACE: ${{ secrets.OCI_OS_NAMESPACE }}
+        with:
+          command: |
+            compute image import from-object \
+              -c $OCI_COMPARTMENT_ID \
+              --display-name 'Fedora CoreOS $(uname -m)' \
+              --launch-mode PARAVIRTUALIZED \
+              --namespace $OCI_OS_NAMESPACE \
+              --bucket-name custom-images \
+              --name coreos-$(uname -m).qcow2 \
+              --source-image-type QCOW2 \
+              --operating-system 'Fedora CoreOS' \
+              --operating-system-version 41 \
+              --wait-for-state IMPORTING
         
