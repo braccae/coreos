@@ -84,6 +84,7 @@ jobs:
             --pid=host --security-opt label=type:unconfined_t \
             -v /var/lib/containers/var/lib/containers \
             -v $(pwd):/tmp/pwd \
+            $INPUT_IMAGE \
             bootc install to-disk \
             --source-imgref=$INPUT_IMAGE \
             --target-imgref=$INPUT_IMAGE \
