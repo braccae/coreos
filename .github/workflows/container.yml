@@ -17,9 +17,8 @@ jobs:
   build-metadata:
     runs-on: ubuntu-latest
     outputs:
-      image_name: ${{ steps.meta.outputs.tags }}
+      tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
-      tags: ${{ steps.tags.outputs.tags }}
     permissions:
       contents: read
       packages: write
@@ -35,52 +34,42 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=schedule,pattern={{date 'YYYYMMDD'}}
-      
-      - name: Get base tag
-        id: tags
-        run: |
-          # Extract the first tag (or use a default if none)
-          FIRST_TAG=$(echo '${{ steps.meta.outputs.tags }}' | head -n 1)
-          if [ -z "$FIRST_TAG" ]; then
-            FIRST_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          fi
-          echo "tags=$FIRST_TAG" >> $GITHUB_OUTPUT
 
-  build-amd64:
-    runs-on: ubuntu-latest
-    needs: build-metadata
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # build-amd64:
+  #   runs-on: ubuntu-latest
+  #   needs: build-metadata
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
 
-      - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Login to GitHub Container Registry
+  #       if: github.event_name != 'pull_request'
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ${{ env.REGISTRY }}
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete huge unnecessary tools folder
-        run: rm -rf /opt/hostedtoolcache
+  #     - name: Delete huge unnecessary tools folder
+  #       run: rm -rf /opt/hostedtoolcache
 
-      - name: Build and push AMD64
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Containerfile
-          platforms: linux/amd64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ needs.build-metadata.outputs.tags }}-amd64
-          labels: ${{ needs.build-metadata.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+  #     - name: Build and push AMD64
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         file: ./Containerfile
+  #         platforms: linux/amd64
+  #         push: ${{ github.event_name != 'pull_request' }}
+  #         tags: ${{ needs.build-metadata.outputs.tags }}
+  #         labels: ${{ needs.build-metadata.outputs.labels }}
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
 
   build-arm64:
     runs-on: ubuntu-24.04-arm
@@ -91,6 +80,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3.6.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -111,42 +103,9 @@ jobs:
         with:
           context: .
           file: ./Containerfile
-          platforms: linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ needs.build-metadata.outputs.tags }}-arm64
+          tags: ${{ needs.build-metadata.outputs.tags }}
           labels: ${{ needs.build-metadata.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  create-manifest:
-    runs-on: ubuntu-latest
-    needs: [build-metadata, build-amd64, build-arm64]
-    if: github.event_name != 'pull_request'
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Create and push manifest
-        run: |
-          # Enable Docker CLI experimental features for manifest command
-          mkdir -p ~/.docker
-          echo '{"experimental": "enabled"}' > ~/.docker/config.json
-          
-          BASE_TAG="${{ needs.build-metadata.outputs.tags }}"
-          AMD64_TAG="${BASE_TAG}-amd64"
-          ARM64_TAG="${BASE_TAG}-arm64"
-          
-          # Create and annotate the manifest with architecture info
-          docker manifest create $BASE_TAG $AMD64_TAG $ARM64_TAG
-          docker manifest annotate $BASE_TAG $AMD64_TAG --os linux --arch amd64
-          docker manifest annotate $BASE_TAG $ARM64_TAG --os linux --arch arm64
-          
-          # Push the manifest
-          docker manifest push --purge $BASE_TAG
