@@ -59,25 +59,37 @@ jobs:
       packages: write
     steps:
 
+      - name: install podman
+        run: |
+          sudo apt update
+          sudo apt install -y podman
+
       - name: Checkout
         id: checkout
         uses: actions/checkout@v4
 
-      - name: Install x86 image to disk
-        id: bootc-install-to-disk
-        uses: addnab/docker-run-action@v3
+      - name: Pull Image
+        id: pull-image
         env:
           INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-        with:
-          registry: ${{ env.REGISTRY }}
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          run: |
+        run: |
+          sudo podman pull $INPUT_IMAGE
+
+      - name: Install x86 image to disk
+        id: bootc-install-to-disk
+        env:
+          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        run: |
+          sudo podman run --rm --privileged -v /dev:/dev \/:/target \
+            --pid=host --security-opt label=type:unconfined_t \
+            -v /var/lib/containers/var/lib/containers \
+            -v $(pwd):/tmp/pwd \
             bootc install to-disk \
             --source-imgref=$INPUT_IMAGE \
             --target-imgref=$INPUT_IMAGE \
             --generic-image \
             --filesystem=btrfs \
             --via-loopback \
-            coreos-x86_64.qcow2
+            /tmp/pwd/coreos-x86_64.qcow2
             
         
