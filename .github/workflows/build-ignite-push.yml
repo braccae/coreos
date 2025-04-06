@@ -75,7 +75,10 @@ jobs:
         run: |
           sudo podman pull $INPUT_IMAGE
 
-      - name: Install x86 image to disk
+      - name: Create empty disk image
+        run: qemu-img create -f qcow2 -o preallocation=metadata coreos-$(uname -m).qcow2 48G
+
+      - name: Install image to disk
         id: bootc-install-to-disk
         env:
           INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
@@ -91,6 +94,6 @@ jobs:
             --generic-image \
             --filesystem=btrfs \
             --via-loopback \
-            /tmp/pwd/coreos-x86_64.qcow2
+            /tmp/pwd/coreos-$(uname -m).qcow2
             
         
