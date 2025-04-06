@@ -11,5 +11,9 @@ RUN dnf install -y \
     dnf clean all && \
     rm -rf /var/*
 
+#COPY rootfs/* /
+COPY rootfs/etc/containers/storage.conf /etc/containers/storage.conf
+
+RUN systemctl enable qemu-guest-agent tailscaled
 
 RUN bootc container lint
