@@ -59,10 +59,10 @@ jobs:
       packages: write
     steps:
 
-      - name: install podman
+      - name: Install podman and qemu-img
         run: |
           sudo apt update
-          sudo apt install -y podman
+          sudo apt install -y podman qemu-img
 
       - name: Checkout
         id: checkout
