@@ -7,5 +7,5 @@ Wants=tailscale-up.service
 Type=oneshot
 ExecStart=/opt/setup/sshd-tailscale.sh
 
-[Install]
-WantedBy=multi-user.target
+# [Install]
+# WantedBy=multi-user.target

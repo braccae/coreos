@@ -7,5 +7,5 @@ Wants=network-online.target
 Type=oneshot
 ExecStart=/usr/bin/tailscale up --authkey=
 
-[Install]
-WantedBy=multi-user.target
+# [Install]
+# WantedBy=multi-user.target

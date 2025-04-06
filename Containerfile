@@ -12,7 +12,7 @@ RUN dnf install -y \
     rm -rf /var/*
 
 #COPY rootfs/* /
-COPY rootfs/etc/containers/storage.conf /etc/containers/storage.conf
+COPY rootfs/etc/containers/storage.conf /etc/containers/storage.conf.tmp
 
 RUN systemctl enable qemu-guest-agent tailscaled
 
