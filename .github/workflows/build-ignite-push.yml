@@ -83,6 +83,11 @@ jobs:
       - name: Create empty disk image
         run: qemu-img create -f qcow2 -o preallocation=metadata coreos-$(uname -m).qcow2 48G
 
+      - name: Mount disk image as block device
+        run: |
+          sudo modprobe nbd
+          sudo qemu-nbd -c /dev/nbd0 coreos-$(uname -m).qcow2
+
       - name: Install image to disk
         id: bootc-install-to-disk
         env:
@@ -96,7 +101,10 @@ jobs:
             bootc install to-disk \
             --generic-image \
             --filesystem=btrfs \
-            --via-loopback \
-            /tmp/pwd/coreos-$(uname -m).qcow2
+            /dev/nbd0
             
+      - name: Unmount disk image
+        run: |
+          sudo qemu-nbd -d /dev/nbd0
+          sudo rmmod nbd
         
