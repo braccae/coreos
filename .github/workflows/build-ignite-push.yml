@@ -70,7 +70,7 @@ jobs:
           INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
         with:
           registry: ${{ env.REGISTRY }}
-          image: braccae/coreos:latest
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           run: |
             bootc install to-disk \
             --source-imgref=$INPUT_IMAGE \
