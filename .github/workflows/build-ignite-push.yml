@@ -55,7 +55,7 @@ jobs:
         env:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |
-          openssl enc -a -in config.ign -pbkdf2 -salt -pass "pass:$ENCRYPTION_KEY" | xargs -I {} printf ignition-encrypted={} >> $GITHUB_OUTPUT 2>/dev/null > /dev/null
+          openssl enc -a -e -in config.ign -pbkdf2 -salt -pass "pass:$ENCRYPTION_KEY" | xargs -I {} printf ignition-encrypted={} >> $GITHUB_OUTPUT 2>/dev/null > /dev/null
     
   build-qcow2-amd64:
     runs-on: ubuntu-latest
@@ -113,7 +113,7 @@ jobs:
           config_file_path=./config.ign
           MOUNT_POINT=$(mktemp -d)
 
-          IGNITION=$(printf $ENCRYPTED_IGNITION | openssl enc -a -in config.ign -pbkdf2 -salt -pass "pass:$ENCRYPTION_KEY")
+          IGNITION=$(printf $ENCRYPTED_IGNITION | openssl enc -a -d -pbkdf2 -salt -pass "pass:$ENCRYPTION_KEY")
 
           # Find the boot partition using lsblk
           boot_part=$(lsblk -n -o NAME,LABEL /dev/nbd0 | grep -i boot | awk '{print $1}' | head -1)
