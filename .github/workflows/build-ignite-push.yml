@@ -80,7 +80,7 @@ jobs:
         env:
           INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
         run: |
-          sudo podman run --rm --privileged -v /dev:/dev \/:/target \
+          sudo podman run --rm --privileged -v /dev:/dev \
             --pid=host --security-opt label=type:unconfined_t \
             -v /var/lib/containers/var/lib/containers \
             -v $(pwd):/tmp/pwd \
