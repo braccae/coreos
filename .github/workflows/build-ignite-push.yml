@@ -123,6 +123,7 @@ jobs:
           fi
           sudo mount /dev/$boot_part $MOUNT_POINT
           sudo mkdir -p $MOUNT_POINT/ignition
+          sudo touch $MOUNT_POINT/ignition/config.ign
           sudo printf $IGNITION >> $MOUNT_POINT/ignition/config.ign 2>/dev/null > /dev/null
           sudo sync
           sudo umount $MOUNT_POINT
