@@ -19,6 +19,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      ARCH: x86_64
     steps:
 
       - name: Install podman and qemu-utils
@@ -37,34 +39,27 @@ jobs:
         run: |
           sudo podman pull $INPUT_IMAGE
 
-      - name: Create empty disk image
-        run: qemu-img create -f qcow2 coreos-$(uname -m).qcow2 48G
-
-      - name: Mount disk image as block device
-        run: |
-          sudo modprobe nbd
-          sudo qemu-nbd -c /dev/nbd0 coreos-$(uname -m).qcow2
-
-      - name: Install image to disk
-        id: bootc-install-to-disk
+      - name: Bootc image builder
+        id: bootc-image-builder
         env:
           INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
-          touch authorized_keys
-          printf ${{ secrets.SSH_PUBKEY }} > authorized_keys
-          sudo podman run --rm --privileged -v /dev:/dev \
-            --pid=host --security-opt label=type:unconfined_t \
-            -v /var/lib/containers/var/lib/containers \
-            -v $(pwd):/gh:ro \
-            $INPUT_IMAGE \
-            bootc install to-disk \
-            --generic-image \
-            --filesystem=btrfs \
-            --root-ssh-authorized-keys=/gh/authorized_keys \
-            /dev/nbd0
-            
-      - name: Detach disk image
-        run: sudo qemu-nbd -d /dev/nbd0
+          mkdir -p $BUILD_DIR
+          sudo podman run \
+            --rm \
+            -it \
+            --privileged \
+            --pull=newer \
+            --security-opt label=type:unconfined_t \
+            -v ./config.toml:/config.toml:ro \
+            -v ./$BUILD_DIR:/output \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            quay.io/centos-bootc/bootc-image-builder:latest \
+            --type qcow2 \
+            --use-librepo=True \
+            --rootfs btrfs
+            $INPUT_IMAGE
 
       - name: Install b2 via python
         run: |
@@ -75,19 +70,21 @@ jobs:
         env:
           B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
           b2 account authorize 2> /dev/null > /dev/null
-          b2 file upload \
+          b2 sync \
             --threads 4 \
-            ${{ secrets.B2_BUCKET_NAME }} \
-            coreos-$(uname -m).qcow2 \
-            artifacts/coreos-$(uname -m).qcow2
+            $BUILD_DIR \
+            b2://${{ secrets.B2_BUCKET_NAME }}/artifacts/$BUILD_DIR
 
   build-qcow2-arm64:
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: write
+    env:
+      ARCH: aarch64
     steps:
 
       - name: Install podman and qemu-utils
@@ -106,34 +103,27 @@ jobs:
         run: |
           sudo podman pull $INPUT_IMAGE
 
-      - name: Create empty disk image
-        run: qemu-img create -f qcow2 coreos-$(uname -m).qcow2 48G
-
-      - name: Mount disk image as block device
-        run: |
-          sudo modprobe nbd
-          sudo qemu-nbd -c /dev/nbd0 coreos-$(uname -m).qcow2
-
-      - name: Install image to disk
-        id: bootc-install-to-disk
+      - name: Bootc image builder
+        id: bootc-image-builder
         env:
           INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
-          touch authorized_keys
-          printf ${{ secrets.SSH_PUBKEY }} > authorized_keys
-          sudo podman run --rm --privileged -v /dev:/dev \
-            --pid=host --security-opt label=type:unconfined_t \
-            -v /var/lib/containers/var/lib/containers \
-            -v $(pwd):/gh:ro \
-            $INPUT_IMAGE \
-            bootc install to-disk \
-            --generic-image \
-            --filesystem=btrfs \
-            --root-ssh-authorized-keys=/gh/authorized_keys \
-            /dev/nbd0
-            
-      - name: Detach disk image
-        run: sudo qemu-nbd -d /dev/nbd0
+          mkdir -p $BUILD_DIR
+          sudo podman run \
+            --rm \
+            -it \
+            --privileged \
+            --pull=newer \
+            --security-opt label=type:unconfined_t \
+            -v ./config.toml:/config.toml:ro \
+            -v ./$BUILD_DIR:/output \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            quay.io/centos-bootc/bootc-image-builder:latest \
+            --type qcow2 \
+            --use-librepo=True \
+            --rootfs btrfs
+            $INPUT_IMAGE
 
       - name: Install b2 via python
         run: |
@@ -144,10 +134,10 @@ jobs:
         env:
           B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
           b2 account authorize 2> /dev/null > /dev/null
-          b2 file upload \
+          b2 sync \
             --threads 4 \
-            ${{ secrets.B2_BUCKET_NAME }} \
-            coreos-$(uname -m).qcow2 \
-            artifacts/coreos-$(uname -m).qcow2
+            $BUILD_DIR \
+            b2://${{ secrets.B2_BUCKET_NAME }}/artifacts/$BUILD_DIR
