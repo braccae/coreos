@@ -108,7 +108,7 @@ jobs:
           sudo podman pull $INPUT_IMAGE
 
       - name: Create empty disk image
-        run: qemu-img create -f qcow2 -o preallocation=metadata coreos-$(uname -m).qcow2 48G
+        run: qemu-img create -f qcow2 coreos-$(uname -m).qcow2 48G
 
       - name: Mount disk image as block device
         run: |
