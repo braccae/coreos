@@ -1,4 +1,4 @@
-name: Build and push qcow2 image to Oracle
+name: Build and push qcow2 image
 
 on:
   workflow_dispatch:
