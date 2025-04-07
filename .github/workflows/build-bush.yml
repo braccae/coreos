@@ -77,9 +77,9 @@ jobs:
           B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
         run: |
-          ./b2 account authorize
+          ./b2 account authorize 2> /dev/null > /dev/null
           ./b2 file upload \
-            --threads 4
+            --threads 4 \
             ${{ secrets.B2_BUCKET_NAME }} \
             coreos-$(uname -m).qcow2 \
             artifacts/coreos-$(uname -m).qcow2
@@ -147,9 +147,9 @@ jobs:
           B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
         run: |
-          ./b2 account authorize
+          ./b2 account authorize 2> /dev/null > /dev/null
           ./b2 file upload \
-            --threads 4
+            --threads 4 \
             ${{ secrets.B2_BUCKET_NAME }} \
             coreos-$(uname -m).qcow2 \
             artifacts/coreos-$(uname -m).qcow2
