@@ -5,8 +5,8 @@ on:
   ## For testing
   push:
     branches: [ main ]
-    # paths:
-    #   - '.github/workflows/build-push.yml'
+    paths:
+      - '.github/workflows/build-bush.yml'
 
 env:
   REGISTRY: ghcr.io
