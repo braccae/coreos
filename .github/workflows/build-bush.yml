@@ -55,14 +55,15 @@ jobs:
         env:
           INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
         run: |
-          sudo podman run --rm --privileged -v /dev:/dev \
+          docker run --rm --privileged -v /dev:/dev \
             --pid=host --security-opt label=type:unconfined_t \
-            -v /var/lib/containers/var/lib/containers \
-            -v $(pwd):/tmp/pwd:z \
+            -v $(pwd)/authorized_keys:/tmp/authorized_keys \
             $INPUT_IMAGE \
             bootc install to-disk \
             --generic-image \
             --filesystem=btrfs \
+            --source-imgref=docker://$INPUT_IMAGE \
+            --target-imgref=docker://$INPUT_IMAGE \
             --root-ssh-authorized-keys=/tmp/pwd/authorized_keys \
             /dev/nbd0
             
