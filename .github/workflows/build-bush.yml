@@ -55,12 +55,12 @@ jobs:
           sudo podman run --rm --privileged -v /dev:/dev \
             --pid=host --security-opt label=type:unconfined_t \
             -v /var/lib/containers/var/lib/containers \
-            -v $(pwd):/tmp/gh:ro \
+            -v $(pwd):/gh:ro \
             $INPUT_IMAGE \
             bootc install to-disk \
             --generic-image \
             --filesystem=btrfs \
-            --root-ssh-authorized-keys=/tmp/gh/authorized_keys \
+            --root-ssh-authorized-keys=/gh/authorized_keys \
             /dev/nbd0
             
       - name: Detach disk image
