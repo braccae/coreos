@@ -66,16 +66,21 @@ jobs:
       - name: Detach disk image
         run: sudo qemu-nbd -d /dev/nbd0
 
+      - name: Download b2
+        run: |
+          curl -L https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux -o b2
+          chmod +x b2
+
       - name: Upload to Backblaze
         id: upload-b2
-        uses: yamatt/backblaze-b2-upload-action@v7
-        with:
-          key_id: ${{ secrets.B2_KEY_ID }}
-          application_key: ${{ secrets.B2_APPLICATION_KEY }}
-          bucket_name: ${{ secrets.B2_BUCKET_NAME }}
-          file_path: coreos-$(uname -m).qcow2
-          remote_path: artifacts/coreos-$(uname -m).qcow2
-
+        env:
+          B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+        run: |
+          ./b2 file upload \
+            ${{ secrets.B2_BUCKET_NAME }} \
+            coreos-$(uname -m).qcow2 \
+            artifacts/coreos-$(uname -m).qcow2
 
   build-qcow2-arm64:
     runs-on: ubuntu-latest
@@ -128,19 +133,3 @@ jobs:
             
       - name: Detach disk image
         run: sudo qemu-nbd -d /dev/nbd0
-
-      - name: Download b2
-        run: |
-          curl -L https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux -o b2
-          chmod +x b2
-
-      - name: Upload to Backblaze
-        id: upload-b2
-        env:
-          B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
-          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-        run: |
-          ./b2 file upload \
-            ${{ secrets.B2_BUCKET_NAME }} \
-            coreos-$(uname -m).qcow2 \
-            artifacts/coreos-$(uname -m).qcow2
