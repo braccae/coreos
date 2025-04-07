@@ -3,8 +3,8 @@ name: Build and push qcow2 image
 on:
   workflow_dispatch:
   ## For testing
-  # push:
-    # branches: [ main ]
+  push:
+    branches: [ main ]
     # paths:
     #   - '.github/workflows/build-push.yml'
 
@@ -21,21 +21,21 @@ jobs:
       packages: write
     steps:
 
-      - name: Install qemu-utils
+      - name: Install podman and qemu-utils
         run: |
           sudo apt update
-          sudo apt install -y qemu-utils
+          sudo apt install -y podman qemu-utils
 
       - name: Checkout
         id: checkout
         uses: actions/checkout@v4
 
-      # - name: Pull Image
-      #   id: pull-image
-      #   env:
-      #     INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-      #   run: |
-      #     sudo podman pull $INPUT_IMAGE
+      - name: Pull Image
+        id: pull-image
+        env:
+          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        run: |
+          sudo podman pull $INPUT_IMAGE
 
       - name: Create empty disk image
         run: qemu-img create -f qcow2 -o preallocation=metadata coreos-$(uname -m).qcow2 48G
@@ -50,17 +50,16 @@ jobs:
         env:
           INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
         run: |
-          touch ./authorized_keys
-          printf ${{ secrets.SSH_PUBKEY }} > ./authorized_keys
-          docker run --rm --privileged -v /dev:/dev \
+          touch authorized_keys
+          printf ${{ secrets.SSH_PUBKEY }} > authorized_keys
+          sudo podman run --rm --privileged -v /dev:/dev \
             --pid=host --security-opt label=type:unconfined_t \
-            -v .:/tmp/gh:ro \
+            -v /var/lib/containers/var/lib/containers \
+            -v $(pwd):/tmp/gh:ro \
             $INPUT_IMAGE \
             bootc install to-disk \
             --generic-image \
             --filesystem=btrfs \
-            --source-imgref=docker://$INPUT_IMAGE \
-            --bound-images=pull \
             --root-ssh-authorized-keys=/tmp/gh/authorized_keys \
             /dev/nbd0
             
