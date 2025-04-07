@@ -54,13 +54,13 @@ jobs:
           printf ${{ secrets.SSH_PUBKEY }} > authorized_keys
           docker run --rm --privileged -v /dev:/dev \
             --pid=host --security-opt label=type:unconfined_t \
-            -v $(pwd)/authorized_keys:/tmp/authorized_keys \
+            -v $(pwd):/tmp/gh \
             $INPUT_IMAGE \
             bootc install to-disk \
             --generic-image \
             --filesystem=btrfs \
             --source-imgref=docker://$INPUT_IMAGE \
-            --root-ssh-authorized-keys=/tmp/authorized_keys \
+            --root-ssh-authorized-keys=/tmp/gh/authorized_keys \
             /dev/nbd0
             
       - name: Detach disk image
