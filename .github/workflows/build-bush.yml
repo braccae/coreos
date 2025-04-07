@@ -38,7 +38,7 @@ jobs:
           sudo podman pull $INPUT_IMAGE
 
       - name: Create empty disk image
-        run: qemu-img create -f qcow2 -o preallocation=metadata coreos-$(uname -m).qcow2 48G
+        run: qemu-img create -f qcow2 coreos-$(uname -m).qcow2 48G
 
       - name: Mount disk image as block device
         run: |
@@ -77,7 +77,9 @@ jobs:
           B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
         run: |
+          ./b2 account authorize
           ./b2 file upload \
+            --threads 4
             ${{ secrets.B2_BUCKET_NAME }} \
             coreos-$(uname -m).qcow2 \
             artifacts/coreos-$(uname -m).qcow2
@@ -133,3 +135,21 @@ jobs:
             
       - name: Detach disk image
         run: sudo qemu-nbd -d /dev/nbd0
+
+      - name: Download b2
+        run: |
+          curl -L https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux -o b2
+          chmod +x b2
+
+      - name: Upload to Backblaze
+        id: upload-b2
+        env:
+          B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+        run: |
+          ./b2 account authorize
+          ./b2 file upload \
+            --threads 4
+            ${{ secrets.B2_BUCKET_NAME }} \
+            coreos-$(uname -m).qcow2 \
+            artifacts/coreos-$(uname -m).qcow2
