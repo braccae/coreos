@@ -3,8 +3,8 @@ name: Build and push qcow2 image
 on:
   workflow_dispatch:
   ## For testing
-  push:
-    branches: [ main ]
+  # push:
+    # branches: [ main ]
     # paths:
     #   - '.github/workflows/build-push.yml'
 
