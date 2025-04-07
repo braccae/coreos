@@ -85,7 +85,7 @@ jobs:
             artifacts/coreos-$(uname -m).qcow2
 
   build-qcow2-arm64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: write
