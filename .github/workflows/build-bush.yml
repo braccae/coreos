@@ -75,3 +75,72 @@ jobs:
           bucket_name: ${{ secrets.B2_BUCKET_NAME }}
           file_path: coreos-$(uname -m).qcow2
           remote_path: artifacts/coreos-$(uname -m).qcow2
+
+
+  build-qcow2-arm64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+
+      - name: Install podman and qemu-utils
+        run: |
+          sudo apt update
+          sudo apt install -y podman qemu-utils
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Pull Image
+        id: pull-image
+        env:
+          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        run: |
+          sudo podman pull $INPUT_IMAGE
+
+      - name: Create empty disk image
+        run: qemu-img create -f qcow2 -o preallocation=metadata coreos-$(uname -m).qcow2 48G
+
+      - name: Mount disk image as block device
+        run: |
+          sudo modprobe nbd
+          sudo qemu-nbd -c /dev/nbd0 coreos-$(uname -m).qcow2
+
+      - name: Install image to disk
+        id: bootc-install-to-disk
+        env:
+          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        run: |
+          touch authorized_keys
+          printf ${{ secrets.SSH_PUBKEY }} > authorized_keys
+          sudo podman run --rm --privileged -v /dev:/dev \
+            --pid=host --security-opt label=type:unconfined_t \
+            -v /var/lib/containers/var/lib/containers \
+            -v $(pwd):/gh:ro \
+            $INPUT_IMAGE \
+            bootc install to-disk \
+            --generic-image \
+            --filesystem=btrfs \
+            --root-ssh-authorized-keys=/gh/authorized_keys \
+            /dev/nbd0
+            
+      - name: Detach disk image
+        run: sudo qemu-nbd -d /dev/nbd0
+
+      - name: Download b2
+        run: |
+          curl -L https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux -o b2
+          chmod +x b2
+
+      - name: Upload to Backblaze
+        id: upload-b2
+        env:
+          B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+        run: |
+          ./b2 file upload \
+            ${{ secrets.B2_BUCKET_NAME }} \
+            coreos-$(uname -m).qcow2 \
+            artifacts/coreos-$(uname -m).qcow2
