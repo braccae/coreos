@@ -66,10 +66,9 @@ jobs:
       - name: Detach disk image
         run: sudo qemu-nbd -d /dev/nbd0
 
-      - name: Download b2
+      - name: Install b2 via python
         run: |
-          curl -L https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux -o b2
-          chmod +x b2
+          pip3 install --upgrade b2
 
       - name: Upload to Backblaze
         id: upload-b2
@@ -136,10 +135,9 @@ jobs:
       - name: Detach disk image
         run: sudo qemu-nbd -d /dev/nbd0
 
-      - name: Download b2
+      - name: Install b2 via python
         run: |
-          curl -L https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux -o b2
-          chmod +x b2
+          pip3 install --upgrade b2
 
       - name: Upload to Backblaze
         id: upload-b2
@@ -147,8 +145,8 @@ jobs:
           B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
         run: |
-          ./b2 account authorize 2> /dev/null > /dev/null
-          ./b2 file upload \
+          b2 account authorize 2> /dev/null > /dev/null
+          b2 file upload \
             --threads 4 \
             ${{ secrets.B2_BUCKET_NAME }} \
             coreos-$(uname -m).qcow2 \
