@@ -63,7 +63,6 @@ jobs:
             --generic-image \
             --filesystem=btrfs \
             --source-imgref=docker://$INPUT_IMAGE \
-            --target-imgref=docker://$INPUT_IMAGE \
             --root-ssh-authorized-keys=/tmp/pwd/authorized_keys \
             /dev/nbd0
             
