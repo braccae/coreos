@@ -1,0 +1,11 @@
+[Container]
+AutoUpdate=registry
+ContainerName=ws
+Environment=NAME=ws
+Exec=/container/label-run
+Image=quay.io/cockpit/ws:latest
+PodmanArgs=--cgroups split --cidfile /run/cockpit.cid --pid host --privileged
+Volume=/:/host
+
+[Install]
+WantedBy=multi-user.target
