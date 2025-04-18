@@ -3,7 +3,6 @@ FROM quay.io/fedora/fedora-bootc:42
 RUN dnf install -y \
     qemu-guest-agent \
     tailscale \
-    cockpit-bridge \
     borgmatic \
     fuse \
     rclone \
@@ -12,6 +11,7 @@ RUN dnf install -y \
     rm -rf /var/*
 
 RUN dnf install -y \
+    cockpit-bridge \
     cockpit-podman \
     cockpit-ostree \
     cockpit-selinux \
@@ -23,7 +23,7 @@ RUN dnf install -y \
 
 #RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-COPY rootfs/* /
+COPY rootfs/ /
 RUN chmod 0440 /etc/sudoers.d/10-core-group
 #COPY rootfs/etc/containers/storage.conf /etc/containers/storage.conf.tmp
 
