@@ -17,7 +17,9 @@ RUN dnf install -y \
     cockpit-selinux \
     cockpit-storaged \
     cockpit-system \
-    cockpit-files
+    cockpit-files && \
+    dnf clean all && \
+    rm -rf /var/*
 
 #RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
