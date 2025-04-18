@@ -24,7 +24,7 @@ RUN dnf install -y \
 #RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 COPY rootfs/ /
-RUN chmod 0440 /etc/sudoers.d/10-core-group
+#RUN chmod 0440 /etc/sudoers.d/10-core-group
 #COPY rootfs/etc/containers/storage.conf /etc/containers/storage.conf.tmp
 
 RUN systemctl enable qemu-guest-agent tailscaled
