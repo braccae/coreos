@@ -1,5 +1,5 @@
 [[customizations.user]]
-name = "alice"
-password = "bob"
-key = "ssh-rsa AAA ... user@email.com"
-groups = ["wheel"]+
+name = "ansible"
+password = ""
+key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBa+WBLGQyn4d/0y0Z2YIB/C7FXO0b7lGveWSAA3A7Zj"
+groups = ["wheel", "ansible"]
