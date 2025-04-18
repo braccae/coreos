@@ -11,8 +11,8 @@ updates:
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "weekly"
-    ignore:
-      # Ignore patch updates for stability
-      - dependency-name: "*"
-        update-types: ["version-update:semver-patch"]
+      interval: "daily"
+    # ignore:
+    #   # Ignore patch updates for stability
+    #   - dependency-name: "*"
+    #     update-types: ["version-update:semver-patch"]
