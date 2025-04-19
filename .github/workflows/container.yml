@@ -5,6 +5,7 @@ on:
     branches: ['main']
     paths:
       - 'Containerfile'
+      - 'rootfs/'
   workflow_dispatch:
   schedule:
     - cron: '0 5 * * *'
