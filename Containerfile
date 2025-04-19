@@ -2,6 +2,7 @@ FROM quay.io/fedora/fedora-bootc:42
 
 RUN dnf install -y \
     qemu-guest-agent \
+    cloud-init \
     tailscale \
     borgmatic \
     fuse \
