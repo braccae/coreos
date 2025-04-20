@@ -21,10 +21,7 @@ RUN dnf install -y \
     dnf clean all && \
     rm -rf /var/*
 
-#RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
 COPY rootfs/ /
-#COPY rootfs/etc/containers/storage.conf /etc/containers/storage.conf.tmp
 
 RUN systemctl enable qemu-guest-agent tailscaled
 
