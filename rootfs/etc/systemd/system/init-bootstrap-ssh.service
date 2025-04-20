@@ -1,0 +1,11 @@
+[Unit]
+Description=Move root authorized keys to core
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=mkdir -p /var/home/core/.ssh && mv /root/.ssh/authorized_keys /var/home/core/.ssh/
+
+[Install]
+WantedBy=multi-user.target
