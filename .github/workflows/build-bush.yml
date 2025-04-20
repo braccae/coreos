@@ -73,10 +73,11 @@ jobs:
           BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
           b2 account authorize 2> /dev/null > /dev/null
-          b2 sync \
+          b2 file upload \
             --threads 4 \
-            $BUILD_DIR \
-            b2://${{ secrets.B2_BUCKET_NAME }}/artifacts/$BUILD_DIR
+            ${{ secrets.B2_BUCKET_NAME }} \
+            $BUILD_DIR/qcow2/disk.qcow2 \
+            artifacts/coreos-$ARCH.qcow2
 
   build-qcow2-arm64:
     runs-on: ubuntu-24.04-arm
@@ -137,7 +138,8 @@ jobs:
           BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
           b2 account authorize 2> /dev/null > /dev/null
-          b2 sync \
+          b2 file upload \
             --threads 4 \
-            $BUILD_DIR \
-            b2://${{ secrets.B2_BUCKET_NAME }}/artifacts/$BUILD_DIR
+            ${{ secrets.B2_BUCKET_NAME }} \
+            $BUILD_DIR/qcow2/disk.qcow2 \
+            artifacts/coreos-$ARCH.qcow2
