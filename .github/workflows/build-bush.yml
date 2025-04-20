@@ -107,7 +107,7 @@ jobs:
         id: bootc-image-builder
         env:
           INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          BUILD_DIR: ${{ env.IMAGE_NAME }}-${{ env.TAG }}/${{ env.ARCH }}
+          BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
           mkdir -p $BUILD_DIR
           sudo podman run \
