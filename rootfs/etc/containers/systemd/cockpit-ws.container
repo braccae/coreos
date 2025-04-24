@@ -7,5 +7,5 @@ Image=quay.io/cockpit/ws:latest
 PodmanArgs=--cgroups split --cidfile /run/cockpit.cid --pid host --privileged
 Volume=/:/host
 
-[Install]
-WantedBy=multi-user.target
+# [Install]
+# WantedBy=multi-user.target
