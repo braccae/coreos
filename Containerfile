@@ -1,6 +1,6 @@
 FROM quay.io/fedora/fedora-bootc:42
 
-RUN dnf install -y \
+RUN dnf5 install -y \
     qemu-guest-agent \
     tailscale \
     borgmatic \
@@ -10,7 +10,7 @@ RUN dnf install -y \
     dnf clean all && \
     rm -rf /var/*
 
-RUN dnf install -y \
+RUN dnf5 install -y \
     cockpit-bridge \
     cockpit-podman \
     cockpit-ostree \
