@@ -37,11 +37,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ env.BRANCH }},enable=${{ github.ref == format('refs/heads/{0}', env.BRANCH) }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=${{ env.BRANCH }},enable=${{ github.ref == format('refs/heads/{0}', env.BRANCH) && env.BRANCH != 'main' }}
             type=sha,format=short
             type=ref,event=branch
             type=ref,event=pr
-            type=schedule,pattern={{date 'YYYYMMDD'}}name: Build and Publish Container
+            type=schedule,pattern={{date 'YYYYMMDD'}}
 
   build:
     runs-on: ubuntu-24.04-arm
