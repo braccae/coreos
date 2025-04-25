@@ -11,7 +11,6 @@ RUN dnf install -y \
     rm -rf /var/*
 
 RUN dnf install -y \
-    cockpit-ws \
     cockpit-bridge \
     cockpit-podman \
     cockpit-ostree \
