@@ -2,17 +2,27 @@ name: Build and Publish Container
 
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'hci']
     paths:
       - 'Containerfile'
       - 'rootfs/'
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build for'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - main
+          - hci
   schedule:
     - cron: '0 5 * * *'
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  BRANCH: ${{ github.ref_name }}
 
 jobs:
   build-metadata:
@@ -20,9 +30,6 @@ jobs:
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Extract metadata for Docker
         id: meta
@@ -30,11 +37,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=${{ env.BRANCH }},enable=${{ github.ref == format('refs/heads/{0}', env.BRANCH) }}
             type=sha,format=short
             type=ref,event=branch
             type=ref,event=pr
-            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=schedule,pattern={{date 'YYYYMMDD'}}name: Build and Publish Container
 
   build:
     runs-on: ubuntu-24.04-arm
