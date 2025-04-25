@@ -21,7 +21,7 @@ RUN dnf install -y \
     dnf clean all && \
     rm -rf /var/*
 
-RUN dnf install -y \
+RUN dnf install -y --skip-unavailable \
     cockpit-machines \
     qemu-audio-dbuser \
     qemu-audio-pipewireriver \
