@@ -1,8 +1,8 @@
-name: Build and Publish Container
+name: Build and Publish HCI Container
 
 on:
   push:
-    branches: ['main']
+    branches: ['hci']
     paths:
       - 'Containerfile'
       - 'rootfs/'
@@ -13,6 +13,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  BRANCH: hci
 
 jobs:
   build-metadata:
@@ -30,7 +31,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=hci,enable=${{ github.ref == format('refs/heads/{0}', 'hci') }}
             type=sha,format=short
             type=ref,event=branch
             type=ref,event=pr
