@@ -29,7 +29,6 @@ RUN dnf install -y \
     qemu-block-blkioer \
     qemu-block-curlr \
     qemu-block-dmg \
-    qemu-block-glusteriver \
     qemu-block-iscsier \
     qemu-block-nfs \
     qemu-block-rbdriver \
