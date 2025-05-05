@@ -12,6 +12,7 @@ RUN dnf5 install -y \
 
 RUN dnf5 install -y \
     cockpit-bridge \
+    cockpit-networkmanager \
     cockpit-podman \
     cockpit-ostree \
     cockpit-selinux \
