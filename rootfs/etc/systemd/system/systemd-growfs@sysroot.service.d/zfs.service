@@ -1,0 +1,10 @@
+[Unit]
+Description=Load ZFS module
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/modprobe zfs
+
+[Install]
+WantedBy=multi-user.target
