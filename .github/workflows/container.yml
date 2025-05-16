@@ -5,7 +5,7 @@ on:
     branches: ['main', 'hci']
     paths:
       - 'Containerfile'
-      - 'rootfs/'
+      - 'rootfs/**'
   workflow_dispatch:
     inputs:
       branch:
