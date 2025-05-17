@@ -10,5 +10,5 @@ Volume=/etc/cockpit/cockpit.conf:/etc/cockpit/cockpit.conf:ro,Z
 #PublishPort=9091:9090
 Network=host
 
-[Install]
-WantedBy=multi-user.target
+# [Install]
+# WantedBy=multi-user.target
