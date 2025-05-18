@@ -96,9 +96,9 @@ RUN dnf5 install -y --skip-unavailable \
 RUN sudo dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.2.10/cockpit-file-sharing-4.2.10-1.el8.noarch.rpm \
     && dnf5 clean all
 
-RUN dnf5 install -y \
-    cockpit-ws \
-    cockpit-ws-selinux
+# RUN dnf5 install -y \
+#     cockpit-ws \
+#     cockpit-ws-selinux
 
 
 COPY rootfs/ /
