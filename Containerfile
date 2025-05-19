@@ -2,7 +2,7 @@ FROM quay.io/fedora/fedora-bootc:42
 
 RUN dnf5 install -y dnf5-plugins
 
-RUN dnf5 config-manager add-repo \
+RUN dnf5 config-manager addrepo \
     --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
 
 RUN dnf5 install -y \
