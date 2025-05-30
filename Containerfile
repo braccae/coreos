@@ -28,11 +28,6 @@ RUN dnf5 install -y \
     dnf clean all && \
     rm -rf /var/*
 
-RUN curl -s https://install.crowdsec.net | sudo sh && \
-    dnf5 install -y crowdsec && \
-    dnf clean all && \
-    rm -rf /var/*
-
 COPY rootfs/ /
 
 RUN systemctl enable qemu-guest-agent tailscaled
