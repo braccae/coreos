@@ -9,6 +9,7 @@ RUN dnf5 install -y \
     qemu-guest-agent \
     tailscale \
     firewalld \
+    sqlite \
     borgmatic \
     fuse \
     rclone \
