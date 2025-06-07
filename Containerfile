@@ -28,7 +28,7 @@ RUN dnf5 install -y \
     dnf clean all && \
     rm -rf /var/*
 
-COPY rootfs/ /
+COPY rootfs/common/ /
 
 RUN systemctl enable qemu-guest-agent tailscaled
 
