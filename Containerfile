@@ -10,6 +10,7 @@ RUN dnf5 install -y \
     git \
     tailscale \
     firewalld \
+    sqlite \
     borgmatic \
     fuse \
     rclone \
