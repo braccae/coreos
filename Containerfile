@@ -29,6 +29,11 @@ RUN dnf5 install -y \
     dnf clean all && \
     rm -rf /var/*
 
+RUN dnf5 install -y \
+    python3-psycopg2 \
+    && dnf clean all \
+    && rm -rf /var/*
+
 COPY rootfs/common/ /
 
 RUN systemctl enable qemu-guest-agent tailscaled
