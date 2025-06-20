@@ -94,7 +94,7 @@ RUN sudo dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releas
     && dnf5 clean all
 
 COPY rootfs/common/ /
-COPY --exclude=rootfs/hci/etc/containers/systemd/cockpit-ws.container rootfs/hci/ /
+COPY rootfs/hci/ /
 
 RUN systemctl enable tailscaled
 
