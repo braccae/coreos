@@ -5,6 +5,7 @@ on:
     branches: ['main']
     paths:
       - 'hci.Containerfile'
+      - 'rootfs/common/**'
       - 'rootfs/hci/**'
   workflow_dispatch:
   schedule:
