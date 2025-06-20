@@ -56,6 +56,9 @@ jobs:
       - name: Delete huge unnecessary tools folder
         run: rm -rf /opt/hostedtoolcache
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Build Image
         uses: redhat-actions/buildah-build@v2
         id: build
