@@ -2,7 +2,7 @@ name: Build and Publish Main Container
 
 on:
   push:
-    branches: ['main'] # Only trigger on main now
+    branches: ['main']
     paths:
       - 'Containerfile'
       - 'rootfs/common/**'
@@ -14,10 +14,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   VARIENT: latest
-  # BRANCH env var might be less relevant or repurposed
 
 jobs:
-  build-main-metadata: # Example for a "main" or "common" variant
+  build-metadata: 
     runs-on: ubuntu-latest
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
@@ -27,7 +26,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} # Default image
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=${{ env.VARIENT }}
             type=sha,format=short
@@ -35,9 +34,9 @@ jobs:
             type=ref,event=pr
             type=schedule,pattern={{date 'YYYYMMDD'}}
 
-  build-main: # Renamed from 'build' to be specific
+  build:
     runs-on: ubuntu-24.04-arm
-    needs: build-main-metadata
+    needs: build-metadata
     permissions:
       contents: read
       packages: write
@@ -66,10 +65,10 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Containerfile # Assumes this is for the main/common variant
+          file: ./Containerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ needs.build-main-metadata.outputs.tags }}
-          labels: ${{ needs.build-main-metadata.outputs.labels }}
+          tags: ${{ needs.build-metadata.outputs.tags }}
+          labels: ${{ needs.build-metadata.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
