@@ -1,4 +1,4 @@
-name: Build and Publish Main Container
+name: Build and Publish Main Container TEST
 
 on:
   # push:
