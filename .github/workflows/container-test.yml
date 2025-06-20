@@ -1,0 +1,107 @@
+name: Build and Publish Main Container
+
+on:
+  # push:
+  #   branches: ['main']
+  #   paths:
+  #     - 'Containerfile'
+  #     - 'rootfs/common/**'
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '0 5 * * *'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  VARIENT: latest
+
+jobs:
+  build-metadata: 
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+    steps:
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.VARIENT }}
+            type=sha,format=short
+            type=ref,event=branch
+            type=ref,event=pr
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+
+  build-arm64:
+    runs-on: ubuntu-24.04-arm
+    needs: build-metadata
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Image
+        uses: redhat-actions/buildah-build@v2
+        id: build
+        with:
+          context: .
+          containerfiles: ./Containerfile
+          platforms: linux/arm64
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: ${{ needs.build-metadata.outputs.tags }}
+          labels: ${{ needs.build-metadata.outputs.labels }}
+
+      - name: Push To Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build.outputs.image }}
+          tags: ${{ steps.build.outputs.tags }}
+
+  build-x86_64:
+    runs-on: ubuntu-24.04
+    needs: build-metadata
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Image
+        uses: redhat-actions/buildah-build@v2
+        id: build
+        with:
+          context: .
+          containerfiles: ./Containerfile
+          platforms: linux/amd64
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: ${{ needs.build-metadata.outputs.tags }}
+          labels: ${{ needs.build-metadata.outputs.labels }}
+
+      - name: Push To Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build.outputs.image }}
+          tags: ${{ steps.build.outputs.tags }}
