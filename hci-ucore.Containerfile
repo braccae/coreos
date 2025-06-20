@@ -1,32 +1,32 @@
 FROM ghcr.io/ublue-os/ucore-hci:stable-zfs-20250620
 
-RUN dnf5 install -y dnf5-plugins
+# RUN dnf5 install -y dnf5-plugins
 
-RUN dnf5 config-manager addrepo \
-    --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+# RUN dnf5 config-manager addrepo \
+#     --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
 
-RUN dnf5 install -y \
-    qemu-guest-agent \
-    git \
-    tailscale \
-    firewalld \
-    sqlite \
-    borgmatic \
-    fuse \
-    rclone \
-    rsync \
-    && dnf5 clean all
+# RUN dnf5 install -y \
+#     qemu-guest-agent \
+#     git \
+#     tailscale \
+#     firewalld \
+#     sqlite \
+#     borgmatic \
+#     fuse \
+#     rclone \
+#     rsync \
+#     && dnf5 clean all
 
-RUN dnf5 install -y \
-    cockpit-bridge \
-    cockpit-networkmanager \
-    cockpit-podman \
-    cockpit-ostree \
-    cockpit-selinux \
-    cockpit-storaged \
-    cockpit-system \
-    cockpit-files \
-    && dnf5 clean all
+# RUN dnf5 install -y \
+#     cockpit-bridge \
+#     cockpit-networkmanager \
+#     cockpit-podman \
+#     cockpit-ostree \
+#     cockpit-selinux \
+#     cockpit-storaged \
+#     cockpit-system \
+#     cockpit-files \
+#     && dnf5 clean all
 
 RUN dnf5 install -y --skip-unavailable \
     cockpit-machines \
@@ -87,29 +87,13 @@ RUN dnf5 install -y --skip-unavailable \
     qemu-user-static-riscv \
     && dnf5 clean all
 
-
-# RUN dnf5 install -y https://zfsonlinux.org/fedora/zfs-release-2-8$(rpm --eval "%{dist}").noarch.rpm \
-#     && dnf5 clean all
-# RUN KERNEL_VERSION=$(uname -r | awk -F'-' '{print $1}') && \
-#     dnf5 install -y kernel-devel-$KERNEL_VERSION && \
-#     dnf5 install -y zfs && \
-#     rm -rf /usr/src/zfs_$KERNEL_VERSION && \
-#     rm -rf /usr/lib/modules/$KERNEL_VERSION/build \
-#     && dnf5 clean all
-
-
-# WORKDIR /tmp
-# RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
+WORKDIR /tmp
+RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
 RUN sudo dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.2.10/cockpit-file-sharing-4.2.10-1.el8.noarch.rpm \
     && dnf5 clean all
 
-RUN dnf5 install -y \
-    cockpit-ws \
-    cockpit-ws-selinux
-
-
 COPY rootfs/common /
-COPY rootfs/hci /
+COPY --exclude=rootfs/hci/etc/containers/systemd/cockpit-ws.container rootfs/hci /
 
 RUN systemctl enable tailscaled
 
