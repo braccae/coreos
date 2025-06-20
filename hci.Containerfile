@@ -108,7 +108,8 @@ RUN dnf5 install -y \
     cockpit-ws-selinux
 
 
-COPY rootfs/ /
+COPY rootfs/common /
+COPY rootfs/hci /
 
 RUN systemctl enable tailscaled
 
