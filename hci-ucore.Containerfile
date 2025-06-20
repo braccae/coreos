@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.7-labs
 FROM ghcr.io/ublue-os/ucore-hci:stable-zfs-20250620
 
 # RUN dnf5 install -y dnf5-plugins
