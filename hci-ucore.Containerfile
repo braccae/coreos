@@ -6,28 +6,28 @@ FROM ghcr.io/ublue-os/ucore-hci:stable-zfs-20250620
 # RUN dnf5 config-manager addrepo \
 #     --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
 
-# RUN dnf5 install -y \
-#     qemu-guest-agent \
-#     git \
-#     tailscale \
-#     firewalld \
-#     sqlite \
-#     borgmatic \
-#     fuse \
-#     rclone \
-#     rsync \
-#     && dnf5 clean all
+RUN dnf5 install -y \
+    qemu-guest-agent \
+    git \
+    tailscale \
+    firewalld \
+    sqlite \
+    borgmatic \
+    fuse \
+    rclone \
+    rsync \
+    && dnf5 clean all
 
-# RUN dnf5 install -y \
-#     cockpit-bridge \
-#     cockpit-networkmanager \
-#     cockpit-podman \
-#     cockpit-ostree \
-#     cockpit-selinux \
-#     cockpit-storaged \
-#     cockpit-system \
-#     cockpit-files \
-#     && dnf5 clean all
+RUN dnf5 install -y \
+    cockpit-bridge \
+    cockpit-networkmanager \
+    cockpit-podman \
+    cockpit-ostree \
+    cockpit-selinux \
+    cockpit-storaged \
+    cockpit-system \
+    cockpit-files \
+    && dnf5 clean all
 
 RUN dnf5 install -y --skip-unavailable \
     cockpit-machines \
