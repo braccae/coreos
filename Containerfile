@@ -37,4 +37,9 @@ COPY rootfs/common/ /
 
 RUN systemctl enable qemu-guest-agent tailscaled
 
+RUN dnf5 downgrade -y \
+    podman-5:5.5.0-1.fc42 \
+    && dnf clean all \
+    && rm -rf /var/*
+
 RUN bootc container lint
