@@ -18,6 +18,7 @@ RUN dnf5 install -y \
     rm -rf /var/*
 
 RUN dnf5 install -y \
+    cockpit-bridge \
     cockpit-networkmanager \
     cockpit-podman \
     cockpit-ostree \
