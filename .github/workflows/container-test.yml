@@ -1,11 +1,10 @@
 name: Build and Publish Main Container TEST
 
 on:
-  # push:
-  #   branches: ['main']
-  #   paths:
-  #     - 'Containerfile'
-  #     - 'rootfs/common/**'
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/container-test.yml'
   workflow_dispatch:
   # schedule:
   #   - cron: '0 5 * * *'
