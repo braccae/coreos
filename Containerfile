@@ -39,4 +39,9 @@ COPY rootfs/common/ /
 
 RUN systemctl enable qemu-guest-agent tailscaled
 
+RUN dnf5 downgrade -y \
+    systemd-257.5-6.fc42 \
+    && dnf clean all \
+    && rm -rf /var/*
+
 RUN bootc container lint
