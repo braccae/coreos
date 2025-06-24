@@ -8,6 +8,7 @@ RUN dnf config-manager -y --add-repo https://pkgs.tailscale.com/stable/centos/10
 
 RUN dnf install -y \
     qemu-guest-agent \
+    btrfs-progs \
     tailscale \
     firewalld \
     sqlite \
