@@ -1,4 +1,4 @@
-name: Build and Publish HCI Universal Blue Container
+name: Build and Publish CentOS Container
 
 on:
   push:
