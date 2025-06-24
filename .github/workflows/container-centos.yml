@@ -6,6 +6,7 @@ on:
     paths:
       - 'centos.Containerfile'
       - 'rootfs/common/**'
+      - 'rootfs/centos/**'
   workflow_dispatch:
   schedule:
     - cron: '0 5 * * *'

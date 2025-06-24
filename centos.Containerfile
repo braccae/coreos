@@ -44,6 +44,7 @@ RUN dnf install -y \
     && rm -rf /var/*
 
 COPY rootfs/common/ /
+COPY rootfs/centos/ /
 
 RUN systemctl enable qemu-guest-agent tailscaled
 
