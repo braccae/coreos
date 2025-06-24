@@ -35,7 +35,7 @@ jobs:
             type=schedule,pattern={{date 'YYYYMMDD'}}
 
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     needs: build-metadata
     permissions:
       contents: read
@@ -64,7 +64,7 @@ jobs:
         with:
           context: .
           containerfiles: ./${{ env.VARIENT }}.Containerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: ${{ needs.build-metadata.outputs.tags }}
           labels: ${{ needs.build-metadata.outputs.labels }}
