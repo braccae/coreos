@@ -24,7 +24,6 @@ RUN dnf5 install -y \
     cockpit-ostree \
     cockpit-selinux \
     cockpit-storaged \
-    cockpit-system \
     cockpit-files && \
     dnf clean all && \
     rm -rf /var/*
