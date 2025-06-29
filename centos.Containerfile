@@ -6,6 +6,9 @@ RUN dnf config-manager -y --add-repo https://pkgs.tailscale.com/stable/centos/10
     dnf config-manager -y --set-enabled crb && \
     dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
 
+# RUN dnf install -y \
+#     centos-release-hyperscale-experimental
+
 RUN dnf install -y \
     qemu-guest-agent \
     btrfs-progs \

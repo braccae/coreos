@@ -107,7 +107,7 @@ RUN dnf5 install -y \
     cockpit-ws \
     cockpit-ws-selinux
 
-
+COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 COPY rootfs/hci/ /
 

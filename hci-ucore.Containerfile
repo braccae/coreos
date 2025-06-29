@@ -93,6 +93,7 @@ RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockp
 RUN sudo dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.2.10/cockpit-file-sharing-4.2.10-1.el8.noarch.rpm \
     && dnf5 clean all
 
+COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 COPY rootfs/hci/ /
 
