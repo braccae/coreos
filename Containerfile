@@ -37,6 +37,6 @@ RUN dnf5 install -y \
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 
-RUN systemctl enable qemu-guest-agent tailscaled
+# RUN systemctl enable qemu-guest-agent tailscaled
 
 RUN bootc container lint
