@@ -18,7 +18,6 @@ RUN dnf5 install -y \
     && dnf5 clean all
 
 RUN dnf5 install -y \
-    cockpit-bridge \
     cockpit-networkmanager \
     cockpit-podman \
     cockpit-ostree \
