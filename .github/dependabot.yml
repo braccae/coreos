@@ -11,8 +11,7 @@ updates:
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "cron"
-      cronjob: "0/5 * * * *"
+      interval: "daily"
     # ignore:
     #   # Ignore patch updates for stability
     #   - dependency-name: "*"
