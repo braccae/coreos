@@ -141,10 +141,10 @@ jobs:
       - name: Sign container image
         if: github.event_name != 'pull_request'
         run: |
-          for tag in ${{ needs.build-metadata.outputs.tags }}; do
-            cosign sign -y --key env://COSIGN_PRIVATE_KEY "$tag"
-          done
+          # Sign using digest to avoid tag mutability warnings
+          DIGEST="${{ steps.push.outputs.digest }}"
+          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${DIGEST}"
         env:
-          TAGS: ${{ steps.push.outputs.digest }}
           COSIGN_EXPERIMENTAL: false
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
