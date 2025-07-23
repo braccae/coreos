@@ -13,20 +13,14 @@ RUN dnf5 install -y \
     borgmatic \
     fuse \
     rclone \
-    rsync && \
-    dnf clean all
-
-RUN dnf5 install -y \
+    rsync \
     cockpit-system \
     cockpit-networkmanager \
     cockpit-podman \
     cockpit-ostree \
     cockpit-selinux \
     cockpit-storaged \
-    cockpit-files && \
-    dnf clean all
-
-RUN dnf5 install -y \
+    cockpit-files \
     python3-psycopg2 \
     xdg-user-dirs \
     && dnf clean all
