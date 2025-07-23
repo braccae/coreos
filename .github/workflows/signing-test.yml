@@ -13,7 +13,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  VARIENT: latest
+  VARIENT: signed
   IMAGE_NAME_BASE: "${{ github.event.repository.name }}"  # the name of the image produced by this build, matches repo names
   IMAGE_DESC: "coreos fedora bootc"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
