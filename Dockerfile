@@ -14,8 +14,7 @@ RUN dnf5 install -y \
     fuse \
     rclone \
     rsync && \
-    dnf clean all && \
-    rm -rf /var/*
+    dnf clean all
 
 RUN dnf5 install -y \
     cockpit-system \
@@ -25,14 +24,12 @@ RUN dnf5 install -y \
     cockpit-selinux \
     cockpit-storaged \
     cockpit-files && \
-    dnf clean all && \
-    rm -rf /var/*
+    dnf clean all
 
 RUN dnf5 install -y \
     python3-psycopg2 \
     xdg-user-dirs \
-    && dnf clean all \
-    && rm -rf /var/*
+    && dnf clean all
 
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
@@ -40,3 +37,4 @@ COPY rootfs/common/ /
 RUN systemctl enable qemu-guest-agent tailscaled
 
 RUN bootc container lint
+RUN ostree container commit

@@ -1,4 +1,4 @@
-FROM ghcr.io/braccae/coreos:latest
+FROM ghcr.io/braccae/coreos:sha-1a944db
 
 
 RUN dnf5 install -y --skip-unavailable \
