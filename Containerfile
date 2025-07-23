@@ -15,6 +15,7 @@ RUN dnf5 install -y \
     rclone \
     rsync \
     cockpit-system \
+    cockpit-bridge \
     cockpit-networkmanager \
     cockpit-podman \
     cockpit-ostree \
