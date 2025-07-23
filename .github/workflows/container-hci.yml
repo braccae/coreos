@@ -5,11 +5,12 @@ on:
     branches: ['main']
     paths:
       - 'hci.Containerfile'
-      - 'rootfs/common/**'
       - 'rootfs/hci/**'
   workflow_dispatch:
-  schedule:
-    - cron: '0 5 * * *'
+  workflow_run:
+    workflows: ["Build and Publish Main Container"]  # Name of your first workflow
+    types:
+      - completed
 
 env:
   REGISTRY: ghcr.io

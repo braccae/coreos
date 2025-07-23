@@ -1,31 +1,5 @@
-FROM quay.io/fedora/fedora-bootc:42
+FROM ghcr.io/braccae/coreos:latest
 
-RUN dnf5 install -y dnf5-plugins
-
-RUN dnf5 config-manager addrepo \
-    --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
-
-RUN dnf5 install -y \
-    qemu-guest-agent \
-    git \
-    tailscale \
-    firewalld \
-    sqlite \
-    borgmatic \
-    fuse \
-    rclone \
-    rsync \
-    && dnf5 clean all
-
-RUN dnf5 install -y \
-    cockpit-networkmanager \
-    cockpit-podman \
-    cockpit-ostree \
-    cockpit-selinux \
-    cockpit-storaged \
-    cockpit-system \
-    cockpit-files \
-    && dnf5 clean all
 
 RUN dnf5 install -y --skip-unavailable \
     cockpit-machines \
@@ -103,11 +77,8 @@ RUN sudo dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releas
     && dnf5 clean all
 
 RUN dnf5 install -y \
-    cockpit-ws \
     cockpit-ws-selinux
 
-COPY rootfs/btrfs_config/ /
-COPY rootfs/common/ /
 COPY rootfs/hci/ /
 
 RUN systemctl enable tailscaled
