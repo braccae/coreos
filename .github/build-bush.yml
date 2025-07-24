@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
   ## For testing
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - '.github/workflows/build-bush.yml'
+      - ".github/workflows/build-bush.yml"
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   TAG: centos
 
-jobs:  
+jobs:
   build-qcow2-amd64:
     runs-on: ubuntu-latest
     permissions:
@@ -22,7 +22,6 @@ jobs:
     env:
       ARCH: x86_64
     steps:
-
       - name: Install podman and qemu-utils
         run: |
           sudo apt update
@@ -35,15 +34,15 @@ jobs:
       - name: Pull Image
         id: pull-image
         env:
-          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.TAG }}
         run: |
           sudo podman pull $INPUT_IMAGE
 
       - name: Bootc image builder
         id: bootc-image-builder
         env:
-          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
+          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.TAG }}
+          BUILD_DIR: ${{ github.repository }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
           mkdir -p $BUILD_DIR
           sudo podman run \
@@ -70,7 +69,7 @@ jobs:
         env:
           B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-          BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
+          BUILD_DIR: ${{ github.repository }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
           b2 account authorize 2> /dev/null > /dev/null
           b2 file upload \
@@ -87,7 +86,6 @@ jobs:
     env:
       ARCH: aarch64
     steps:
-
       - name: Install podman and qemu-utils
         run: |
           sudo apt update
@@ -100,15 +98,15 @@ jobs:
       - name: Pull Image
         id: pull-image
         env:
-          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.TAG }}
         run: |
           sudo podman pull $INPUT_IMAGE
 
       - name: Bootc image builder
         id: bootc-image-builder
         env:
-          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
+          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.TAG }}
+          BUILD_DIR: ${{ github.repository }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
           mkdir -p $BUILD_DIR
           sudo podman run \
@@ -135,7 +133,7 @@ jobs:
         env:
           B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-          BUILD_DIR: ${{ env.IMAGE_NAME }}/${{ env.TAG }}/${{ env.ARCH }}
+          BUILD_DIR: ${{ github.repository }}/${{ env.TAG }}/${{ env.ARCH }}
         run: |
           b2 account authorize 2> /dev/null > /dev/null
           b2 file upload \

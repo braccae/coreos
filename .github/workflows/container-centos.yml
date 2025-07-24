@@ -66,7 +66,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
             type=raw,value=${{ env.VARIENT }}
             type=sha,format=short
@@ -123,7 +123,7 @@ jobs:
           context: .
           containerfiles: ./${{ env.VARIENT }}.Containerfile
           platforms: linux/amd64,linux/arm64
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          image: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: ${{ needs.build-metadata.outputs.tags }}
           labels: ${{ needs.build-metadata.outputs.labels }}
 
@@ -144,7 +144,7 @@ jobs:
         run: |
           # Sign using digest to avoid tag mutability warnings
           DIGEST="${{ steps.push.outputs.digest }}"
-          REPOSITORY="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
           cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${DIGEST}"
         env:
           COSIGN_EXPERIMENTAL: false
