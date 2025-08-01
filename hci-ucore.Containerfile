@@ -16,9 +16,6 @@ RUN dnf5 install -y \
     fuse \
     rclone \
     rsync \
-    && dnf5 clean all
-
-RUN dnf5 install -y \
     cockpit-networkmanager \
     cockpit-podman \
     cockpit-ostree \
@@ -88,9 +85,22 @@ RUN dnf5 install -y --skip-unavailable \
     && dnf5 clean all
 
 WORKDIR /tmp
-RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
-RUN sudo dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.2.10/cockpit-file-sharing-4.2.10-1.el8.noarch.rpm \
-    && dnf5 clean all
+# RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
+# RUN sudo dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.2.10/cockpit-file-sharing-4.2.10-1.el8.noarch.rpm \
+#     && dnf5 clean all
+
+# RUN sudo dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.2.10/cockpit-file-sharing-4.2.10-1.el8.noarch.rpm \
+#     && dnf5 clean all
+
+RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.latest.1/k3s-selinux-1.6-1.coreos.noarch.rpm && \
+        curl -sfL https://get.k3s.io | \
+        INSTALL_K3S_SKIP_ENABLE=true \
+        INSTALL_K3S_SKIP_START=true \
+        INSTALL_K3S_SKIP_SELINUX_RPM=true \
+        INSTALL_K3S_SELINUX_WARN=true \
+        sh -
+
+RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /

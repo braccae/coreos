@@ -85,6 +85,8 @@ RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.
         INSTALL_K3S_SELINUX_WARN=true \
         sh -
 
+RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
 COPY rootfs/hci/ /
 
 RUN systemctl enable tailscaled
