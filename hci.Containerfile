@@ -77,10 +77,11 @@ RUN dnf5 install -y --skip-unavailable \
 RUN sudo dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.2.10/cockpit-file-sharing-4.2.10-1.el8.noarch.rpm \
     && dnf5 clean all
 
-RUN curl -sfL https://get.k3s.io | \
-    INSTALL_K3S_SKIP_ENABLE=true \
-    INSTALL_K3S_SKIP_START=true \
-    sh -
+RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.latest.1/k3s-selinux-1.6-1.coreos.noarch.rpm && \
+        curl -sfL https://get.k3s.io | \
+        INSTALL_K3S_SKIP_ENABLE=true \
+        INSTALL_K3S_SKIP_START=true \
+        sh -
 
 COPY rootfs/hci/ /
 
