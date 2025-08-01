@@ -81,6 +81,8 @@ RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.
         curl -sfL https://get.k3s.io | \
         INSTALL_K3S_SKIP_ENABLE=true \
         INSTALL_K3S_SKIP_START=true \
+        INSTALL_K3S_SKIP_SELINUX_RPM=true \
+        INSTALL_K3S_SELINUX_WARN=true \
         sh -
 
 COPY rootfs/hci/ /
