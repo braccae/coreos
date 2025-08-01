@@ -26,6 +26,8 @@ RUN dnf5 install -y \
     xdg-user-dirs \
     && dnf clean all
 
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
+
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 
