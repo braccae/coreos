@@ -101,7 +101,8 @@ RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.
         INSTALL_K3S_BIN_DIR=/usr/bin \
         sh -
 
-RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+ADD https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh /tmp/k3d_install.sh
+RUN bash /tmp/k3d_install.sh --no-sudo
 
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
