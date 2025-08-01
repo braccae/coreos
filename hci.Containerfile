@@ -59,6 +59,7 @@ RUN dnf5 install -y --skip-unavailable \
     qemu-user-static-arm \
     qemu-user-static-riscv \
     cockpit-ws-selinux \
+    distrobox \
     && dnf5 clean all
 
 
