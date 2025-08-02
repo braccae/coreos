@@ -104,8 +104,8 @@ RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.
 ADD https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh /tmp/k3d_install.sh
 RUN K3D_INSTALL_DIR=/usr/bin bash /tmp/k3d_install.sh
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh && \
-    /usr/bin/uv pip install --system packaging
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
+RUN /usr/bin/uv pip install --system packaging
 
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
