@@ -24,7 +24,6 @@ RUN dnf5 install -y \
     cockpit-system \
     cockpit-files \
     python3-packaging \
-    python3-venv \
     python3-pip
 
 RUN dnf5 install -y --skip-unavailable \

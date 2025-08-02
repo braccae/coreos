@@ -23,10 +23,7 @@ RUN dnf5 install -y \
     cockpit-storaged \
     cockpit-files \
     python3-psycopg2 \
-    container-selinux \
     xdg-user-dirs \
-    python3-packaging \
-    python3-venv \
     python3-pip \
     && dnf clean all
 
