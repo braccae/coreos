@@ -105,7 +105,7 @@ ADD https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh /tmp/k3d_instal
 RUN K3D_INSTALL_DIR=/usr/bin bash /tmp/k3d_install.sh
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
-RUN /usr/bin/uv pip install --system packaging
+# RUN /usr/bin/uv pip install --system packaging
 
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /

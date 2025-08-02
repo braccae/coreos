@@ -28,7 +28,7 @@ RUN dnf5 install -y \
     && dnf clean all
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
-RUN /usr/bin/uv pip install --system packaging
+# RUN /usr/bin/uv pip install --system packaging
 
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
