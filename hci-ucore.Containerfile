@@ -23,7 +23,7 @@ RUN dnf5 install -y \
     cockpit-storaged \
     cockpit-system \
     cockpit-files \
-    && dnf5 clean all
+    python3-packaging
 
 RUN dnf5 install -y --skip-unavailable \
     cockpit-machines \
