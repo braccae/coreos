@@ -26,6 +26,8 @@ RUN dnf5 install -y \
     container-selinux \
     xdg-user-dirs \
     python3-packaging \
+    python3-venv \
+    python3-pip \
     && dnf clean all
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
