@@ -30,6 +30,9 @@ RUN dnf5 install -y \
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 # RUN /usr/bin/uv pip install --system packaging
 
+COPY scripts/build /tmp/build_scripts
+RUN bash /tmp/build_scripts/wazuh-agent.sh
+
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 
