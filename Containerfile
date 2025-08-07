@@ -36,6 +36,6 @@ RUN bash /tmp/build_scripts/wazuh-agent.sh
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 
-RUN systemctl enable qemu-guest-agent tailscaled
+RUN systemctl enable tailscaled
 
 RUN bootc container lint
