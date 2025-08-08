@@ -1,12 +1,12 @@
 name: Build and Publish CentOS Container
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "centos.Containerfile"
-      - "rootfs/common/**"
-      - "rootfs/centos/**"
+  # push:
+  #   branches: ["main"]
+  #   paths:
+  #     - "centos.Containerfile"
+  #     - "rootfs/common/**"
+  #     - "rootfs/centos/**"
   workflow_dispatch:
   # schedule:
   #   - cron: '0 5 * * *'
