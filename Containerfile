@@ -1,4 +1,6 @@
 FROM quay.io/fedora/fedora-bootc:42
+LABEL containers.bootc 1
+
 
 RUN dnf5 install -y dnf5-plugins
 

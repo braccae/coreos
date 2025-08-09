@@ -1,4 +1,5 @@
 FROM ghcr.io/braccae/coreos:sha-1a944db
+LABEL containers.bootc 1
 
 
 RUN dnf5 install -y --skip-unavailable \
