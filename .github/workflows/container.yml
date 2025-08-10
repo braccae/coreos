@@ -177,11 +177,17 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts/
-          pattern: build-info-*
-          merge-multiple: true
+          name: build-info-amd64
+          path: artifacts/build-info-amd64/
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-info-arm64
+          path: artifacts/build-info-arm64/
 
       - name: Read build info
+        id: read-build-info
         run: |
           AMD64_DIGEST=$(cat artifacts/build-info-amd64/digest.txt)
           ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest.txt)
@@ -197,8 +203,8 @@ jobs:
           podman manifest create $REPOSITORY:$TAG
           
           # Add images to manifest
-          podman manifest add $REPOSITORY:$TAG $REPOSITORY@${{ steps.read-info.outputs.amd64_digest }}
-          podman manifest add $REPOSITORY:$TAG $REPOSITORY@${{ steps.read-info.outputs.arm64_digest }}
+          podman manifest add $REPOSITORY:$TAG $REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}
+          podman manifest add $REPOSITORY:$TAG $REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}
           
           # Push manifest
           podman manifest push $REPOSITORY:$TAG
