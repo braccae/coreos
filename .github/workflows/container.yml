@@ -147,6 +147,7 @@ jobs:
       - name: Upload build info
         if: github.event_name != 'pull_request'
         run: |
+          mkdir -p build-info
           echo "${{ steps.push.outputs.digest }}" > build-info/digest.txt
           echo "${{ matrix.platform }}" > build-info/platform.txt
         id: build-info
