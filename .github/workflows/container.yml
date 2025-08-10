@@ -147,8 +147,8 @@ jobs:
       - name: Upload build info
         if: github.event_name != 'pull_request'
         run: |
-          echo "digest=${{ steps.push.outputs.digest }}" >> $GITHUB_OUTPUT
-          echo "platform=${{ matrix.platform }}" >> $GITHUB_OUTPUT
+          echo "${{ steps.push.outputs.digest }}" > digest.txt
+          echo "${{ matrix.platform }}" > platform.txt
         id: build-info
 
       - name: Upload artifact for manifest creation
@@ -157,8 +157,8 @@ jobs:
         with:
           name: build-info-${{ matrix.arch }}
           path: |
-            ${{ steps.build-info.outputs.digest }}
-            ${{ steps.build-info.outputs.platform }}
+            digest.txt
+            platform.txt
 
   create-manifest:
     runs-on: ubuntu-latest
@@ -185,8 +185,8 @@ jobs:
       - name: Read build info
         id: read-info
         run: |
-          AMD64_DIGEST=$(cat artifacts/build-info-amd64/digest)
-          ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest)
+          AMD64_DIGEST=$(cat artifacts/build-info-amd64/digest.txt)
+          ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest.txt)
           echo "amd64_digest=$AMD64_DIGEST" >> $GITHUB_OUTPUT
           echo "arm64_digest=$ARM64_DIGEST" >> $GITHUB_OUTPUT
 
