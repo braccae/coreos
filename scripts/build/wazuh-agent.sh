@@ -13,6 +13,7 @@ priority=1
 EOF
 
 dnf install -y wazuh-agent
+dnf clean all
 
 mv /var/ossec /usr/ossec
 sed -i 's|/var/ossec|/usr/ossec|g' /usr/lib/systemd/system/wazuh-agent.service
