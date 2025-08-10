@@ -226,7 +226,7 @@ jobs:
           TAG="${{ env.VARIENT }}"
           
           # Get the digest of the multi-arch manifest after pushing
-          MANIFEST_DIGEST=$(podman manifest inspect $REPOSITORY:$TAG --format '{{.Manifest.Digest}}')
+          MANIFEST_DIGEST=$(podman manifest inspect $REPOSITORY:$TAG | jq -r '.manifest.digest')
           
           # Sign the multi-arch manifest using the full reference
           cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${MANIFEST_DIGEST}"
