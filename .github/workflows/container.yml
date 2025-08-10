@@ -199,14 +199,22 @@ jobs:
           REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
           TAG="${{ env.VARIENT }}"
           
-          # Create manifest
+          # Create manifest with proper architecture annotations
           podman manifest create $REPOSITORY:$TAG
           
-          # Add images to manifest
-          podman manifest add $REPOSITORY:$TAG $REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}
-          podman manifest add $REPOSITORY:$TAG $REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}
+          # Add amd64 image to manifest with architecture annotation
+          podman manifest add $REPOSITORY:$TAG \
+            --arch amd64 \
+            --os linux \
+            $REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}
           
-          # Push manifest
+          # Add arm64 image to manifest with architecture annotation
+          podman manifest add $REPOSITORY:$TAG \
+            --arch arm64 \
+            --os linux \
+            $REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}
+          
+          # Push manifest to registry
           podman manifest push $REPOSITORY:$TAG
 
       - name: Install Cosign
@@ -217,10 +225,10 @@ jobs:
           REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
           TAG="${{ env.VARIENT }}"
           
-          # Get the digest of the multi-arch manifest
-          MANIFEST_DIGEST=$(podman manifest inspect $REPOSITORY:$TAG | jq -r '.manifest.digest')
+          # Get the digest of the multi-arch manifest after pushing
+          MANIFEST_DIGEST=$(podman manifest inspect $REPOSITORY:$TAG --format '{{.Manifest.Digest}}')
           
-          # Sign the multi-arch manifest
+          # Sign the multi-arch manifest using the full reference
           cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${MANIFEST_DIGEST}"
         env:
           COSIGN_EXPERIMENTAL: false
