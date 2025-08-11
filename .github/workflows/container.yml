@@ -43,7 +43,7 @@ jobs:
           # E.G: 2022-02-08T15:38:15Z'
           # https://artifacthub.io/docs/topics/repositories/container-images/
           # https://linux.die.net/man/1/date
-          echo "date=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
 
       - name: Set Image Name and Tag
         id: set_image_name
@@ -121,10 +121,6 @@ jobs:
       - name: Delete huge unnecessary tools folder
         run: rm -rf /opt/hostedtoolcache
 
-      - name: Set up QEMU
-        if: matrix.arch == 'amd64'
-        uses: docker/setup-qemu-action@v3
-
       - name: Build Image
         uses: redhat-actions/buildah-build@v2
         id: build
@@ -194,7 +190,8 @@ jobs:
           echo "amd64_digest=$AMD64_DIGEST" >> $GITHUB_OUTPUT
           echo "arm64_digest=$ARM64_DIGEST" >> $GITHUB_OUTPUT
 
-      - name: Create multi-arch manifest
+      - name: Create and push multi-arch manifest
+        id: push-manifest
         run: |
           REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
           TAG="${{ env.VARIENT }}"
@@ -214,8 +211,9 @@ jobs:
             --os linux \
             $REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}
           
-          # Push manifest to registry
-          podman manifest push $REPOSITORY:$TAG
+          # Push manifest to registry and capture digest
+          DIGEST=$(podman manifest push $REPOSITORY:$TAG)
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
@@ -223,13 +221,9 @@ jobs:
       - name: Sign multi-arch manifest
         run: |
           REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
-          TAG="${{ env.VARIENT }}"
-          
-          # Get the digest of the multi-arch manifest after pushing
-          MANIFEST_DIGEST=$(podman manifest inspect $REPOSITORY:$TAG | jq -r '.manifest.digest')
           
           # Sign the multi-arch manifest using the full reference
-          cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${MANIFEST_DIGEST}"
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${{ steps.push-manifest.outputs.digest }}"
         env:
           COSIGN_EXPERIMENTAL: false
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
