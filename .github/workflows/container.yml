@@ -83,7 +83,7 @@ jobs:
             org.opencontainers.image.vendor=${{ github.repository_owner }}
             org.opencontainers.image.version=${{ env.DEFAULT_TAG }}
             io.artifacthub.package.deprecated=false
-            io.artifacthub.package.keywords=bootc,ublue,universal-blue
+            io.artifacthub.package.keywords=bootc,fedora
             io.artifacthub.package.license=Apache-2.0
             io.artifacthub.package.logo-url=${{ env.ARTIFACTHUB_LOGO_URL }}
             io.artifacthub.package.prerelease=false
@@ -170,13 +170,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download build artifacts
+      - name: Download amd64 build artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-info-amd64
           path: artifacts/build-info-amd64/
 
-      - name: Download build artifacts
+      - name: Download arm64 build artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-info-arm64
@@ -194,26 +194,23 @@ jobs:
         id: push-manifest
         run: |
           REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
-          TAG="${{ env.VARIENT }}"
-          
-          # Create manifest with proper architecture annotations
-          podman manifest create $REPOSITORY:$TAG
-          
-          # Add amd64 image to manifest with architecture annotation
-          podman manifest add $REPOSITORY:$TAG \
-            --arch amd64 \
-            --os linux \
-            $REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}
-          
-          # Add arm64 image to manifest with architecture annotation
-          podman manifest add $REPOSITORY:$TAG \
-            --arch arm64 \
-            --os linux \
-            $REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}
-          
-          # Push manifest to registry and capture digest
-          DIGEST=$(podman manifest push $REPOSITORY:$TAG)
-          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+          for TAG in ${{ needs.build-metadata.outputs.tags }};
+          do
+            echo "Creating and pushing manifest for $REPOSITORY:$TAG"
+            podman manifest create "$REPOSITORY:$TAG"
+            podman manifest add "$REPOSITORY:$TAG" \
+              --arch amd64 \
+              --os linux \
+              "$REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}"
+            podman manifest add "$REPOSITORY:$TAG" \
+              --arch arm64 \
+              --os linux \
+              "$REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}"
+            DIGEST=$(podman manifest push "$REPOSITORY:$TAG")
+            if [[ "$TAG" == "${{ env.VARIENT }}" ]]; then
+              echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+            fi
+          done
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
