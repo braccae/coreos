@@ -194,19 +194,19 @@ jobs:
         id: push-manifest
         run: |
           REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
-          for TAG in ${{ needs.build-metadata.outputs.tags }};
-          do
-            echo "Creating and pushing manifest for $REPOSITORY:$TAG"
-            podman manifest create "$REPOSITORY:$TAG"
-            podman manifest add "$REPOSITORY:$TAG" \
+          for IMAGE_TAG in ${{ needs.build-metadata.outputs.tags }}; do
+            echo "Creating and pushing manifest for $IMAGE_TAG"
+            podman manifest create "$IMAGE_TAG"
+            podman manifest add "$IMAGE_TAG" \
               --arch amd64 \
               --os linux \
               "$REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}"
-            podman manifest add "$REPOSITORY:$TAG" \
+            podman manifest add "$IMAGE_TAG" \
               --arch arm64 \
               --os linux \
               "$REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}"
-            DIGEST=$(podman manifest push "$REPOSITORY:$TAG")
+            DIGEST=$(podman manifest push "$IMAGE_TAG")
+            TAG="${IMAGE_TAG##*:}"
             if [[ "$TAG" == "${{ env.VARIENT }}" ]]; then
               echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
             fi
