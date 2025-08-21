@@ -150,20 +150,12 @@ jobs:
           echo "${{ matrix.platform }}" > build-info/platform.txt
         id: build-info
 
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+      - name: Upload artifact for manifest creation
         if: github.event_name != 'pull_request'
-
-      - name: Sign container image
-        if: github.event_name != 'pull_request'
-        run: |
-          # Sign using digest to avoid tag mutability warnings
-          DIGEST="${{ steps.push.outputs.digest }}"
-          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
-          cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${DIGEST}"
-        env:
-          COSIGN_EXPERIMENTAL: false
-          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info-${{ matrix.arch }}
+          path: build-info/
 
   create-manifest:
     runs-on: ubuntu-latest
