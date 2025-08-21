@@ -1,16 +1,19 @@
 name: Build and Publish HCI Container
 
 on:
+  workflow_run:
+    workflows: ["Build and Publish Main Container"]
+    types:
+      - completed
+    branches:
+      - main
   push:
     branches: ["main"]
     paths:
-      - "hci.Containerfile"
+      - "hci-ucore.Containerfile"
+      - "rootfs/common/**"
       - "rootfs/hci/**"
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Build and Publish Main Container"] # Name of your first workflow
-    types:
-      - completed
 
 env:
   REGISTRY: ghcr.io
@@ -23,6 +26,7 @@ env:
 
 jobs:
   build-metadata:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
@@ -73,7 +77,6 @@ jobs:
             type=sha,format=short
             type=ref,event=branch
             type=ref,event=pr
-            type=schedule,pattern={{date 'YYYYMMDD'}}
           labels: |
             io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/refs/heads/main/README.md
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
