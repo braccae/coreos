@@ -18,24 +18,25 @@ This project builds upon Fedora bootc and uCore to create customized, immutable 
   - QEMU guest agent for virtualization
   - Firewall and security tools
 
-### 2. HCI uCore (`hci-ucore.Containerfile`)
-- **Base**: uCore HCI stable-zfs
-- **Purpose**: Hyperconverged Infrastructure with ZFS support (x86_64 Only)
+### 2. HCI Variant (`hci.Containerfile`)
+- **Purpose**: Hyperconverged Infrastructure
 - **Key Features**:
   - Complete QEMU/KVM virtualization stack
-  - ZFS filesystem support via Cockpit ZFS Manager
   - Cockpit Machines for VM management
   - File sharing capabilities
   - Comprehensive virtualization device support
-(This image is better than mine in every way except for the lack of arm64 varient. Once that happens ucore will likely become the default base image.)
 
-### 3. CentOS-based (`centos.Containerfile`)
+### 3. HCI uCore (`hci-ucore.Containerfile`)
+- **Base**: uCore HCI stable-zfs
+- **Purpose**: Hyperconverged Infrastructure with ZFS support (x86_64 Only)
+- **Key Features**:
+  - ZFS filesystem support via Cockpit ZFS Manager
+(Once I figure out zfs support, this varient will be depreciated)
+
+### 4. CentOS-based (`centos.Containerfile`)
 - **Base**: CentOS Stream bootc
 - **Purpose**: Enterprise-focused deployment
 (EXPERIMENTAL: Currently does not boot as of 06/28/25)
-
-### 4. HCI Variant (`hci.Containerfile`)
-- **Purpose**: Alternative HCI configuration
 
 ### 5. Webtop (`webtop.Containerfile`)
 - **Purpose**: Desktop environment in container
@@ -121,7 +122,7 @@ sudo systemctl reboot
 
 #### User Configuration (`config.toml`)
 - Default user: `core`
-- SSH key authentication (CHANGE THIS TO YOUR PUBKEY)
+- SSH key authentication
 - Wheel group membership for sudo access
 - Minimum root filesystem: 48 GiB
 
