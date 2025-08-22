@@ -177,19 +177,19 @@ jobs:
           name: build-info-amd64
           path: artifacts/build-info-amd64/
 
-      - name: Download arm64 build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-info-arm64
-          path: artifacts/build-info-arm64/
+      # - name: Download arm64 build artifacts
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: build-info-arm64
+      #     path: artifacts/build-info-arm64/
 
       - name: Read build info
         id: read-build-info
         run: |
           AMD64_DIGEST=$(cat artifacts/build-info-amd64/digest.txt)
-          ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest.txt)
+          # ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest.txt)
           echo "amd64_digest=$AMD64_DIGEST" >> $GITHUB_OUTPUT
-          echo "arm64_digest=$ARM64_DIGEST" >> $GITHUB_OUTPUT
+          # echo "arm64_digest=$ARM64_DIGEST" >> $GITHUB_OUTPUT
 
       - name: Create and push multi-arch manifest
         id: push-manifest
