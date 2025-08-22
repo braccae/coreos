@@ -202,10 +202,10 @@ jobs:
               --arch amd64 \
               --os linux \
               "$REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}"
-            podman manifest add "$IMAGE_TAG" \
-              --arch arm64 \
-              --os linux \
-              "$REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}"
+            # podman manifest add "$IMAGE_TAG" \
+            #   --arch arm64 \
+            #   --os linux \
+            #   "$REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}"
             DIGEST=$(podman manifest push "$IMAGE_TAG")
             TAG="${IMAGE_TAG##*:}"
             if [[ "$TAG" == "${{ env.VARIENT }}" ]]; then
