@@ -43,7 +43,7 @@ COPY scripts/build /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh
 
 
-COPY --from=builder /build/RPMS/*.rpm /tmp/rpms/
+COPY --from=zfs-builder /build/RPMS/*.rpm /tmp/rpms/
 RUN dnf5 remove -y zfs-fuse && \
     ls /tmp/rpms/ && \
     dnf5 install -y /tmp/rpms/*.rpm && dnf clean all
