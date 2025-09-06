@@ -2,13 +2,15 @@
 set -euo pipefail
 
 KERNEL_VERSION_FULL=$(ls /usr/lib/modules/)
+echo "This is the kernel we're working with, chief: $KERNEL_VERSION_FULL"
+
 KERNEL_VERSION=${KERNEL_VERSION_FULL%.*}
 
 dnf install -y \
     gcc \
     make \
     autoconf \
-    automake \ 
+    automake \
     libtool \
     git \
     libblkid-devel \
