@@ -55,4 +55,5 @@ for file in *.rpm; do
     fi
 done
 
-mv -v /tmp/zfs-${ZFS_VERSION}/*.rpm /build/RPMS/
+mkdir /build/RPMS/install
+mv -v /tmp/zfs-${ZFS_VERSION}/*.rpm /build/RPMS/install/
