@@ -31,6 +31,8 @@ RUN dnf5 install -y \
     cockpit-selinux \
     cockpit-storaged \
     cockpit-files \
+    cockpit-ws \
+    cockpit-ws-selinux \
     python3-psycopg2 \
     xdg-user-dirs \
     python3-pip \
@@ -43,13 +45,10 @@ COPY scripts/build /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh
 
 
-COPY --from=zfs-builder /build/RPMS/*.rpm /tmp/rpms/
+COPY --from=zfs-builder /build/RPMS/install/*.rpm /tmp/rpms/
 RUN dnf5 remove -y zfs-fuse && \
     ls /tmp/rpms/ && \
     dnf5 install -y /tmp/rpms/*.rpm && dnf clean all
-# RUN find /tmp/rpms -name "*.rpm" -exec rpm -ivh {} \;
-
-# RUN depmod -a
 
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
