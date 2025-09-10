@@ -36,7 +36,7 @@ cd /tmp
 curl -fLO https://github.com/openzfs/zfs/releases/download/zfs-${ZFS_VERSION}/zfs-${ZFS_VERSION}.tar.gz
 tar -xf zfs-${ZFS_VERSION}.tar.gz
 cd zfs-${ZFS_VERSION}
-./configure --with-linux=/usr/src/kernels/$KERNEL_VERSION_FULL --with-linux-obj=/usr/src/kernels/$KERNEL_VERSION_FULL/build
+./configure --with-linux=/usr/src/kernels/$KERNEL_VERSION_FULL --with-linux-obj=/lib/modules/$KERNEL_VERSION_FULL/build
 make -j1 rpm-utils rpm-kmod
 
 KEYWORDS=("debug" "debuginfo" "devel" "debugsource" "src" "test")
