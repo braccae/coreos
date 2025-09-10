@@ -28,7 +28,9 @@ dnf install -y \
     libtirpc-devel \
     libudev-devel \
     python3-devel \
-    kernel-devel-$KERNEL_VERSION
+    kernel-devel-$KERNEL_VERSION \
+    kernel-devel-$KERNEL_VERSION_FULL \
+    kernel-devel-$(uname -m) 
 
 cd /tmp
 curl -fLO https://github.com/openzfs/zfs/releases/download/zfs-${ZFS_VERSION}/zfs-${ZFS_VERSION}.tar.gz
