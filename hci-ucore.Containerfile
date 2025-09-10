@@ -1,5 +1,5 @@
 # syntax=docker.io/docker/dockerfile:1.7-labs
-FROM ghcr.io/ublue-os/ucore-hci:stable-zfs-20250620
+FROM ghcr.io/ublue-os/ucore-hci:stable-zfs
 LABEL containers.bootc 1
 
 # RUN dnf5 install -y dnf5-plugins

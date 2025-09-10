@@ -31,8 +31,6 @@ RUN dnf5 install -y \
     cockpit-selinux \
     cockpit-storaged \
     cockpit-files \
-    cockpit-ws \
-    cockpit-ws-selinux \
     python3-psycopg2 \
     xdg-user-dirs \
     python3-pip \
