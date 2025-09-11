@@ -1,4 +1,4 @@
-FROM ghcr.io/braccae/coreos:sha-1a944db
+FROM ghcr.io/braccae/coreos
 LABEL containers.bootc 1
 
 
