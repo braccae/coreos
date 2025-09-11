@@ -113,6 +113,8 @@ RUN K3D_INSTALL_DIR=/usr/bin bash /tmp/k3d_install.sh
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 # RUN /usr/bin/uv pip install --system packaging
 
+RUN dnf5 remove cockpit-ws cockpit-ws-selinux -y && dnf5 clean all
+
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 COPY rootfs/hci/ /
