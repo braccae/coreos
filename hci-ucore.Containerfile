@@ -119,7 +119,7 @@ COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 COPY rootfs/hci/ /
 
-RUN systemctl disable zincati
+RUN systemctl disable zincati.service coreos-oci-migration-motd.service
 RUN systemctl enable tailscaled
 
 RUN bootc container lint
