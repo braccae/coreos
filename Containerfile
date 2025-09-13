@@ -2,7 +2,7 @@ FROM quay.io/fedora/fedora-bootc:42 AS zfs-builder
 
 ARG ZFS_VERSION="2.3.4"
 
-COPY scripts/build/zfs.sh /tmp/build_scripts/zfs.sh
+COPY build/scripts/zfs.sh /tmp/build_scripts/zfs.sh
 RUN bash /tmp/build_scripts/zfs.sh
 
 FROM quay.io/fedora/fedora-bootc:42
@@ -39,7 +39,7 @@ RUN dnf5 install -y \
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 # RUN /usr/bin/uv pip install --system packaging
 
-COPY scripts/build /tmp/build_scripts
+COPY build/scripts /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh
 
 
