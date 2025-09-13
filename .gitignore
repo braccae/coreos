@@ -6,7 +6,6 @@
 
 ## scratch dir for temporary files
 scratch/*
-build/*
 
 ## Cosign Private Key
 cosign.key
