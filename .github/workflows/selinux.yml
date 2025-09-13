@@ -15,8 +15,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install SELinux tools
       run: |
-        apt-get update
-        apt-get install -y selinux-policy-dev checkpolicy
+        sudo apt-get update
+        sudo apt-get install -y selinux-policy-dev checkpolicy
     - name: Build borgmatic policy
       working-directory: build/selinux/borgmatic
       run: make -f /usr/share/selinux/devel/Makefile
