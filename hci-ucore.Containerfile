@@ -121,6 +121,8 @@ COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 COPY rootfs/hci/ /
 
+RUN semodule -i /usr/share/selinux/packages/borgmatic.pp || :
+
 RUN systemctl disable zincati.service coreos-oci-migration-motd.service
 RUN systemctl enable tailscaled
 
