@@ -19,6 +19,8 @@ RUN dnf5 install -y \
     cockpit-storaged \
     cockpit-system \
     cockpit-files \
+    realmd \
+    tuned \
     python3-psycopg2 \
     python3-packaging \
     python3-pip
