@@ -2,11 +2,9 @@ name: SELinux Policy
 
 on:
   push:
-    branches: [ "main" ]
-    paths:
-      - 'build/selinux/**'
+    branches: [ "main", "selinux" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "selinux" ]
     paths:
       - 'build/selinux/**'
 
