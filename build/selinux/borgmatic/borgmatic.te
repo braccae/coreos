@@ -1,5 +1,16 @@
 policy_module(borgmatic, 1.0.0)
 
+gen_require(`
+	type var_log_t;
+	type etc_t;
+	type bin_t;
+	type usr_bin_t;
+	type tmp_t;
+	type container_t;
+	type node_t;
+	type port_t;
+')
+
 ########################################
 #
 # Declarations
@@ -9,6 +20,7 @@ type borgmatic_t;
 type borgmatic_exec_t;
 init_daemon_domain(borgmatic_t, borgmatic_exec_t)
 
+# Type for data shared between borgmatic and containers
 type borgmatic_data_t;
 files_type(borgmatic_data_t)
 
@@ -27,8 +39,8 @@ allow borgmatic_t self:fd use;
 allow borgmatic_t self:fifo_file { read write getattr open };
 
 # Allow network access
-corenet_tcp_connect(borgmatic_t)
-corenet_udp_bind(borgmatic_t)
+allow borgmatic_t port_t:tcp_socket name_connect;
+allow borgmatic_t node_t:tcp_socket name_connect;
 
 # Allow borgmatic to read system configuration
 allow borgmatic_t etc_t:dir search;
@@ -51,9 +63,9 @@ init_daemon_domain(borgmatic_t, borgmatic_exec_t)
 #
 
 # Allow borgmatic to access its data files
-allow borgmatic_t borgmatic_data_t:dir { add_name create getattr open read remove_name rmdir search write };
-allow borgmatic_t borgmatic_data_t:file { append create getattr open read rename setattr unlink write };
+allow borgmatic_t borgmatic_data_t:dir { add_name create getattr ioctl lock read remove_name rename reparent rmdir search setattr write };
+allow borgmatic_t borgmatic_data_t:file { create getattr ioctl lock open read rename setattr unlink write };
 
 # Allow containers to access borgmatic_data_t
-allow container_t borgmatic_data_t:dir { add_name create getattr open read remove_name rmdir search write };
-allow container_t borgmatic_data_t:file { append create getattr open read rename setattr unlink write };
+allow container_t borgmatic_data_t:dir { add_name create getattr ioctl lock read remove_name rename reparent rmdir search setattr write };
+allow container_t borgmatic_data_t:file { create getattr ioctl lock open read rename setattr unlink write };

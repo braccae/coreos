@@ -22,7 +22,7 @@ $(PP_FILE): $(MOD_FILE)
 
 $(MOD_FILE): $(TE_FILES) $(IF_FILES)
 	@echo "Building policy module..."
-	checkmodule -M -m -o $@ $(TE_FILES)
+	checkmodule -M -m $(TE_FILES) -o $@
 
 clean:
 	@echo "Cleaning up..."
