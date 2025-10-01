@@ -103,6 +103,6 @@ RUN K3D_INSTALL_DIR=/usr/bin bash /tmp/k3d_install.sh
 
 COPY rootfs/hci/ /
 
-RUN systemctl enable tailscaled
+RUN systemctl enable tailscaled selinux-recover
 
 RUN bootc container lint

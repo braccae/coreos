@@ -51,6 +51,6 @@ RUN dnf5 remove -y zfs-fuse && \
 COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 
-RUN systemctl enable tailscaled
+RUN systemctl enable tailscaled selinux-recover
 
 RUN bootc container lint
