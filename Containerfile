@@ -1,9 +1,15 @@
 FROM quay.io/fedora/fedora-bootc:42 AS zfs-builder
 
-ARG ZFS_VERSION="2.3.4"
+ARG ENTITLEMENT_IMAGE=ghcr.io/braccae/rhel
+ARG ENTITLEMENT_TAG=repos
+ARG ZFS_VERSION=zfs-2.3.4
 
-COPY build/scripts/zfs.sh /tmp/build_scripts/zfs.sh
-RUN bash /tmp/build_scripts/zfs.sh
+# Copy persistent MOK public key for secure boot
+COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
+
+COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
+RUN --mount=type=secret,mode=0600,id=LOCALMOK \
+    bash /tmp/build_scripts/zfs.sh
 
 FROM quay.io/fedora/fedora-bootc:42
 LABEL containers.bootc 1

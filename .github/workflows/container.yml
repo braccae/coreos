@@ -131,6 +131,8 @@ jobs:
           image: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: ${{ needs.build-metadata.outputs.tags }}
           labels: ${{ needs.build-metadata.outputs.labels }}
+          extra-args: |
+            --secret id=LOCALMOK,env=LOCALMOK
 
       - name: Push To Registry
         if: github.event_name != 'pull_request'
