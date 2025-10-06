@@ -11,38 +11,44 @@ log() {
 
 # Get variables from environment and arguments
 ZFS_VERSION="${ZFS_VERSION:-zfs-2.3.4}"
-ENTITLEMENT_IMAGE="${ENTITLEMENT_IMAGE:-ghcr.io/braccae/rhel}"
-ENTITLEMENT_TAG="${ENTITLEMENT_TAG:-repos}"
 
 log "Starting complete ZFS build process"
 log "ZFS_VERSION: ${ZFS_VERSION}"
-log "ENTITLEMENT_IMAGE: ${ENTITLEMENT_IMAGE}"
-log "ENTITLEMENT_TAG: ${ENTITLEMENT_TAG}"
-
-# Step 1: Install build dependencies
-log "Installing build dependencies..."
-dnf install -y --skip-broken \
-   gcc make autoconf automake libtool rpm-build kernel-rpm-macros \
-   libtirpc-devel libblkid-devel libuuid-devel libudev-devel \
-   openssl-devel zlib-devel libaio-devel libattr-devel \
-   elfutils-libelf-devel kernel-devel \
-   python3 python3-devel python3-setuptools python3-cffi \
-   libffi-devel python3-packaging \
-    git wget ncompress
-
-log "✓ Build dependencies installed successfully"
 
 # Get bootc kernel version
 BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -path "/usr/lib/modules/" -printf "%f\n" | head -1)
 log "BOOTC_KERNEL_VERSION: ${BOOTC_KERNEL_VERSION}"
 
-# Install kernel headers for the specific kernel version
-log "Installing kernel headers for ${BOOTC_KERNEL_VERSION}..."
-dnf install -y "kernel-devel-${BOOTC_KERNEL_VERSION}" || {
-    log "WARNING: Could not install kernel-devel-${BOOTC_KERNEL_VERSION}"
-    log "Trying to install latest kernel-devel..."
-    dnf install -y kernel-devel
-}
+# Step 1: Install build dependencies
+log "Installing build dependencies..."
+dnf install -y \
+    wget \
+    gcc \
+    make \
+    autoconf \
+    automake \
+    libtool \
+    rpm-build \
+    kernel-rpm-macros \
+    libtirpc-devel \
+    libblkid-devel \
+    libuuid-devel \
+    systemd-devel \
+    openssl-devel \
+    zlib-ng-compat-devel \
+    libaio-devel \
+    libattr-devel \
+    libffi-devel \
+    libunwind-devel \
+    python3 \
+    python3-devel \
+    python3-cffi \
+    python3-setuptools \
+    openssl \
+    ncompress \
+    "kernel-devel-${BOOTC_KERNEL_VERSION}"
+
+log "✓ Build dependencies installed successfully"
 
 # Find the actual kernel source directory
 KERNEL_SOURCE_DIR=$(find /usr/src/kernels/ -maxdepth 1 -type d ! -path "/usr/src/kernels/" | head -1)
@@ -54,36 +60,36 @@ if [ -z "$KERNEL_SOURCE_DIR" ]; then
 fi
 log "KERNEL_SOURCE_DIR: ${KERNEL_SOURCE_DIR}"
 
-# Step 1.5: Convert and install MOK keys for kernel module signing
-log "Converting MOK keys for kernel module signing..."
+# # Step 1.5: Convert and install MOK keys for kernel module signing
+# log "Converting MOK keys for kernel module signing..."
 
-# Check if MOK keys exist
-if [ ! -f "/run/secrets/LOCALMOK" ]; then
-    log "ERROR: MOK private key not found at /run/secrets/LOCALMOK"
-    exit 1
-fi
+# # Check if MOK keys exist
+# if [ ! -f "/run/secrets/LOCALMOK" ]; then
+#     log "ERROR: MOK private key not found at /run/secrets/LOCALMOK"
+#     exit 1
+# fi
 
-if [ ! -f "/etc/pki/mok/LOCALMOK.der" ]; then
-    log "ERROR: MOK public key not found at /etc/pki/mok/LOCALMOK.der"
-    exit 1
-fi
+# if [ ! -f "/etc/pki/mok/LOCALMOK.der" ]; then
+#     log "ERROR: MOK public key not found at /etc/pki/mok/LOCALMOK.der"
+#     exit 1
+# fi
 
-# Create certs directory if it doesn't exist
-mkdir -p "${KERNEL_SOURCE_DIR}/certs"
+# # Create certs directory if it doesn't exist
+# mkdir -p "${KERNEL_SOURCE_DIR}/certs"
 
-# Convert private key from DER to PEM format
-log "Linking MOK private key to kernel source dir..."
-ln -s /run/secrets/LOCALMOK "${KERNEL_SOURCE_DIR}/certs/signing_key.pem"
+# # Convert private key from DER to PEM format
+# log "Linking MOK private key to kernel source dir..."
+# ln -s /run/secrets/LOCALMOK "${KERNEL_SOURCE_DIR}/certs/signing_key.pem"
 
-# Copy public key to signing location
-log "Converting MOK public key to signing location..."
-openssl x509 -inform DER -in /etc/pki/mok/LOCALMOK.der -outform PEM -out "${KERNEL_SOURCE_DIR}/certs/signing_key.x509"
+# # Copy public key to signing location
+# log "Converting MOK public key to signing location..."
+# openssl x509 -inform DER -in /etc/pki/mok/LOCALMOK.der -outform PEM -out "${KERNEL_SOURCE_DIR}/certs/signing_key.x509"
 
-# Set proper permissions
-chmod 644 "${KERNEL_SOURCE_DIR}/certs/signing_key.x509"
-ls -al "${KERNEL_SOURCE_DIR}/certs"
+# # Set proper permissions
+# chmod 644 "${KERNEL_SOURCE_DIR}/certs/signing_key.x509"
+# ls -al "${KERNEL_SOURCE_DIR}/certs"
 
-log "✓ MOK keys converted and installed for kernel module signing"
+# log "✓ MOK keys converted and installed for kernel module signing"
 
 # Step 2: Download and build ZFS
 log "Downloading and building ZFS..."

@@ -1,7 +1,5 @@
 FROM quay.io/fedora/fedora-bootc:42 AS zfs-builder
 
-ARG ENTITLEMENT_IMAGE=ghcr.io/braccae/rhel
-ARG ENTITLEMENT_TAG=repos
 ARG ZFS_VERSION=zfs-2.3.4
 
 # Copy persistent MOK public key for secure boot
