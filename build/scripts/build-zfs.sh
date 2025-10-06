@@ -25,9 +25,9 @@ dnf install -y --skip-broken \
    gcc make autoconf automake libtool rpm-build kernel-rpm-macros \
    libtirpc-devel libblkid-devel libuuid-devel libudev-devel \
    openssl-devel zlib-devel libaio-devel libattr-devel \
-   elfutils-libelf-devel kernel-devel kernel-abi-stablelists \
+   elfutils-libelf-devel kernel-devel \
    python3 python3-devel python3-setuptools python3-cffi \
-   libffi-devel python3-packaging dkms \
+   libffi-devel python3-packaging \
     git wget ncompress
 
 log "✓ Build dependencies installed successfully"
