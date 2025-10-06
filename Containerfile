@@ -52,9 +52,9 @@ RUN dnf5 remove -y zfs-fuse && \
     ls /tmp/rpms/ && \
     dnf5 install -y /tmp/rpms/*.rpm && dnf clean all
 
-COPY rootfs/btrfs_config/ /
+# COPY rootfs/btrfs_config/ /
 COPY rootfs/common/ /
 
-RUN systemctl enable tailscaled selinux-recover
+RUN systemctl enable tailscaled
 
 RUN bootc container lint
