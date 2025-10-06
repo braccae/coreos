@@ -53,6 +53,7 @@ RUN dnf5 remove -y zfs-fuse && \
     dnf5 install -y /tmp/rpms/*.rpm && dnf clean all
 
 # COPY rootfs/btrfs_config/ /
+COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 
 RUN systemctl enable tailscaled
