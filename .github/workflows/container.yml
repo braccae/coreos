@@ -6,6 +6,7 @@ on:
     paths:
       - "Containerfile"
       - "rootfs/common/**"
+      - "build/scripts/**"
   workflow_dispatch:
   schedule:
     - cron: "0 5 * * *"
