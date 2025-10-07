@@ -105,7 +105,7 @@ tar -xzf "${ZFS_VERSION}.tar.gz"
 cd "${ZFS_VERSION}" || exit 1
 
 log "Configuring ZFS build..."
-./configure --with-spec=generic
+./configure --with-spec=redhat
 
 log "Building ZFS RPMs (this may take a while)..."
 make -j1 rpm-utils rpm-kmod
