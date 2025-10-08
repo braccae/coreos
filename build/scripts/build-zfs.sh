@@ -108,23 +108,36 @@ cd "${ZFS_VERSION}" || exit 1
 log "Configuring ZFS build..."
 ./configure --with-spec=generic
 
-tree -ad ./
+log "Searching for the generated spec file to hardcode the kernel version..."
 
-log "Patching the generated spec file to hardcode the kernel version..."
+# Define the list of possible spec directories in order of preference
+SPEC_DIRS=("rpm/redhat" "rpm/generic")
+SPEC_FILE=""
 
-# The configure script will generate a file named 'zfs-kmod.spec' from 'zfs-kmod.spec.in'
-SPEC_FILE="zfs-kmod.spec"
+# Loop through the potential locations until we find the spec file
+for dir in "${SPEC_DIRS[@]}"; do
+    potential_spec="${dir}/zfs-kmod.spec"
+    if [ -f "$potential_spec" ]; then
+        SPEC_FILE="$potential_spec"
+        log "Found spec file at: ${SPEC_FILE}"
+        break
+    fi
+done
 
-# Check if the spec file exists
-if [ ! -f "$SPEC_FILE" ]; then
-    log "ERROR: Generated spec file '$SPEC_FILE' not found!"
+# If the loop completed without finding a file, throw an error.
+if [ -z "$SPEC_FILE" ]; then
+    log "ERROR: Generated spec file 'zfs-kmod.spec' not found in any of the expected locations!"
+    log "Searched in:"
+    printf '  - %s\n' "${SPEC_DIRS[@]}"
     exit 1
 fi
 
+# Use sed to replace all instances of '$(uname -r)' with the hardcoded version.
+# The backslash before '$' is important to prevent shell interpretation.
 log "Replacing \$(uname -r) with ${BOOTC_KERNEL_VERSION} in ${SPEC_FILE}"
 sed -i "s/\\\$(uname -r)/${BOOTC_KERNEL_VERSION}/g" "$SPEC_FILE"
 
-# Optional but recommended: verify the change
+# Optional but recommended: verify the change was successful.
 if grep -q "\$(uname -r)" "$SPEC_FILE"; then
     log "WARNING: \$(uname -r) still found in spec file after patching!"
 else
