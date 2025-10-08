@@ -105,7 +105,28 @@ tar -xzf "${ZFS_VERSION}.tar.gz"
 cd "${ZFS_VERSION}" || exit 1
 
 log "Configuring ZFS build..."
-./configure --with-spec=redhat
+./configure --with-spec=generic
+
+log "Patching the generated spec file to hardcode the kernel version..."
+
+# The configure script will generate a file named 'zfs-kmod.spec' from 'zfs-kmod.spec.in'
+SPEC_FILE="zfs-kmod.spec"
+
+# Check if the spec file exists
+if [ ! -f "$SPEC_FILE" ]; then
+    log "ERROR: Generated spec file '$SPEC_FILE' not found!"
+    exit 1
+fi
+
+log "Replacing \$(uname -r) with ${BOOTC_KERNEL_VERSION} in ${SPEC_FILE}"
+sed -i "s/\\\$(uname -r)/${BOOTC_KERNEL_VERSION}/g" "$SPEC_FILE"
+
+# Optional but recommended: verify the change
+if grep -q "\$(uname -r)" "$SPEC_FILE"; then
+    log "WARNING: \$(uname -r) still found in spec file after patching!"
+else
+    log "✓ Successfully patched ${SPEC_FILE}"
+fi
 
 log "Building ZFS RPMs (this may take a while)..."
 make -j1 rpm-utils rpm-kmod
