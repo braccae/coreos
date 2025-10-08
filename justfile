@@ -83,14 +83,14 @@ build-disk-image image_tag='latest':
 # DANGER: This will overwrite the destination disk. Use with extreme caution.
 # Usage: just write-disk-image <image_file> <disk_device>
 # Example: just write-disk-image build/qcow2/disk.qcow2 /dev/sdX
-write-disk-image image_file disk:
+write-disk-image disk image_tag='latest':
     #!/bin/bash
     set -euo pipefail
     echo "DANGER: This will overwrite all data on {{disk}}".
     echo "You have 5 seconds to press Ctrl+C to cancel."
     sleep 5
-    echo "Writing {{image_file}} to {{disk}}..."
-    sudo qemu-img convert -O raw -p {{image_file}} {{disk}}
+    echo "Writing {{image_tag}} to {{disk}}..."
+    sudo qemu-img convert -O raw -p ./output/{{image_tag}}/qcow2/disk.qcow2 {{disk}}
     sudo sync -f {{disk}}
     sudo sync {{disk}}
     echo "Write complete."
