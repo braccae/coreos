@@ -50,7 +50,14 @@ RUN bash /tmp/build_scripts/wazuh-agent.sh
 COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
 RUN dnf5 remove -y zfs-fuse && \
     ls /tmp/rpms/ && \
-    dnf5 install -y /tmp/rpms/*.rpm && dnf clean all
+    dnf5 install -y /tmp/rpms/*.rpm && \
+    echo "Correcting ZFS kernel module dependencies..." && \
+    KERNEL_VERSION=$(basename /lib/modules/*) && \
+    echo "Found kernel version: ${KERNEL_VERSION}" && \
+    depmod -a -K ${KERNEL_VERSION} && \
+    echo "✓ depmod completed successfully for kernel ${KERNEL_VERSION}" && \
+    \
+    dnf clean all
 
 # COPY rootfs/btrfs_config/ /
 COPY rootfs/non_btrfs/ /
