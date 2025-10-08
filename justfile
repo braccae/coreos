@@ -56,7 +56,7 @@ regen-mok:
 build-disk-image image_tag='latest':
     #!/bin/bash
     set -euo pipefail
-    sudo podman pull ghcr.io/braccae/rhel:{{image_tag}}
+    sudo podman pull ghcr.io/braccae/coreos:{{image_tag}}
     sudo mkdir -p ./output/{{image_tag}}
     sudo podman run \
         --rm \
