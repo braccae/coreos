@@ -46,6 +46,7 @@ dnf install -y \
     python3-setuptools \
     openssl \
     ncompress \
+    tree \
     "kernel-devel-${BOOTC_KERNEL_VERSION}"
 
 log "✓ Build dependencies installed successfully"
