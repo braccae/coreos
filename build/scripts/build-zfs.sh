@@ -107,6 +107,8 @@ cd "${ZFS_VERSION}" || exit 1
 log "Configuring ZFS build..."
 ./configure --with-spec=generic
 
+tree -ad ./
+
 log "Patching the generated spec file to hardcode the kernel version..."
 
 # The configure script will generate a file named 'zfs-kmod.spec' from 'zfs-kmod.spec.in'
