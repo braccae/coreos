@@ -32,6 +32,5 @@ RUN dnf remove -y moby-engine \
     && systemctl enable docker
 
 RUN --mount=type=bind,from=builder,source=/tmp/build/cockpit-docker,target=/tmp/build/cockpit-docker \
-    dnf remove -y \
-    cockpit-podman \
-    && dnf install -y --setopt=tsflags=nocheck /tmp/build/cockpit-docker/*.rpm
+    rpm -i --nodeps \
+    /tmp/build/cockpit-docker/*.rpm
