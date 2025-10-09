@@ -15,14 +15,14 @@ RUN git clone https://github.com/cockpit-docker/cockpit-docker \
 
 RUN tree ./ && exit 1
 
-FROM base
+# FROM base AS final
 
-RUN dnf5 config-manager addrepo \
-    --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo \
-    && dnf install -y \
-    docker-ce \
-    docker-ce-cli \
-    containerd.io \
-    docker-buildx-plugin \
-    docker-compose-plugin \
-    && systemctl enable docker
+# RUN dnf5 config-manager addrepo \
+#     --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo \
+#     && dnf install -y \
+#     docker-ce \
+#     docker-ce-cli \
+#     containerd.io \
+#     docker-buildx-plugin \
+#     docker-compose-plugin \
+#     && systemctl enable docker
