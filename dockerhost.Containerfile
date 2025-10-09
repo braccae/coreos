@@ -20,7 +20,8 @@ RUN git clone https://github.com/chabad360/cockpit-docker.git \
 
 FROM base AS final
 
-RUN dnf5 config-manager addrepo \
+RUN dnf remove -y moby-engine \
+    dnf5 config-manager addrepo \
     --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo \
     && dnf install -y \
     docker-ce \
