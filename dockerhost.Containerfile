@@ -10,7 +10,7 @@ RUN dnf install -y \
 
 WORKDIR /tmp/build
 
-RUN git clone https://github.com/cockpit-docker/cockpit-docker \
+RUN git clone https://github.com/chabad360/cockpit-docker.git \
     && cd cockpit-docker \
     && NODE_ENV=production make rpm
 
