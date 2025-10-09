@@ -37,6 +37,7 @@ RUN dnf5 install -y \
     cockpit-files \
     python3-psycopg2 \
     xdg-user-dirs \
+    bees \
     python3-pip \
     && dnf clean all
 
