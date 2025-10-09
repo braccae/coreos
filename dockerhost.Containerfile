@@ -3,6 +3,7 @@ FROM ghcr.io/braccae/coreos:latest as base
 FROM base AS builder
 
 RUN dnf install -y \
+    git \
     gettext \
     nodejs \
     make
