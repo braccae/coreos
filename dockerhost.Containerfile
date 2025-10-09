@@ -8,13 +8,15 @@ RUN dnf install -y \
     nodejs \
     make
 
+RUN rm -rv /root
 WORKDIR /tmp/build
 
 RUN git clone https://github.com/chabad360/cockpit-docker.git \
     && cd cockpit-docker \
     && NODE_ENV=production make rpm
 
-RUN tree ./ && exit 1
+RUN tree ./ 
+RUN exit 1
 
 # FROM base AS final
 
