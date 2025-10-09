@@ -71,7 +71,7 @@ build-disk-image image_tag='latest':
         --type qcow2 \
         --use-librepo=True \
         --rootfs xfs \
-        ghcr.io/braccae/rhel:{{image_tag}}
+        ghcr.io/braccae/coreos:{{image_tag}}
     sudo chown -fR ${SUDO_UID:-${CALLING_UID:-$(id -u)}}:${SUDO_GID:-${CALLING_GID:-$(id -g)}} ./output
 
 
