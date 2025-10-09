@@ -6,7 +6,8 @@ RUN dnf install -y \
     git \
     gettext \
     nodejs \
-    make
+    make \
+    rpmbuild
 
 RUN rm -rv /root
 WORKDIR /tmp/build
@@ -18,14 +19,18 @@ RUN git clone https://github.com/chabad360/cockpit-docker.git \
 RUN tree ./ 
 RUN exit 1
 
-# FROM base AS final
+FROM base AS final
 
-# RUN dnf5 config-manager addrepo \
-#     --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo \
-#     && dnf install -y \
-#     docker-ce \
-#     docker-ce-cli \
-#     containerd.io \
-#     docker-buildx-plugin \
-#     docker-compose-plugin \
-#     && systemctl enable docker
+RUN dnf remove -y \
+    podman \
+    cockpit-podman
+
+RUN dnf5 config-manager addrepo \
+    --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo \
+    && dnf install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-buildx-plugin \
+    docker-compose-plugin \
+    && systemctl enable docker
