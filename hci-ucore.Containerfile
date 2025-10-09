@@ -1,5 +1,25 @@
 # syntax=docker.io/docker/dockerfile:1.7-labs
-FROM ghcr.io/ublue-os/ucore-hci:stable-zfs
+FROM ghcr.io/ublue-os/ucore-hci:stable-zfs as base
+
+FROM base AS builder
+
+RUN dnf install -y \
+    git \
+    gettext \
+    nodejs \
+    make \
+    rpmbuild \
+    libappstream-glib \
+    libappstream-glib-devel
+
+RUN rm -rv /root
+WORKDIR /tmp/build
+
+RUN git clone https://github.com/chabad360/cockpit-docker.git \
+    && cd cockpit-docker \
+    && NODE_ENV=production make rpm
+
+FROM base AS final
 LABEL containers.bootc 1
 
 RUN dnf5 install -y \
