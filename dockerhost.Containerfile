@@ -18,9 +18,6 @@ RUN git clone https://github.com/chabad360/cockpit-docker.git \
     && cd cockpit-docker \
     && NODE_ENV=production make rpm
 
-RUN tree ./ 
-RUN exit 1
-
 FROM base AS final
 
 RUN dnf5 config-manager addrepo \
