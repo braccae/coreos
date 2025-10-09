@@ -34,4 +34,4 @@ RUN dnf remove -y moby-engine \
 RUN --mount=type=bind,from=builder,source=/tmp/build/cockpit-docker,target=/tmp/build/cockpit-docker \
     dnf remove -y \
     cockpit-podman \
-    && dnf install -y /tmp/build/cockpit-docker/*.rpm
+    && dnf install -y --allowerasing /tmp/build/cockpit-docker/*.rpm
