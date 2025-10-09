@@ -7,7 +7,9 @@ RUN dnf install -y \
     gettext \
     nodejs \
     make \
-    rpmbuild
+    rpmbuild \
+    libappstream-glib \
+    libappstream-glib-devel
 
 RUN rm -rv /root
 WORKDIR /tmp/build
