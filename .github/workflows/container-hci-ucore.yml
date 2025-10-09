@@ -1,4 +1,4 @@
-name: Build and Publish HCI Universal Blue Container
+name: HCI Universal Blue Container
 
 on:
   push:

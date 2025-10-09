@@ -1,4 +1,4 @@
-name: Build and Publish HCI Container
+name: Dockerhost Container
 
 on:
   workflow_run:
