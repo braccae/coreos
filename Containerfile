@@ -60,7 +60,9 @@ RUN dnf5 remove -y zfs-fuse && \
     echo "Correcting ZFS kernel module dependencies..." && \
     KERNEL_VERSION=$(basename /lib/modules/*) && \
     echo "Found kernel version: ${KERNEL_VERSION}" && \
-    depmod -a ${KERNEL_VERSION} && \
+    depmod -a \
+    --filesyms /usr/lib/modules/${KERNEL_VERSION}/System.map \
+    ${KERNEL_VERSION} && \
     echo "✓ depmod completed successfully for kernel ${KERNEL_VERSION}" && \
     \
     dnf clean all
