@@ -69,17 +69,27 @@ TAG_NAME=$(jq -r '.tag_name' "$TEMP_JSON_FILE")
 echo "Found latest release tag: ${TAG_NAME}"
 echo "--------------------------------------------------"
 
-# Convert the bash array of search strings into a JSON array string for jq.
-# This is robust against spaces and special characters in strings.
-JSON_STRINGS_ARRAY=$(printf '%s\n' "${SEARCH_STRINGS[@]}" | jq -R . | jq -s .)
+ASSET_NAMES=$(jq -r '.assets[].name' "$TEMP_JSON_FILE")
+DOWNLOAD_URLS=()
 
-# Find all assets containing ALL of the search strings (case-insensitively).
-# The `all()` function checks if all elements in the input array satisfy the condition.
-# `(.name | ascii_downcase) as $name_lower` converts the filename to lowercase once.
-# `all($strings[]; $name_lower | contains(. | ascii_downcase))` iterates through our
-# search strings, lowercases them, and checks if they are in the lowercase filename.
-FILTER='(.name | ascii_downcase) as $name_lower | select(all($strings[]; $name_lower | contains(. | ascii_downcase))) | .browser_download_url'
-DOWNLOAD_URLS=$(jq -r --argjson strings "$JSON_STRINGS_ARRAY" "$FILTER" "$TEMP_JSON_FILE")
+for ASSET_NAME in $ASSET_NAMES; do
+    MATCH=true
+    LOWER_ASSET_NAME=$(echo "$ASSET_NAME" | tr '[:upper:]' '[:lower:]')
+    for SEARCH_STRING in "${SEARCH_STRINGS[@]}"; do
+        LOWER_SEARCH_STRING=$(echo "$SEARCH_STRING" | tr '[:upper:]' '[:lower:]')
+        if [[ ! "$LOWER_ASSET_NAME" =~ $LOWER_SEARCH_STRING ]]; then
+            MATCH=false
+            break
+        fi
+    done
+    if [ "$MATCH" = true ]; then
+        # Found a match, get its download URL
+        URL=$(jq -r ".assets[] | select(.name == \"$ASSET_NAME\") | .browser_download_url" "$TEMP_JSON_FILE")
+        if [ -n "$URL" ]; then
+            DOWNLOAD_URLS+=("$URL")
+        fi
+    fi
+done
 
 if [ -z "$DOWNLOAD_URLS" ]; then
     echo "No files found matching all criteria: ${SEARCH_STRINGS[*]}"
@@ -91,7 +101,7 @@ fi
 
 echo "Found matching file(s). Starting download..."
 # Download each found file
-for URL in $DOWNLOAD_URLS; do
+for URL in "${DOWNLOAD_URLS[@]}"; do
     FILENAME=$(basename "$URL")
     echo "  -> Downloading ${FILENAME}..."
     curl -L -o "$FILENAME" "$URL"
