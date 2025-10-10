@@ -62,17 +62,7 @@ RUN dnf5 install -y --skip-unavailable \
     distrobox \
     && dnf5 clean all
 
-
-# RUN dnf5 install -y https://zfsonlinux.org/fedora/zfs-release-2-8$(rpm --eval "%{dist}").noarch.rpm \
-#     && dnf5 clean all
-# RUN KERNEL_VERSION=$(uname -r | awk -F'-' '{print $1}') && \
-#     dnf5 install -y kernel-devel-$KERNEL_VERSION && \
-#     dnf5 install -y zfs && \
-#     rm -rf /usr/src/zfs_$KERNEL_VERSION && \
-#     rm -rf /usr/lib/modules/$KERNEL_VERSION/build \
-#     && dnf5 clean all
-
-WORKDIR /tmp
+WORKDIR /tmp/build/scripts
 # RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
 RUN dnf5 install -y \
     coreutils \
@@ -88,18 +78,23 @@ RUN dnf5 install -y \
     && dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.3.1-2/cockpit-file-sharing-4.3.1-2.el9.noarch.rpm \
     && dnf5 clean all
 
-RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.latest.1/k3s-selinux-1.6-1.coreos.noarch.rpm && \
-        curl -sfL https://get.k3s.io | \
-        INSTALL_K3S_SKIP_ENABLE=true \
-        INSTALL_K3S_SKIP_START=true \
-        INSTALL_K3S_SKIP_SELINUX_RPM=true \
-        INSTALL_K3S_SELINUX_WARN=true \
-        INSTALL_K3S_BIN_DIR=/usr/bin \
-        sh -
+COPY build/scripts/* ./
 
-# RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh -o 
-ADD https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh /tmp/k3d_install.sh
-RUN K3D_INSTALL_DIR=/usr/bin bash /tmp/k3d_install.sh
+RUN bash get-latest-release.sh https://github.com/45Drives/cockpit-identities .rpm \
+    && dnf install -y ./*.rpm
+
+# RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.latest.1/k3s-selinux-1.6-1.coreos.noarch.rpm && \
+#         curl -sfL https://get.k3s.io | \
+#         INSTALL_K3S_SKIP_ENABLE=true \
+#         INSTALL_K3S_SKIP_START=true \
+#         INSTALL_K3S_SKIP_SELINUX_RPM=true \
+#         INSTALL_K3S_SELINUX_WARN=true \
+#         INSTALL_K3S_BIN_DIR=/usr/bin \
+#         sh -
+
+# # RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh -o 
+# ADD https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh /tmp/k3d_install.sh
+# RUN K3D_INSTALL_DIR=/usr/bin bash /tmp/k3d_install.sh
 
 COPY rootfs/hci/ /
 
