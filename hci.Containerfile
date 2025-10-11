@@ -63,7 +63,7 @@ RUN dnf5 install -y --skip-unavailable \
     && dnf5 clean all
 
 WORKDIR /tmp/build/scripts
-RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
+
 RUN dnf5 install -y \
     coreutils \
     attr \
