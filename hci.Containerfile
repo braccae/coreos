@@ -79,8 +79,10 @@ COPY build/scripts/* ./
 
 RUN bash get-latest-release.sh https://github.com/45Drives/cockpit-identities .rpm \
     && bash get-latest-release.sh https://github.com/45Drives/cockpit-file-sharing .rpm el9 \
+    && mkdir /var/roothome \
     && dnf install -y ./*.rpm \
-    && dnf clean all
+    && dnf clean all \
+    && rm -rv /var/roothome
 
 # RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.latest.1/k3s-selinux-1.6-1.coreos.noarch.rpm && \
 #         curl -sfL https://get.k3s.io | \
