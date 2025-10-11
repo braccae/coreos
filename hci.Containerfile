@@ -73,6 +73,9 @@ RUN dnf5 install -y \
     glibc-common \
     systemd \
     nfs-utils \
+    libnfsidmap \
+    sssd-nfs-idmap \
+    samba \
     samba-common-tools
 
 COPY build/scripts/* ./
