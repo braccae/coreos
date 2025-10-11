@@ -67,6 +67,7 @@ RUN dnf5 remove -y zfs-fuse && \
     \
     dnf clean all
 
+WORKDIR /tmp/zfs
 RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
 
 # COPY rootfs/btrfs_config/ /
