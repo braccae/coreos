@@ -1,15 +1,15 @@
 name: HCI Universal Blue Container
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "hci-ucore.Containerfile"
-      - "rootfs/common/**"
-      - "rootfs/hci/**"
+  # push:
+  #   branches: ["main"]
+  #   paths:
+  #     - "hci-ucore.Containerfile"
+  #     - "rootfs/common/**"
+  #     - "rootfs/hci/**"
   workflow_dispatch:
-  schedule:
-    - cron: "0 5 * * *"
+  # schedule:
+  #   - cron: "0 5 * * *"
 
 env:
   REGISTRY: ghcr.io
