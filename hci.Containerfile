@@ -63,7 +63,7 @@ RUN dnf5 install -y --skip-unavailable \
     && dnf5 clean all
 
 WORKDIR /tmp/build/scripts
-# RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
+RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
 RUN dnf5 install -y \
     coreutils \
     attr \
@@ -73,15 +73,14 @@ RUN dnf5 install -y \
     glibc-common \
     systemd \
     nfs-utils \
-    samba-common-tools \
-    && dnf5 install -y https://github.com/45Drives/cockpit-identities/releases/download/v0.1.12/cockpit-identities-0.1.12-1.el8.noarch.rpm \
-    && dnf5 install -y https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.3.1-2/cockpit-file-sharing-4.3.1-2.el9.noarch.rpm \
-    && dnf5 clean all
+    samba-common-tools
 
 COPY build/scripts/* ./
 
 RUN bash get-latest-release.sh https://github.com/45Drives/cockpit-identities .rpm \
-    && dnf install -y ./*.rpm
+    && bash get-latest-release.sh https://github.com/45Drives/cockpit-file-sharing .rpm \
+    && dnf install -y ./*.rpm \
+    && dnf clean all
 
 # RUN dnf install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.latest.1/k3s-selinux-1.6-1.coreos.noarch.rpm && \
 #         curl -sfL https://get.k3s.io | \
