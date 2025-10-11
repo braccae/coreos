@@ -44,6 +44,7 @@ RUN dnf5 install -y \
     xdg-user-dirs \
     bees \
     python3-pip \
+    git \
     && dnf clean all
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
