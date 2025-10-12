@@ -45,6 +45,7 @@ RUN dnf5 install -y \
     bees \
     python3-pip \
     git \
+    tmux \
     && dnf clean all
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
