@@ -48,6 +48,16 @@ RUN dnf5 install -y \
     tmux \
     && dnf clean all
 
+# SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
+RUN dnf install -y \
+    setroubleshoot-server \
+    policycoreutils \
+    policycoreutils-python-utils \
+    policycoreutils-restorecond \
+    selinuxconlist \
+    selinuxdefcon \
+    && dnf clean all
+
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 # RUN /usr/bin/uv pip install --system packaging
 
