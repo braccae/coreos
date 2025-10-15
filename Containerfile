@@ -21,7 +21,6 @@ RUN dnf5 config-manager addrepo \
 RUN dnf5 install -y \
     qemu-guest-agent \
     container-selinux \
-    glances \
     tuned \
     realmd \
     sssd \
