@@ -1,21 +1,21 @@
 set shell := ["bash", "-c"]
 
-install-ublue-repos:
+add-repos:
     #!/bin/bash
     # dnf5 copr enable ublue/os-akmods
     # Terra
-    # dnf5 config-manager add-repo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
-    # dnf5 install terra-release -y
+    dnf config-manager add-repo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
+    dnf install terra-release -y
     # Github CLI
-    dnf5 install -y dnf5-plugins
-    dnf5 config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
+    dnf install -y dnf5-plugins
+    dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
     # ACT local gihub actions
-    dnf5 -y copr enable goncalossilva/act
+    dnf -y copr enable goncalossilva/act
     # VSCode
     rpm --import https://packages.microsoft.com/keys/microsoft.asc
     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
     # # Tailscale
-    # dnf5 config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+    dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
     cat <<EOF > /etc/yum.repos.d/adoptium.repo
     [Adoptium]
     name=Adoptium
@@ -25,7 +25,7 @@ install-ublue-repos:
     gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
     EOF
     copr enable -y scottames/ghostty
-    dnf5 check
+    dnf check
 
 install-ansible:
     dnf5 install -y \
@@ -74,3 +74,27 @@ install-misc-tools:
         borgmatic \
         sqlite-devel \
         ghostty
+
+install-linux-surface:
+    dnf config-manager \
+    addrepo --from-repofile=https://pkg.surfacelinux.com/fedora/linux-surface.repo
+    rpm-ostree override replace ./*.rpm \
+        --remove kernel-core \
+        --remove kernel-modules \
+        --remove kernel-modules-extra \
+        --remove libwacom \
+        --remove libwacom-data \
+        --install kernel-surface \
+        --install iptsd \
+        --install libwacom-surface \
+        --install libwacom-surface-data
+
+install-kde-plasma:
+    dnf groupinstall -y "KDE Plasma Workspaces"
+    dnf install -y @kde-desktop-environment
+
+install-cosmic-desktop:
+    dnf install -y @cosmic-desktop-environment
+
+install-deepin-desktop:
+    dnf install -y @deepin-desktop-environment
