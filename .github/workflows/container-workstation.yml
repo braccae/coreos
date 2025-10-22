@@ -1,12 +1,12 @@
 name: Workstation Container
 
 on:
-  workflow_run:
-    workflows: ["Main Container"]
-    types:
-      - completed
-    branches:
-      - main
+  # workflow_run:
+  #   workflows: ["Main Container"]
+  #   types:
+  #     - completed
+  #   branches:
+  #     - main
   push:
     branches: ["main"]
     paths:
@@ -14,6 +14,8 @@ on:
       - "rootfs/workstation/**"
       - ".github/workflows/container-workstation.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * *"
 
 env:
   REGISTRY: ghcr.io
