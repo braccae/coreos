@@ -11,7 +11,7 @@ on:
     branches: ["main"]
     paths:
       - "laptop.Containerfile"
-      - "rootfs/laptop/**"
+      - "rootfs/workstation/**"
       - ".github/workflows/container-laptop.yml"
   workflow_dispatch:
 
