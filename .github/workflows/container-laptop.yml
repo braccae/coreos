@@ -1,4 +1,4 @@
-name: HCI Container
+name: Laptop Container
 
 on:
   workflow_run:
