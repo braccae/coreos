@@ -2,19 +2,16 @@ set shell := ["bash", "-c"]
 
 add-repos:
     #!/bin/bash
-    # dnf5 copr enable ublue/os-akmods
-    # Terra
-    dnf config-manager add-repo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
+    dnf install -y dnf5-plugins dnf-plugins-core copr-cli
+    dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-42.noarch.rpm
+    dnf install -y https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-42.noarch.rpm
+    dnf config-manager addrepo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
     dnf install terra-release -y
-    # Github CLI
-    dnf install -y dnf5-plugins
     dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
     # ACT local gihub actions
     dnf -y copr enable goncalossilva/act
-    # VSCode
     rpm --import https://packages.microsoft.com/keys/microsoft.asc
     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
-    # # Tailscale
     dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
     cat <<EOF > /etc/yum.repos.d/adoptium.repo
     [Adoptium]
@@ -78,23 +75,29 @@ install-misc-tools:
 install-linux-surface:
     dnf config-manager \
     addrepo --from-repofile=https://pkg.surfacelinux.com/fedora/linux-surface.repo
-    rpm-ostree override replace ./*.rpm \
-        --remove kernel-core \
-        --remove kernel-modules \
-        --remove kernel-modules-extra \
-        --remove libwacom \
-        --remove libwacom-data \
-        --install kernel-surface \
-        --install iptsd \
-        --install libwacom-surface \
-        --install libwacom-surface-data
+    dnf install --allowerasing -y kernel-surface iptsd libwacom-surface
+    dnf install -y surface-secureboot
+    # rpm-ostree override replace \
+    #     --remove kernel-core \
+    #     --remove kernel-modules \
+    #     --remove kernel-modules-extra \
+    #     --remove libwacom \
+    #     --remove libwacom-data \
+    #     --install kernel-surface \
+    #     --install iptsd \
+    #     --install libwacom-surface \
+    #     --install libwacom-surface-data
 
 install-kde-plasma:
     dnf groupinstall -y "KDE Plasma Workspaces"
     dnf install -y @kde-desktop-environment
 
 install-cosmic-desktop:
+    mkdir -p /var/roothome
     dnf install -y @cosmic-desktop-environment
+    rm -rv /var/roothome
 
 install-deepin-desktop:
+    mkdir -p /var/roothome
     dnf install -y @deepin-desktop-environment
+    rm -rv /var/roothome
