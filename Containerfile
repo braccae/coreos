@@ -1,6 +1,6 @@
 FROM quay.io/fedora/fedora-bootc:42 AS zfs-builder
 
-ARG ZFS_VERSION=zfs-2.3.4
+ARG ZFS_VERSION=zfs-2.4.0-rc3
 
 # Copy persistent MOK public key for secure boot
 COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
@@ -87,5 +87,11 @@ COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 
 RUN systemctl enable tailscaled
+
+RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -path "/usr/lib/modules/" -printf "%f\n" | head -1) && \
+    cd /usr/lib/modules/$BOOTC_KERNEL_VERSION && \
+    mkdir /var/roothome && \
+    dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
+    rm -rv /var/roothome
 
 RUN bootc container lint
