@@ -1,4 +1,15 @@
-FROM quay.io/fedora/fedora-bootc:42 AS zfs-builder
+FROM quay.io/almalinuxorg/almalinux-bootc:10 AS base
+
+RUN EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm" \
+    && RPMFUSION_FREE_URL="https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm" \
+    && RPMFUSION_NONFREE_URL="https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm" \
+    && dnf install -y --nogpgcheck \
+    $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL
+
+ADD https://pkgs.tailscale.com/stable/rhel/9/tailscale.repo /etc/yum.repos.d/
+COPY repos/wazuh.repo /etc/yum.repos.d/
+
+FROM base AS zfs-builder
 
 ARG ZFS_VERSION=zfs-2.4.0-rc3
 
@@ -9,16 +20,16 @@ COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
 RUN --mount=type=secret,mode=0600,id=LOCALMOK \
     bash /tmp/build_scripts/zfs.sh
 
-FROM quay.io/fedora/fedora-bootc:42
+FROM base AS final
 LABEL containers.bootc 1
 
-RUN dnf5 install -y dnf5-plugins \
+RUN dnf install -y dnf-plugins \
     && dnf clean all
 
-RUN dnf5 config-manager addrepo \
+RUN dnf config-manager addrepo \
     --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
 
-RUN dnf5 install -y \
+RUN dnf install -y \
     qemu-guest-agent \
     container-selinux \
     just \
@@ -66,9 +77,9 @@ RUN bash /tmp/build_scripts/wazuh-agent.sh
 
 
 COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
-RUN dnf5 remove -y zfs-fuse && \
+RUN dnf remove -y zfs-fuse && \
     ls /tmp/rpms/ && \
-    dnf5 install -y /tmp/rpms/*.rpm && \
+    dnf install -y /tmp/rpms/*.rpm && \
     echo "Correcting ZFS kernel module dependencies..." && \
     KERNEL_VERSION=$(basename /lib/modules/*) && \
     echo "Found kernel version: ${KERNEL_VERSION}" && \
