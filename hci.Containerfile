@@ -59,6 +59,11 @@ RUN dnf5 install -y --skip-unavailable \
     qemu-user-static-aarch64 \
     qemu-user-static-arm \
     qemu-user-static-riscv \
+    libvirt-daemon-driver-storage-zfs \
+    libvirt-daemon-driver-storage \
+    libvirt-daemon-driver-secret \
+    libvirt-daemon-driver-lxc \
+    libvirt-daemon-lxc \
     distrobox \
     && dnf5 clean all
 
