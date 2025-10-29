@@ -47,19 +47,24 @@ jobs:
         run: |
           sudo just build-disk-image $INPUT_TAG
 
-      - name: Install b2 via python
+      - name: Setup Rclone
         run: |
-          pip3 install --upgrade b2
+          printf "%s\n" "${{ secrets.RCLONE }}" > /tmp/rclone.conf
+          rclone copy output/qcow2/disk.qcow2 b2:artifacts/coreos-$ARCH.qcow2
 
-      - name: Upload to Backblaze
-        id: upload-b2
-        env:
-          B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
-          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-        run: |
-          b2 account authorize 2> /dev/null > /dev/null
-          b2 file upload \
-            --threads 4 \
-            ${{ secrets.B2_BUCKET_NAME }} \
-            output/qcow2/disk.qcow2 \
-            artifacts/coreos-$ARCH.qcow2
+      # - name: Install b2 via python
+      #   run: |
+      #     pip3 install --upgrade b2
+
+      # - name: Upload to Backblaze
+      #   id: upload-b2
+      #   env:
+      #     B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
+      #     B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+      #   run: |
+      #     b2 account authorize 2> /dev/null > /dev/null
+      #     b2 file upload \
+      #       --threads 4 \
+      #       ${{ secrets.B2_BUCKET_NAME }} \
+      #       output/qcow2/disk.qcow2 \
+      #       artifacts/coreos-$ARCH.qcow2
