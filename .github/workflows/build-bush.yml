@@ -11,7 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  TAG: centos
+  TAG: latest
 
 jobs:
   build-qcow2:
@@ -42,15 +42,13 @@ jobs:
 
       - name: Build image using justfile
         id: build-image
-        env:
-          INPUT_TAG: ${{ env.TAG }}
         run: |
           sudo just build-disk-image $INPUT_TAG
 
       - name: Setup Rclone
         run: |
           printf "%s\n" "${{ secrets.RCLONE }}" > /tmp/rclone.conf
-          rclone copy output/qcow2/disk.qcow2 b2:artifacts/coreos-$ARCH.qcow2
+          rclone --config /tmp/rclone.conf copy output/$TAG/qcow2/disk.qcow2 b2:artifacts/coreos-$ARCH.qcow2
 
       # - name: Install b2 via python
       #   run: |
