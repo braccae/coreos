@@ -48,7 +48,7 @@ jobs:
       - name: Push via Rclone
         run: |
           printf "%s\n" "${{ secrets.RCLONE }}" > /tmp/rclone.conf
-          rclone --config /tmp/rclone.conf copy output/$TAG/qcow2/disk.qcow2 b2:github-braccae/artifacts/coreos-$ARCH.qcow2
+          rclone --config /tmp/rclone.conf copyto output/$TAG/qcow2/disk.qcow2 b2:github-braccae/artifacts/coreos-$ARCH.qcow2
 
       # - name: Install b2 via python
       #   run: |
