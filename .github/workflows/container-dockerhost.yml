@@ -2,7 +2,7 @@ name: Dockerhost Container
 
 on:
   workflow_run:
-    workflows: ["Main Container"]
+    workflows: ["HCI Container"]
     types:
       - completed
     branches:
