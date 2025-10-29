@@ -14,115 +14,38 @@ env:
   TAG: centos
 
 jobs:
-  build-qcow2-amd64:
-    runs-on: ubuntu-latest
+  build-qcow2:
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            arch_name: x86_64
+            runner: ubuntu-latest
+          - arch: arm64
+            arch_name: aarch64
+            runner: ubuntu-24.04-arm
     env:
-      ARCH: x86_64
+      ARCH: ${{ matrix.arch_name }}
     steps:
-      - name: Install podman and qemu-utils
+      - name: Install podman and just
         run: |
           sudo apt update
-          sudo apt install -y podman qemu-utils
+          sudo apt install -y podman just
 
       - name: Checkout
         id: checkout
         uses: actions/checkout@v4
 
-      - name: Pull Image
-        id: pull-image
+      - name: Build image using justfile
+        id: build-image
         env:
-          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.TAG }}
+          INPUT_TAG: ${{ env.TAG }}
         run: |
-          sudo podman pull $INPUT_IMAGE
-
-      - name: Bootc image builder
-        id: bootc-image-builder
-        env:
-          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.TAG }}
-          BUILD_DIR: ${{ github.repository }}/${{ env.TAG }}/${{ env.ARCH }}
-        run: |
-          mkdir -p $BUILD_DIR
-          sudo podman run \
-            --rm \
-            -it \
-            --privileged \
-            --pull=newer \
-            --security-opt label=type:unconfined_t \
-            -v ./config.toml:/config.toml:ro \
-            -v ./$BUILD_DIR:/output \
-            -v /var/lib/containers/storage:/var/lib/containers/storage \
-            quay.io/centos-bootc/bootc-image-builder:latest \
-            --type qcow2 \
-            --use-librepo=True \
-            --rootfs btrfs \
-            $INPUT_IMAGE
-
-      - name: Install b2 via python
-        run: |
-          pip3 install --upgrade b2
-
-      - name: Upload to Backblaze
-        id: upload-b2
-        env:
-          B2_APPLICATION_KEY_ID: ${{ secrets.B2_KEY_ID }}
-          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-          BUILD_DIR: ${{ github.repository }}/${{ env.TAG }}/${{ env.ARCH }}
-        run: |
-          b2 account authorize 2> /dev/null > /dev/null
-          b2 file upload \
-            --threads 4 \
-            ${{ secrets.B2_BUCKET_NAME }} \
-            $BUILD_DIR/qcow2/disk.qcow2 \
-            artifacts/coreos-$ARCH.qcow2
-
-  build-qcow2-arm64:
-    runs-on: ubuntu-24.04-arm
-    permissions:
-      contents: read
-      packages: write
-    env:
-      ARCH: aarch64
-    steps:
-      - name: Install podman and qemu-utils
-        run: |
-          sudo apt update
-          sudo apt install -y podman qemu-utils
-
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v4
-
-      - name: Pull Image
-        id: pull-image
-        env:
-          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.TAG }}
-        run: |
-          sudo podman pull $INPUT_IMAGE
-
-      - name: Bootc image builder
-        id: bootc-image-builder
-        env:
-          INPUT_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.TAG }}
-          BUILD_DIR: ${{ github.repository }}/${{ env.TAG }}/${{ env.ARCH }}
-        run: |
-          mkdir -p $BUILD_DIR
-          sudo podman run \
-            --rm \
-            -it \
-            --privileged \
-            --pull=newer \
-            --security-opt label=type:unconfined_t \
-            -v ./config.toml:/config.toml:ro \
-            -v ./$BUILD_DIR:/output \
-            -v /var/lib/containers/storage:/var/lib/containers/storage \
-            quay.io/centos-bootc/bootc-image-builder:latest \
-            --type qcow2 \
-            --use-librepo=True \
-            --rootfs btrfs \
-            $INPUT_IMAGE
+          sudo just build-disk-image $INPUT_TAG
 
       - name: Install b2 via python
         run: |
