@@ -182,35 +182,39 @@ jobs:
           name: build-info-amd64
           path: artifacts/build-info-amd64/
 
-      - name: Download arm64 build artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: build-info-arm64
-          path: artifacts/build-info-arm64/
+      # ARM64 build artifacts download - commented out until ARM64 runner is available
+      # - name: Download arm64 build artifacts
+      #   uses: actions/download-artifact@v5
+      #   with:
+      #     name: build-info-arm64
+      #     path: artifacts/build-info-arm64/
 
       - name: Read build info
         id: read-build-info
         run: |
           AMD64_DIGEST=$(cat artifacts/build-info-amd64/digest.txt)
-          ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest.txt)
           echo "amd64_digest=$AMD64_DIGEST" >> $GITHUB_OUTPUT
-          echo "arm64_digest=$ARM64_DIGEST" >> $GITHUB_OUTPUT
+          # ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest.txt)
+          # echo "arm64_digest=$ARM64_DIGEST" >> $GITHUB_OUTPUT
 
-      - name: Create and push multi-arch manifest
+      - name: Create and push single-arch manifest (AMD64 only)
         id: push-manifest
         run: |
           REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
           for IMAGE_TAG in ${{ needs.build-metadata.outputs.tags }}; do
-            echo "Creating and pushing manifest for $IMAGE_TAG"
+            echo "Creating and pushing manifest for $IMAGE_TAG (AMD64 only)"
+            # For single-arch builds, we can push the image directly or create a single-arch manifest
+            # Using manifest approach for consistency with multi-arch setup
             podman manifest create "$IMAGE_TAG"
             podman manifest add "$IMAGE_TAG" \
               --arch amd64 \
               --os linux \
               "$REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}"
-            podman manifest add "$IMAGE_TAG" \
-              --arch arm64 \
-              --os linux \
-              "$REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}"
+            # ARM64 entry - commented out until ARM64 base image is available
+            # podman manifest add "$IMAGE_TAG" \
+            #   --arch arm64 \
+            #   --os linux \
+            #   "$REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}"
             DIGEST=$(podman manifest push "$IMAGE_TAG")
             TAG="${IMAGE_TAG##*:}"
             if [[ "$TAG" == "${{ env.VARIENT }}" ]]; then
