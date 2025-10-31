@@ -35,11 +35,11 @@ jobs:
     steps:
       # These stage versions are pinned by https://github.com/renovatebot/renovate
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v4
 
       # This is optional, but if you see that your builds are way too big for the runners, you can enable this by uncommenting the following lines:
       - name: Maximize build space
-        uses: ublue-os/remove-unwanted-software@517622d6452028f266b7ba4cc9a123b5f58a6b53 # v7
+        uses: ublue-os/remove-unwanted-software@cc0becac701cf642c8f0a6613bbdaf5dc36b259e # v9
         with:
           remove-codeql: true
 
@@ -156,7 +156,7 @@ jobs:
 
       - name: Upload artifact for manifest creation
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-info-${{ matrix.arch }}
           path: build-info/
@@ -177,14 +177,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download amd64 build artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: build-info-amd64
           path: artifacts/build-info-amd64/
 
       # ARM64 build artifacts download - commented out until ARM64 runner is available
       # - name: Download arm64 build artifacts
-      #   uses: actions/download-artifact@v5
+      #   uses: actions/download-artifact@v6
       #   with:
       #     name: build-info-arm64
       #     path: artifacts/build-info-arm64/
@@ -223,7 +223,7 @@ jobs:
           done
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
       - name: Sign multi-arch manifest
         run: |
