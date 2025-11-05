@@ -47,7 +47,7 @@ dnf install -y \
     openssl \
     ncompress \
     tree \
-    "kernel-devel-${BOOTC_KERNEL_VERSION}"
+    kernel-devel
 
 log "✓ Build dependencies installed successfully"
 
