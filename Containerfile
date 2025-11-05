@@ -1,10 +1,11 @@
 FROM quay.io/almalinuxorg/almalinux-bootc:10-kitten AS base
 
 RUN EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm" \
-    && RPMFUSION_FREE_URL="https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm" \
-    && RPMFUSION_NONFREE_URL="https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm" \
-    && dnf install -y --nogpgcheck \
-    $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL
+    RPMFUSION_FREE_URL="https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm" \
+    RPMFUSION_NONFREE_URL="https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm" \
+    dnf install -y --nogpgcheck \
+    $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL \
+    && /usr/bin/crb enable
 
 ADD https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo /etc/yum.repos.d/
 COPY repos/*.repo /etc/yum.repos.d/
