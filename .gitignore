@@ -11,3 +11,4 @@ output/*
 ## Cosign Private Key
 cosign.key
 .secrets
+test.Containerfile
