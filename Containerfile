@@ -1,4 +1,4 @@
-FROM quay.io/almalinuxorg/almalinux-bootc:10 AS base
+FROM quay.io/almalinuxorg/almalinux-bootc:10-kitten AS base
 
 RUN EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm" \
     && RPMFUSION_FREE_URL="https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm" \
@@ -6,8 +6,10 @@ RUN EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E
     && dnf install -y --nogpgcheck \
     $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL
 
-ADD https://pkgs.tailscale.com/stable/rhel/9/tailscale.repo /etc/yum.repos.d/
-COPY repos/wazuh.repo /etc/yum.repos.d/
+ADD https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo /etc/yum.repos.d/
+COPY repos/*.repo /etc/yum.repos.d/
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 
 FROM base AS zfs-builder
 
@@ -23,12 +25,6 @@ RUN --mount=type=secret,mode=0600,id=LOCALMOK \
 FROM base AS final
 LABEL containers.bootc 1
 
-RUN dnf install -y dnf-plugins \
-    && dnf clean all
-
-RUN dnf config-manager addrepo \
-    --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
-
 RUN dnf install -y \
     qemu-guest-agent \
     container-selinux \
@@ -39,9 +35,7 @@ RUN dnf install -y \
     tailscale-1.88.3-1 \
     firewalld \
     sqlite \
-    borgmatic \
     fuse \
-    rclone \
     rsync \
     cockpit-system \
     cockpit-bridge \
@@ -53,11 +47,22 @@ RUN dnf install -y \
     cockpit-files \
     python3-psycopg2 \
     xdg-user-dirs \
-    bees \
     python3-pip \
     git \
     tmux \
+    unzip \
     && dnf clean all
+
+RUN mkdir /var/roothome && \
+    uv pip install --prefix=/usr \
+    borgmatic && \
+    rm -rv /var/roothome
+
+RUN curl https://rclone.org/install.sh | bash
+
+RUN dnf install -y \
+    # bees \
+    btrfs-progs
 
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
 RUN dnf install -y \
@@ -65,15 +70,14 @@ RUN dnf install -y \
     policycoreutils \
     policycoreutils-python-utils \
     policycoreutils-restorecond \
-    selinuxconlist \
-    selinuxdefcon \
+    libselinux-utils \
     && dnf clean all
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
-# RUN /usr/bin/uv pip install --system packaging
-
 COPY build/scripts /tmp/build_scripts
-RUN bash /tmp/build_scripts/wazuh-agent.sh
+RUN bash /tmp/build_scripts/wazuh-agent.sh && \
+    dnf install -y \
+        crowdsec \
+        crowdsec-firewall-bouncer-nftables
 
 
 COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
@@ -104,5 +108,7 @@ RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -
     mkdir /var/roothome && \
     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
     rm -rv /var/roothome
+
+RUN id -u wazuh
 
 RUN bootc container lint
