@@ -14,11 +14,8 @@ RUN dnf install -y  \
     qemu-kvm-block-rbd \
     qemu-kvm-device-display-virtio-gpu \
     qemu-kvm-device-display-virtio-gpu-pci \
-    qemu-kvm-device-display-virtio-vga \
     qemu-kvm-device-usb-host \
     qemu-kvm-device-usb-redirect \
-    qemu-kvm-ui-egl-headless \
-    qemu-kvm-ui-opengl \
     qemu-kvm-ui-spice \
     qemu-kvm-tools \
     qemu-guest-agent \
