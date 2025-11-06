@@ -2,7 +2,7 @@ FROM ghcr.io/braccae/coreos
 LABEL containers.bootc 1
 
 
-RUN dnf install -y --skip-unavailable \
+RUN dnf install -y  \
     cockpit-machines \
     qemu-audio-dbuser \
     qemu-audio-pipewireriver \
