@@ -5,8 +5,13 @@ FROM quay.io/almalinuxorg/almalinux-bootc:10-kitten AS base
 RUN export EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm" && \
     export RPMFUSION_FREE_URL="https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm" && \
     export RPMFUSION_NONFREE_URL="https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm" && \
+    export OPENZFS_REPO_URL="https://zfsonlinux.org/epel/zfs-release-2-8$(rpm --eval "%{dist}").noarch.rpm" && \
     dnf install -y --nogpgcheck \
-    $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL
+    $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL $OPENZFS_REPO_URL
+
+RUN dnf config-manager -y --disable zfs \
+    && dnf -y config-manager --enable zfs-kmod \
+    && dnf -y search zfs && exit 1
 
 ADD https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo /etc/yum.repos.d/
 COPY repos/*.repo /etc/yum.repos.d/
