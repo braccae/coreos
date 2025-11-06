@@ -1,4 +1,19 @@
-FROM quay.io/fedora/fedora-bootc:42 AS zfs-builder
+FROM quay.io/almalinuxorg/almalinux-bootc:10-kitten AS base
+
+
+
+RUN export EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm" && \
+    export RPMFUSION_FREE_URL="https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm" && \
+    export RPMFUSION_NONFREE_URL="https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm" && \
+    dnf install -y --nogpgcheck \
+    $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL
+
+ADD https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo /etc/yum.repos.d/
+COPY repos/*.repo /etc/yum.repos.d/
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
+
+FROM base AS zfs-builder
 
 ARG ZFS_VERSION=zfs-2.4.0-rc3
 
@@ -9,16 +24,10 @@ COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
 RUN --mount=type=secret,mode=0600,id=LOCALMOK \
     bash /tmp/build_scripts/zfs.sh
 
-FROM quay.io/fedora/fedora-bootc:42
+FROM base AS final
 LABEL containers.bootc 1
 
-RUN dnf5 install -y dnf5-plugins \
-    && dnf clean all
-
-RUN dnf5 config-manager addrepo \
-    --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
-
-RUN dnf5 install -y \
+RUN dnf install -y \
     qemu-guest-agent \
     container-selinux \
     just \
@@ -28,9 +37,7 @@ RUN dnf5 install -y \
     tailscale-1.88.3-1 \
     firewalld \
     sqlite \
-    borgmatic \
     fuse \
-    rclone \
     rsync \
     cockpit-system \
     cockpit-bridge \
@@ -42,11 +49,24 @@ RUN dnf5 install -y \
     cockpit-files \
     python3-psycopg2 \
     xdg-user-dirs \
-    bees \
     python3-pip \
     git \
     tmux \
+    unzip \
+    samba \
+    samba-common-tools \
     && dnf clean all
+
+RUN mkdir /var/roothome && \
+    uv pip install --prefix=/usr \
+    borgmatic && \
+    rm -rv /var/roothome
+
+RUN curl https://rclone.org/install.sh | bash
+
+RUN dnf install -y \
+    # bees \
+    btrfs-progs
 
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
 RUN dnf install -y \
@@ -54,21 +74,19 @@ RUN dnf install -y \
     policycoreutils \
     policycoreutils-python-utils \
     policycoreutils-restorecond \
-    selinuxconlist \
-    selinuxdefcon \
+    libselinux-utils \
     && dnf clean all
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
-# RUN /usr/bin/uv pip install --system packaging
-
 COPY build/scripts /tmp/build_scripts
-RUN bash /tmp/build_scripts/wazuh-agent.sh
-
+RUN bash /tmp/build_scripts/wazuh-agent.sh && \
+    dnf install -y \
+        crowdsec \
+        crowdsec-firewall-bouncer-nftables
 
 COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
-RUN dnf5 remove -y zfs-fuse && \
+RUN dnf remove -y zfs-fuse && \
     ls /tmp/rpms/ && \
-    dnf5 install -y /tmp/rpms/*.rpm && \
+    dnf install -y /tmp/rpms/*.rpm && \
     echo "Correcting ZFS kernel module dependencies..." && \
     KERNEL_VERSION=$(basename /lib/modules/*) && \
     echo "Found kernel version: ${KERNEL_VERSION}" && \
