@@ -4,66 +4,45 @@ LABEL containers.bootc 1
 
 RUN dnf install -y  \
     cockpit-machines \
-    qemu-audio-dbuser \
-    qemu-audio-pipewireriver \
-    qemu-audio-spiceer \
-    qemu-block-blkioer \
-    qemu-block-curlr \
-    qemu-block-dmg \
-    qemu-block-iscsier \
-    qemu-block-nfs \
-    qemu-block-rbdriver \
-    qemu-block-ssh \
-    qemu-char-spice \
-    qemu-common \
-    qemu-device-display-qxl \
-    qemu-device-display-vhost-user-gpu \
-    qemu-device-display-virtio-gpu \
-    qemu-device-display-virtio-gpu-ccw \
-    qemu-device-display-virtio-gpu-gl \
-    qemu-device-display-virtio-gpu-pci \
-    qemu-device-display-virtio-gpu-pci-gl \
-    qemu-device-display-virtio-gpu-pci-rutabaga \
-    qemu-device-display-virtio-gpu-rutabaga \
-    qemu-device-display-virtio-vga \
-    qemu-device-display-virtio-vga-gl \
-    qemu-device-display-virtio-vga-rutabaga \
-    qemu-device-usb-host \
-    qemu-device-usb-redirect \
-    qemu-device-usb-smartcard \
-    qemu-docs \
-    qemu-img \
     qemu-kvm \
+    qemu-img \
     qemu-kvm-core \
+    qemu-kvm-common \
+    qemu-kvm-audio-pa \
+    qemu-kvm-block-blkio \
+    qemu-kvm-block-curl \
+    qemu-kvm-block-rbd \
+    qemu-kvm-device-display-virtio-gpu \
+    qemu-kvm-device-display-virtio-gpu-pci \
+    qemu-kvm-device-display-virtio-vga \
+    qemu-kvm-device-usb-host \
+    qemu-kvm-device-usb-redirect \
+    qemu-kvm-ui-egl-headless \
+    qemu-kvm-ui-opengl \
+    qemu-kvm-ui-spice \
+    qemu-kvm-tools \
+    qemu-guest-agent \
     qemu-pr-helper \
-    qemu-system-aarch64 \
-    qemu-system-aarch64-core \
-    qemu-system-arm \
-    qemu-system-arm-core \
-    qemu-system-riscv \
-    qemu-system-riscv-core \
-    qemu-system-x86 \
-    qemu-system-x86-core \
-    qemu-tools \
-    qemu-ui-curses \
-    qemu-ui-dbus \
-    qemu-ui-egl-headless \
-    qemu-ui-gtk \
-    qemu-ui-opengl \
-    qemu-ui-sdl \
-    qemu-ui-spice-app \
-    qemu-ui-spice-core \
-    qemu-user \
-    qemu-user-binfmt \
-    qemu-user-static \
-    qemu-user-static-aarch64 \
-    qemu-user-static-arm \
-    qemu-user-static-riscv \
-    libvirt-daemon-driver-storage-zfs \
-    libvirt-daemon-driver-storage \
+    libvirt-daemon \
+    libvirt-daemon-driver-qemu \
+    libvirt-daemon-driver-interface \
+    libvirt-daemon-driver-network \
+    libvirt-daemon-driver-nodedev \
+    libvirt-daemon-driver-nwfilter \
     libvirt-daemon-driver-secret \
-    libvirt-daemon-driver-lxc \
-    libvirt-daemon-lxc \
+    libvirt-daemon-driver-storage \
+    libvirt-daemon-driver-storage-core \
+    libvirt-daemon-driver-storage-disk \
+    libvirt-daemon-driver-storage-iscsi \
+    libvirt-daemon-driver-storage-logical \
+    libvirt-daemon-driver-storage-mpath \
+    libvirt-daemon-driver-storage-rbd \
+    libvirt-daemon-driver-storage-scsi \
+    libvirt-daemon-config-network \
+    libvirt-daemon-config-nwfilter \
+    libvirt-daemon-kvm \
+    libvirt-client \
+    libvirt-client-qemu \
     distrobox \
     && dnf clean all
 
