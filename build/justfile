@@ -2,20 +2,20 @@ set shell := ["bash", "-c"]
 
 install-ublue-repos:
     #!/bin/bash
-    # dnf5 copr enable ublue/os-akmods
+    # dnf copr enable ublue/os-akmods
     # Terra
-    # dnf5 config-manager add-repo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
-    # dnf5 install terra-release -y
+    # dnf config-manager add-repo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
+    # dnf install terra-release -y
     # Github CLI
-    dnf5 install -y dnf5-plugins
-    dnf5 config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
+    dnf install -y dnf-plugins
+    dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
     # ACT local gihub actions
-    dnf5 -y copr enable goncalossilva/act
+    dnf -y copr enable goncalossilva/act
     # VSCode
     rpm --import https://packages.microsoft.com/keys/microsoft.asc
     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
     # # Tailscale
-    # dnf5 config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+    # dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
     cat <<EOF > /etc/yum.repos.d/adoptium.repo
     [Adoptium]
     name=Adoptium
@@ -25,10 +25,10 @@ install-ublue-repos:
     gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
     EOF
     copr enable -y scottames/ghostty
-    dnf5 check
+    dnf check
 
 install-ansible:
-    dnf5 install -y \
+    dnf install -y \
         ansible \
         python3-ansible-lint \
         ansible-core-doc \
@@ -50,11 +50,11 @@ install-ansible:
         ansible-collection-community-libvirt
 
 install-java:
-    dnf5 install -y \
+    dnf install -y \
     java-21-openjdk
 
 install-kde-utils:
-    dnf5 install -y \
+    dnf install -y \
         kmail \
         merkuro \
         konsole \
@@ -64,7 +64,7 @@ install-kde-utils:
         qt6-qtlocation
 
 install-misc-tools:
-    dnf5 install -y \
+    dnf install -y \
         waypipe \
         tailscale \
         zsh \

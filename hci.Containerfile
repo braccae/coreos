@@ -2,7 +2,7 @@ FROM ghcr.io/braccae/coreos
 LABEL containers.bootc 1
 
 
-RUN dnf5 install -y --skip-unavailable \
+RUN dnf install -y --skip-unavailable \
     cockpit-machines \
     qemu-audio-dbuser \
     qemu-audio-pipewireriver \
@@ -65,11 +65,11 @@ RUN dnf5 install -y --skip-unavailable \
     libvirt-daemon-driver-lxc \
     libvirt-daemon-lxc \
     distrobox \
-    && dnf5 clean all
+    && dnf clean all
 
 WORKDIR /tmp/build/scripts
 
-RUN dnf5 install -y \
+RUN dnf install -y \
     coreutils \
     attr \
     findutils \
