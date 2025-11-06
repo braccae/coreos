@@ -53,6 +53,8 @@ RUN dnf install -y \
     git \
     tmux \
     unzip \
+    samba \
+    samba-common-tools \
     && dnf clean all
 
 RUN mkdir /var/roothome && \
@@ -80,7 +82,6 @@ RUN bash /tmp/build_scripts/wazuh-agent.sh && \
     dnf install -y \
         crowdsec \
         crowdsec-firewall-bouncer-nftables
-
 
 COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
 RUN dnf remove -y zfs-fuse && \
@@ -110,7 +111,5 @@ RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -
     mkdir /var/roothome && \
     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
     rm -rv /var/roothome
-
-RUN id -u wazuh
 
 RUN bootc container lint
