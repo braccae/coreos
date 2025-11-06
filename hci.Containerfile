@@ -62,7 +62,7 @@ RUN dnf install -y \
 COPY build/scripts/* ./
 
 RUN bash get-latest-release.sh https://github.com/45Drives/cockpit-identities .rpm \
-    && bash get-latest-release.sh https://github.com/45Drives/cockpit-file-sharing .rpm el9 \
+    && bash get-latest-release.sh https://github.com/45Drives/cockpit-file-sharing .rpm el9 noarch \
     && mkdir /var/roothome \
     && dnf install -y ./*.rpm \
     && dnf clean all \
