@@ -28,7 +28,7 @@ RUN dnf5 install -y \
     tailscale-1.88.3-1 \
     firewalld \
     sqlite \
-    borgmatic \
+    borgbackup \
     fuse \
     rclone \
     rsync \
@@ -47,6 +47,11 @@ RUN dnf5 install -y \
     git \
     tmux \
     && dnf clean all
+
+RUN mkdir /var/roothome && \
+    uv pip install --prefix=/usr \
+    borgmatic==2.0.8 && \
+    rm -rv /var/roothome
 
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
 RUN dnf install -y \
