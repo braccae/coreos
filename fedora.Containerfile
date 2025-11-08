@@ -12,6 +12,9 @@ RUN --mount=type=secret,mode=0600,id=LOCALMOK \
 FROM quay.io/fedora/fedora-bootc:42
 LABEL containers.bootc 1
 
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
+# RUN /usr/bin/uv pip install --system packaging
+
 RUN dnf5 install -y dnf5-plugins \
     && dnf clean all
 
@@ -63,12 +66,8 @@ RUN dnf install -y \
     selinuxdefcon \
     && dnf clean all
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
-# RUN /usr/bin/uv pip install --system packaging
-
 COPY build/scripts /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh
-
 
 COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
 RUN dnf5 remove -y zfs-fuse && \
