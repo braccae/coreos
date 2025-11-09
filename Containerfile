@@ -10,8 +10,7 @@ RUN export EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$
     $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL $OPENZFS_REPO_URL
 
 RUN dnf config-manager -y --disable zfs \
-    && dnf -y config-manager --enable zfs-kmod \
-    && dnf -y search zfs && exit 1
+    && dnf -y config-manager --enable zfs-kmod
 
 ADD https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo /etc/yum.repos.d/
 COPY repos/*.repo /etc/yum.repos.d/
