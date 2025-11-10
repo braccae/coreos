@@ -7,10 +7,11 @@ RUN export EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$
     export RPMFUSION_NONFREE_URL="https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm" && \
     export OPENZFS_REPO_URL="https://zfsonlinux.org/epel/zfs-release-2-8$(rpm --eval "%{dist}").noarch.rpm" && \
     dnf install -y --nogpgcheck \
-    $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL $OPENZFS_REPO_URL
+    $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL 
+    # $OPENZFS_REPO_URL
 
-RUN dnf config-manager -y --disable zfs \
-    && dnf -y config-manager --enable zfs-kmod
+# RUN dnf config-manager -y --disable zfs \
+#     && dnf -y config-manager --enable zfs-kmod
 
 ADD https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo /etc/yum.repos.d/
 COPY repos/*.repo /etc/yum.repos.d/
