@@ -1,0 +1,12 @@
+[Unit]
+Description=borgmatic backup timer
+Documentation=https://torsion.org/borgmatic/
+
+[Timer]
+# Run daily at 4am
+OnCalendar=daily
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
