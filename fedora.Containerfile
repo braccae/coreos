@@ -54,7 +54,7 @@ RUN dnf5 install -y \
 RUN mkdir /var/roothome && \
     uv pip install --prefix=/usr \
     borgmatic && \
-    rm -rv /var/roothome
+    rm -rfv /var/roothome
 
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
 RUN dnf install -y \
@@ -96,6 +96,6 @@ RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -
     cd /usr/lib/modules/$BOOTC_KERNEL_VERSION && \
     mkdir /var/roothome && \
     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
-    rm -rv /var/roothome
+    rm -rfv /var/roothome
 
 RUN bootc container lint

@@ -66,7 +66,7 @@ RUN dnf install -y \
 RUN mkdir /var/roothome && \
     uv pip install --prefix=/usr \
     borgmatic==2.0.8 && \
-    rm -rv /var/roothome
+    rm -rfv /var/roothome
 
 RUN curl https://rclone.org/install.sh | bash
 
@@ -116,6 +116,6 @@ RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -
     cd /usr/lib/modules/$BOOTC_KERNEL_VERSION && \
     mkdir /var/roothome && \
     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
-    rm -rv /var/roothome
+    rm -rfv /var/roothome
 
 RUN bootc container lint
