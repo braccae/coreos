@@ -61,7 +61,9 @@ install-kde-utils:
         plasma-discover-flatpak \
         plasma-discover-rpm-ostree \
         yakuake \
-        qt6-qtlocation
+        qt6-qtlocation \
+        chromium-qt6-ui \
+        fedora-chromium-config-kde
 
 install-misc-tools:
     dnf install -y \
@@ -73,4 +75,8 @@ install-misc-tools:
         mpv \
         borgmatic \
         sqlite-devel \
-        ghostty
+        ghostty \
+        chromium \
+        chromium-headless \
+        chromedriver
+        
