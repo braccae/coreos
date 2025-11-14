@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora-bootc:42 AS zfs-builder
+FROM quay.io/fedora/fedora-bootc:43 AS zfs-builder
 
 ARG ZFS_VERSION=zfs-2.4.0-rc3
 
@@ -9,7 +9,7 @@ COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
 RUN --mount=type=secret,mode=0600,id=LOCALMOK \
     bash /tmp/build_scripts/zfs.sh
 
-FROM quay.io/fedora/fedora-bootc:42
+FROM quay.io/fedora/fedora-bootc:43
 LABEL containers.bootc 1
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
