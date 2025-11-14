@@ -1,7 +1,11 @@
-FROM ghcr.io/ublue-os/bazzite-dx
+FROM ghcr.io/braccae/coreos:hci as base
 
 COPY rootfs/workstation/ /
 COPY build/justfile /tmp/
+
+RUN dnf update -y \
+    && dnf groupinstall -y --allowerasing "KDE Plasma Workspaces" \
+    && systemctl set-default graphical.target
 
 WORKDIR /tmp
 
