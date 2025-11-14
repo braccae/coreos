@@ -44,6 +44,7 @@ RUN dnf5 install -y \
     cockpit-storaged \
     cockpit-files \
     python3-psycopg2 \
+    python3-pcp \
     xdg-user-dirs \
     bees \
     python3-pip \
