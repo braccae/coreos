@@ -18,4 +18,7 @@ RUN just install-ansible && \
 
 RUN just install-kde-utils
 
+RUN dnf remove -y \
+    gnome-disk-utility
+
 RUN ostree container commit
