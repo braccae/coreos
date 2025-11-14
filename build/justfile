@@ -63,7 +63,8 @@ install-kde-utils:
         yakuake \
         qt6-qtlocation \
         chromium-qt6-ui \
-        fedora-chromium-config-kde
+        fedora-chromium-config-kde \
+        kde-partitionmanager
 
 install-misc-tools:
     dnf install -y \
