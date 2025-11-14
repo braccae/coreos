@@ -39,7 +39,7 @@ RUN dnf install -y \
     tuned \
     realmd \
     sssd \
-    tailscale-1.88.3-1 \
+    tailscale \
     borgbackup \
     firewalld \
     sqlite \
