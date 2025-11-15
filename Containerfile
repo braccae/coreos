@@ -1,4 +1,4 @@
-FROM quay.io/almalinuxorg/almalinux-bootc:10-kitten AS base
+FROM quay.io/almalinuxorg/almalinux-bootc:10 AS base
 
 
 
