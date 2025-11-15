@@ -1,4 +1,4 @@
-FROM quay.io/almalinuxorg/almalinux-bootc:10-kitten AS base
+FROM quay.io/almalinuxorg/almalinux-bootc:10 AS base
 
 
 
@@ -28,6 +28,76 @@ COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
 COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
 RUN --mount=type=secret,mode=0600,id=LOCALMOK \
     bash /tmp/build_scripts/zfs.sh
+
+FROM base AS libvirt-builder
+
+RUN dnf install -y \
+    wget \
+    rpm-build \
+    libvirt-devel \
+    gcc \
+    meson \
+    ninja-build \
+    libxml2-devel \
+    gnutls-devel \
+    pciutils-devel \
+    procps-ng-devel \
+    libselinux-devel \
+    libtool \
+    dtrace \
+    qemu-img \
+    audit-libs-devel \
+    augeas \
+    cyrus-sasl-devel \
+    device-mapper-devel \
+    firewalld-filesystem \
+    gettext \
+    git \
+    glib2-devel \
+    iscsi-initiator-utils \
+    json-c-devel \
+    libacl-devel \
+    libattr-devel \
+    libblkid-devel \
+    libcap-ng-devel \
+    libcurl-devel \
+    libnl3-devel \
+    libpcap-devel \
+    librdmacm-devel \
+    libseccomp-devel \
+    libtirpc-devel \
+    libuuid-devel \
+    libvirt-client \
+    libxslt-devel \
+    lvm2-devel \
+    numactl-devel \
+    openldap-devel \
+    parted-devel \
+    python3-devel \
+    readline-devel \
+    rpcgen \
+    sanlock-devel \
+    systemd-devel \
+    wget \
+    xfsprogs-devel \
+    libnbd-devel \
+    libpciaccess-devel \
+    librados-devel \
+    librbd-devel \
+    numad \
+    python3-docutils \
+    python3-pytest \
+    systemtap-sdt-devel \
+    wireshark-devel
+
+COPY --from=zfs-builder /tmp/zfs-dev-rpms/*.rpm /tmp/zfs-dev-rpms/
+
+RUN dnf install -y \
+    /tmp/zfs-dev-rpms/*.rpm
+
+# Build libvirt with ZFS driver using dedicated script
+COPY build/scripts/build-libvirt-zfs.sh /tmp/build-libvirt-zfs.sh
+RUN bash /tmp/build-libvirt-zfs.sh
 
 FROM base AS final
 LABEL containers.bootc 1
@@ -90,10 +160,11 @@ RUN bash /tmp/build_scripts/wazuh-agent.sh && \
         crowdsec \
         crowdsec-firewall-bouncer-nftables
 
-COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
+COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/zfs-rpms/
+COPY --from=libvirt-builder /tmp/libvirt-rpms/ /tmp/libvirt-rpms/
 RUN dnf remove -y zfs-fuse && \
-    ls /tmp/rpms/ && \
-    dnf install -y /tmp/rpms/*.rpm && \
+    ls /tmp/zfs-rpms/ /tmp/libvirt-rpms/ && \
+    dnf install -y /tmp/zfs-rpms/*.rpm /tmp/libvirt-rpms/*.rpm && \
     echo "Correcting ZFS kernel module dependencies..." && \
     KERNEL_VERSION=$(basename /lib/modules/*) && \
     echo "Found kernel version: ${KERNEL_VERSION}" && \

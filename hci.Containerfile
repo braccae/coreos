@@ -1,6 +1,7 @@
-FROM ghcr.io/braccae/coreos:latest
-LABEL containers.bootc 1
+FROM ghcr.io/braccae/coreos:latest as main
 
+FROM main AS final
+LABEL containers.bootc 1
 
 RUN dnf install -y  \
     cockpit-machines \
