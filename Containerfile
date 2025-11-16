@@ -66,7 +66,7 @@ RUN dnf install -y \
 
 RUN mkdir /var/roothome && \
     uv pip install --prefix=/usr \
-    borgmatic==2.0.8 && \
+    borgmatic==2.0.11 && \
     rm -rfv /var/roothome
 
 RUN curl https://rclone.org/install.sh | bash

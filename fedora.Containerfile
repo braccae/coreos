@@ -54,7 +54,7 @@ RUN dnf5 install -y \
 
 RUN mkdir /var/roothome && \
     uv pip install --prefix=/usr \
-    borgmatic && \
+    borgmatic==2.0.11 && \
     rm -rfv /var/roothome
 
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
