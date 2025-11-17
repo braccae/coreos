@@ -80,8 +80,7 @@ RUN dnf5 install -y \
     nfs-utils \
     libnfsidmap \
     sssd-nfs-idmap \
-    samba \
-    samba-common-tools
+    && dnf clean all
 
 COPY build/scripts/* ./
 
