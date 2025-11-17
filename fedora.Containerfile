@@ -50,6 +50,9 @@ RUN dnf5 install -y \
     python3-pip \
     git \
     tmux \
+    samba \
+    samba-common-tools \
+    samba-usershares \
     && dnf clean all
 
 RUN mkdir /var/roothome && \

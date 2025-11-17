@@ -62,6 +62,7 @@ RUN dnf install -y \
     unzip \
     samba \
     samba-common-tools \
+    samba-usershares \
     && dnf clean all
 
 RUN mkdir /var/roothome && \
