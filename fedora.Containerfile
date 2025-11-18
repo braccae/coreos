@@ -102,4 +102,5 @@ RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -
     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
     rm -rfv /var/roothome
 
+RUN sed 's/enforcing=1/enforcing=0/g' /usr/lib/bootc/kargs.d/999-selinux.toml
 RUN bootc container lint
