@@ -85,6 +85,9 @@ RUN dnf install -y \
     libselinux-utils \
     && dnf clean all
 
+RUN dnf reinstall selinux-policy-targeted policycoreutils policycoreutils-python-utils \
+    && dnf clean all
+
 COPY build/scripts /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh && \
     dnf install -y \
