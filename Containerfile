@@ -36,6 +36,7 @@ RUN dnf install -y \
     qemu-guest-agent \
     container-selinux \
     just \
+    zsh \
     tuned \
     realmd \
     sssd \
