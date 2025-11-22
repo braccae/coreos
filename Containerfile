@@ -85,7 +85,7 @@ RUN dnf install -y \
     libselinux-utils \
     && dnf clean all
 
-RUN dnf reinstall selinux-policy-targeted policycoreutils policycoreutils-python-utils \
+RUN dnf -y reinstall selinux-policy-targeted policycoreutils policycoreutils-python-utils \
     && dnf clean all
 
 COPY build/scripts /tmp/build_scripts
