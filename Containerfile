@@ -110,7 +110,8 @@ RUN dnf remove -y zfs-fuse && \
     dnf clean all
 
 WORKDIR /tmp/zfs
-RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
+RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit \
+    && curl https://raw.githubusercontent.com/45Drives/scripts/main/cockpit_font_fix/fix-cockpit.sh | bash
 
 # COPY rootfs/btrfs_config/ /
 COPY rootfs/non_btrfs/ /
