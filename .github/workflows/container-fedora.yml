@@ -9,7 +9,7 @@ on:
       - ".github/workflows/container-fedora.yml"
   workflow_dispatch:
   schedule:
-    - cron: "0 5 * * *"
+    - cron: "0 5 1/4 * *"
 
 env:
   REGISTRY: ghcr.io
