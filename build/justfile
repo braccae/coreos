@@ -64,7 +64,8 @@ install-kde-utils:
         qt6-qtlocation \
         chromium-qt6-ui \
         fedora-chromium-config-kde \
-        kde-partitionmanager
+        kde-partitionmanager \
+        qt6-qtwebsockets
 
 install-misc-tools:
     dnf install -y \
