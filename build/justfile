@@ -80,6 +80,9 @@ install-misc-tools:
         ghostty \
         chromium \
         chromium-headless \
-        chromedriver \
-        virt-manager
+        chromedriver
         
+install-vm-tools:
+    dnf install -y \
+        virt-install \
+        virt-manager

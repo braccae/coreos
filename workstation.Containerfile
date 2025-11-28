@@ -14,6 +14,8 @@ RUN just install-ansible && \
 
 RUN just install-kde-utils
 
+RUN just install-vm-tools
+
 RUN dnf remove -y \
     gnome-disk-utility
 
