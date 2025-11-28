@@ -2,13 +2,12 @@ set shell := ["bash", "-c"]
 
 install-ublue-repos:
     #!/bin/bash
-    # dnf copr enable ublue/os-akmods
+    dnf5 install -y dnf-plugins-core
     # Terra
-    # dnf config-manager add-repo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
-    # dnf install terra-release -y
+    dnf5 config-manager addrepo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
+    dnf install terra-release -y
     # Github CLI
-    dnf install -y dnf-plugins
-    dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
+    dnf5 config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
     # ACT local gihub actions
     dnf -y copr enable goncalossilva/act
     # VSCode
@@ -16,16 +15,7 @@ install-ublue-repos:
     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
     # # Tailscale
     # dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
-    cat <<EOF > /etc/yum.repos.d/adoptium.repo
-    [Adoptium]
-    name=Adoptium
-    baseurl=https://packages.adoptium.net/artifactory/rpm/fedora/42/$(uname -m)
-    enabled=1
-    gpgcheck=1
-    gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
-    EOF
-    copr enable -y scottames/ghostty
-    dnf check
+    dnf copr enable -y scottames/ghostty
 
 install-ansible:
     dnf install -y \
@@ -51,7 +41,7 @@ install-ansible:
 
 install-java:
     dnf install -y \
-    java-21-openjdk
+        java-21-openjdk
 
 install-kde-utils:
     dnf install -y \

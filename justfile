@@ -64,13 +64,35 @@ build-disk-image image_tag='latest':
         --privileged \
         --pull=newer \
         --security-opt label=type:unconfined_t \
-        -v ./config.toml:/config.toml:ro \
+        -v ./build/config-img.toml:/config.toml:ro \
         -v ./output/{{image_tag}}:/output \
         -v /var/lib/containers/storage:/var/lib/containers/storage \
         quay.io/centos-bootc/bootc-image-builder:latest \
         --type qcow2 \
         --use-librepo=True \
         --rootfs xfs \
+        ghcr.io/braccae/coreos:{{image_tag}}
+    sudo chown -fR ${SUDO_UID:-${CALLING_UID:-$(id -u)}}:${SUDO_GID:-${CALLING_GID:-$(id -g)}} ./output
+
+build-iso image_tag='latest':
+    #!/bin/bash
+    set -euo pipefail
+    sudo podman pull ghcr.io/braccae/coreos:{{image_tag}}
+    sudo mkdir -p ./output/{{image_tag}}
+    sudo podman run \
+        --rm \
+        -it \
+        --privileged \
+        --pull=newer \
+        --security-opt label=type:unconfined_t \
+        -v ./build/config-iso.toml:/config.toml:ro \
+        -v ./output/{{image_tag}}:/output \
+        -v /var/lib/containers/storage:/var/lib/containers/storage \
+        quay.io/centos-bootc/bootc-image-builder:latest \
+        --type bootc-installer \
+        --use-librepo=True \
+        --rootfs xfs \
+        --verbose \
         ghcr.io/braccae/coreos:{{image_tag}}
     sudo chown -fR ${SUDO_UID:-${CALLING_UID:-$(id -u)}}:${SUDO_GID:-${CALLING_GID:-$(id -g)}} ./output
 
