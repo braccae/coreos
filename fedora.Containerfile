@@ -54,6 +54,9 @@ RUN dnf5 install -y \
     samba \
     samba-common-tools \
     samba-usershares \
+    samba-client \
+    samba-common-tools \
+    cifs-utils \
     && dnf clean all
 
 RUN mkdir /var/roothome && \
