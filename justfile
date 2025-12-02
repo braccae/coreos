@@ -92,6 +92,7 @@ build-iso image_tag='latest':
         --type bootc-installer \
         --use-librepo=True \
         --rootfs xfs \
+        --installer-payload-ref quay.io/fedora-ostree-desktops/kinoite \
         --verbose \
         ghcr.io/braccae/coreos:{{image_tag}}
     sudo chown -fR ${SUDO_UID:-${CALLING_UID:-$(id -u)}}:${SUDO_GID:-${CALLING_GID:-$(id -g)}} ./output
