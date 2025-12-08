@@ -1,5 +1,11 @@
 set shell := ["bash", "-c"]
 
+get-active-kernel:
+	@for d in /usr/lib/modules/*/; do v=$(basename "$d"); if [ -f "${d}vmlinuz" ]; then printf "%s\n" "$v"; exit 0; fi; done; echo "ERROR: no active kernel found" >&2; exit 1
+
+get-active-kernel-base:
+	@FULL_VER=$(just get-active-kernel); BASE_VER=$(echo "$FULL_VER" | cut -d- -f1); printf "%s\n" "$BASE_VER"
+
 install-ublue-repos:
     #!/bin/bash
     dnf5 install -y dnf-plugins-core
@@ -73,3 +79,8 @@ install-misc-tools:
         chromedriver \
         virt-manager
         
+install-game-mode:
+    dnf install -y \
+        steam \
+        steamtinkerlaunch \
+        steam-device-rules
