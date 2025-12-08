@@ -15,9 +15,61 @@ ZFS_VERSION="${ZFS_VERSION:-zfs-2.3.4}"
 log "Starting complete ZFS build process"
 log "ZFS_VERSION: ${ZFS_VERSION}"
 
-# Get bootc kernel version
-BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -path "/usr/lib/modules/" -printf "%f\n" | head -1)
+# Get bootc kernel version - find the kernel directory that contains a vmlinuz file
+BOOTC_KERNEL_VERSION=""
+for kernel_dir in /usr/lib/modules/*/; do
+    kernel_version=$(basename "$kernel_dir")
+    # Check if this kernel directory itself contains a vmlinuz file
+    if [ -f "${kernel_dir}vmlinuz" ]; then
+        BOOTC_KERNEL_VERSION="${kernel_version}"
+        log "Found kernel with vmlinuz in modules dir: ${BOOTC_KERNEL_VERSION}"
+        break
+    fi
+done
+
+if [ -z "$BOOTC_KERNEL_VERSION" ]; then
+    log "ERROR: No kernel with vmlinuz found in /usr/lib/modules/"
+    log "Available kernel directories:"
+    ls -la /usr/lib/modules/ || log "Directory /usr/lib/modules/ does not exist"
+    exit 1
+fi
 log "BOOTC_KERNEL_VERSION: ${BOOTC_KERNEL_VERSION}"
+
+# Step 0.5: Check if kernel-devel is already installed
+KERNEL_DEVEL_INSTALLED=0
+if rpm -q kernel-devel > /dev/null 2>&1; then
+    log "✓ kernel-devel is already installed"
+    KERNEL_DEVEL_INSTALLED=1
+else
+    log "kernel-devel not found, will install from standard repos or akmods"
+    
+    # Check for akmods kernel devel packages as fallback
+    AKMODS_MOUNT="/tmp/ublue/akmods"
+    if [ -d "$AKMODS_MOUNT" ]; then
+        log "Found akmods mount point at $AKMODS_MOUNT"
+        # Extract base kernel version (e.g., 6.17.7 from 6.17.7-ba19.fc43.x86_64)
+        BASE_KERNEL_VERSION=$(echo "$BOOTC_KERNEL_VERSION" | cut -d- -f1)
+        log "Looking for kernel packages matching base version: ${BASE_KERNEL_VERSION}"
+        
+        # Find all kernel RPMs matching the base version in akmods
+        KERNEL_RPMS=$(find "$AKMODS_MOUNT/kernel-rpms" -name "kernel*-${BASE_KERNEL_VERSION}-*.rpm" -type f 2>/dev/null | grep -v debuginfo | grep -v debugsource || true)
+        
+        if [ -n "$KERNEL_RPMS" ]; then
+            log "Found kernel RPMs in akmods:"
+            echo "$KERNEL_RPMS" | while read -r rpm; do
+                log "  - $(basename "$rpm")"
+            done
+            
+            log "Installing kernel packages from akmods..."
+            # Install all matching kernel RPMs (core, devel, modules, etc.)
+            echo "$KERNEL_RPMS" | xargs dnf install -y
+            KERNEL_DEVEL_INSTALLED=1
+            log "✓ Kernel packages from akmods installed successfully"
+        else
+            log "No kernel RPMs found in akmods matching version ${BASE_KERNEL_VERSION}"
+        fi
+    fi
+fi
 
 # Step 1: Install build dependencies
 log "Installing build dependencies..."
@@ -47,7 +99,7 @@ dnf install -y \
     openssl \
     ncompress \
     tree \
-    kernel-devel
+    $([ "$KERNEL_DEVEL_INSTALLED" -eq 0 ] && echo "kernel-devel" || true)
 
 log "✓ Build dependencies installed successfully"
 
