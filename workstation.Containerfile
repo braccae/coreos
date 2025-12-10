@@ -108,5 +108,7 @@ COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
+RUN rm -fv /etc/sudoers.d/100-passwordless-wheel /etc/polkit-1/rules.d/10-systemd-nopasswd.rules
+
 RUN ostree container commit
 RUN bootc container lint
