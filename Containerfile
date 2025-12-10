@@ -64,6 +64,9 @@ RUN dnf install -y \
     samba \
     samba-common-tools \
     samba-usershares \
+    samba-client \
+    samba-common-tools \
+    cifs-utils \
     && dnf clean all
 
 RUN mkdir /var/roothome && \
@@ -75,7 +78,8 @@ RUN curl https://rclone.org/install.sh | bash
 
 RUN dnf install -y \
     # bees \
-    btrfs-progs
+    btrfs-progs\
+    && dnf clean all
 
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
 RUN dnf install -y \
@@ -93,7 +97,8 @@ COPY build/scripts /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh && \
     dnf install -y \
         crowdsec \
-        crowdsec-firewall-bouncer-nftables
+        crowdsec-firewall-bouncer-nftables\
+    && dnf clean all
 
 COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
 RUN dnf remove -y zfs-fuse && \

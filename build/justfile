@@ -60,7 +60,8 @@ install-kde-utils:
         chromium-qt6-ui \
         fedora-chromium-config-kde \
         kde-partitionmanager \
-        qt6-qtwebsockets
+        qt6-qtwebsockets \
+        qt6-qtwebsockets-devel
 
 install-misc-tools:
     dnf install -y \

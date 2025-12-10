@@ -1,6 +1,6 @@
 FROM quay.io/fedora/fedora-bootc:43 AS zfs-builder
 
-ARG ZFS_VERSION=zfs-2.4.0-rc3
+ARG ZFS_VERSION=zfs-2.4.0-rc4
 
 # Copy persistent MOK public key for secure boot
 COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
@@ -54,6 +54,9 @@ RUN dnf5 install -y \
     samba \
     samba-common-tools \
     samba-usershares \
+    samba-client \
+    samba-common-tools \
+    cifs-utils \
     && dnf clean all
 
 RUN mkdir /var/roothome && \
