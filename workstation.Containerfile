@@ -1,11 +1,13 @@
 # FROM quay.io/fedora-ostree-desktops/kinoite:43 as base
 FROM ghcr.io/ublue-os/bazzite:stable-43 as base
 
+COPY repos/ /etc/yum.repos.d/
 COPY build/justfile /tmp/
 
 FROM base AS zfs-builder
 
-ARG ZFS_VERSION=zfs-2.4.0-rc4
+# ARG ZFS_VERSION=zfs-2.4.0-rc4
+ARG ZFS_VERSION=zfs-2.3.5
 
 # Copy persistent MOK public key for secure boot
 COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
@@ -97,7 +99,7 @@ WORKDIR /tmp
 RUN just install-java && \
     just install-misc-tools
 
-# RUN just install-game-mode
+RUN just install-dev-mode
 
 RUN just install-kde-utils
 

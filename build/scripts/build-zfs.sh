@@ -42,7 +42,7 @@ if rpm -q kernel-devel > /dev/null 2>&1; then
     KERNEL_DEVEL_INSTALLED=1
 else
     log "kernel-devel not found, will install from standard repos or akmods"
-    
+
     # Check for akmods kernel devel packages as fallback
     AKMODS_MOUNT="/tmp/ublue/akmods"
     if [ -d "$AKMODS_MOUNT" ]; then
@@ -50,16 +50,16 @@ else
         # Extract base kernel version (e.g., 6.17.7 from 6.17.7-ba19.fc43.x86_64)
         BASE_KERNEL_VERSION=$(echo "$BOOTC_KERNEL_VERSION" | cut -d- -f1)
         log "Looking for kernel packages matching base version: ${BASE_KERNEL_VERSION}"
-        
+
         # Find all kernel RPMs matching the base version in akmods
         KERNEL_RPMS=$(find "$AKMODS_MOUNT/kernel-rpms" -name "kernel*-${BASE_KERNEL_VERSION}-*.rpm" -type f 2>/dev/null | grep -v debuginfo | grep -v debugsource || true)
-        
+
         if [ -n "$KERNEL_RPMS" ]; then
             log "Found kernel RPMs in akmods:"
             echo "$KERNEL_RPMS" | while read -r rpm; do
                 log "  - $(basename "$rpm")"
             done
-            
+
             log "Installing kernel packages from akmods..."
             # Install all matching kernel RPMs (core, devel, modules, etc.)
             echo "$KERNEL_RPMS" | xargs dnf install -y
@@ -73,6 +73,13 @@ fi
 
 # Step 1: Install build dependencies
 log "Installing build dependencies..."
+# Remove zlib-devel if it exists to avoid conflicts with zlib-ng-compat-devel
+if rpm -q zlib-devel > /dev/null 2>&1; then
+    log "Removing conflicting zlib-devel package (ignoring dependencies to preserve kernel-devel)..."
+    # Use rpm -e --nodeps to remove only zlib-devel without removing kernel-devel
+    rpm -e --nodeps zlib-devel
+    log "✓ zlib-devel removed successfully (dependencies preserved)."
+fi
 dnf install -y \
     wget \
     gcc \
