@@ -1,31 +1,26 @@
 set shell := ["bash", "-c"]
 
+get-active-kernel:
+	@for d in /usr/lib/modules/*/; do v=$(basename "$d"); if [ -f "${d}vmlinuz" ]; then printf "%s\n" "$v"; exit 0; fi; done; echo "ERROR: no active kernel found" >&2; exit 1
+
+get-active-kernel-base:
+	@FULL_VER=$(just get-active-kernel); BASE_VER=$(echo "$FULL_VER" | cut -d- -f1); printf "%s\n" "$BASE_VER"
+
 install-ublue-repos:
     #!/bin/bash
-    # dnf copr enable ublue/os-akmods
+    dnf5 install -y dnf-plugins-core
     # Terra
-    # dnf config-manager add-repo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
-    # dnf install terra-release -y
+    dnf5 config-manager addrepo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
+    dnf install terra-release -y
     # Github CLI
-    dnf install -y dnf-plugins
-    dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
+    dnf5 config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
     # ACT local gihub actions
     dnf -y copr enable goncalossilva/act
     # VSCode
     rpm --import https://packages.microsoft.com/keys/microsoft.asc
-    echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
     # # Tailscale
     # dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
-    cat <<EOF > /etc/yum.repos.d/adoptium.repo
-    [Adoptium]
-    name=Adoptium
-    baseurl=https://packages.adoptium.net/artifactory/rpm/fedora/42/$(uname -m)
-    enabled=1
-    gpgcheck=1
-    gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
-    EOF
-    copr enable -y scottames/ghostty
-    dnf check
+    dnf copr enable -y scottames/ghostty
 
 install-ansible:
     dnf install -y \
@@ -51,7 +46,7 @@ install-ansible:
 
 install-java:
     dnf install -y \
-    java-21-openjdk
+        java-21-openjdk
 
 install-kde-utils:
     dnf install -y \
@@ -81,9 +76,15 @@ install-misc-tools:
         ghostty \
         chromium \
         chromium-headless \
-        chromedriver
-        
-install-vm-tools:
-    dnf install -y \
-        virt-install \
+        chromedriver \
         virt-manager
+
+install-game-mode:
+    dnf install -y \
+        steam \
+        steamtinkerlaunch \
+        steam-device-rules
+
+install-dev-mode:
+    dnf install -y \
+        code
