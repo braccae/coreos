@@ -81,7 +81,7 @@ install-misc-tools:
 
 install-game-mode:
     #!/usr/bin/env bash
-    dnf copr enable rankyn/xivlauncher
+    dnf copr enable -y rankyn/xivlauncher
     dnf install -y \
         XIVLauncher
     
