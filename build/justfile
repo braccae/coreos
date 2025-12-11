@@ -7,7 +7,7 @@ get-active-kernel-base:
 	@FULL_VER=$(just get-active-kernel); BASE_VER=$(echo "$FULL_VER" | cut -d- -f1); printf "%s\n" "$BASE_VER"
 
 install-ublue-repos:
-    #!/bin/bash
+    #!/usr/bin/env bash
     dnf5 install -y dnf-plugins-core
     # Terra
     dnf5 config-manager addrepo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
@@ -80,10 +80,14 @@ install-misc-tools:
         virt-manager
 
 install-game-mode:
+    #!/usr/bin/env bash
+    dnf copr enable rankyn/xivlauncher
     dnf install -y \
         steam \
         steamtinkerlaunch \
-        steam-device-rules
+        steam-device-rules \
+        XIVLauncher
+    
 
 install-dev-mode:
     dnf install -y \
