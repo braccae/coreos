@@ -83,9 +83,6 @@ install-game-mode:
     #!/usr/bin/env bash
     dnf copr enable rankyn/xivlauncher
     dnf install -y \
-        steam \
-        steamtinkerlaunch \
-        steam-device-rules \
         XIVLauncher
     
 

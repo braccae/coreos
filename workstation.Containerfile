@@ -101,6 +101,8 @@ RUN just install-java && \
 
 RUN just install-dev-mode
 
+RUN just install-game-mode
+
 RUN just install-kde-utils
 
 # COPY rootfs/btrfs_config/ /
