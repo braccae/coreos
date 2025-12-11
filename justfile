@@ -97,7 +97,11 @@ build-iso image_tag='latest':
         ghcr.io/braccae/coreos:{{image_tag}}
     sudo chown -fR ${SUDO_UID:-${CALLING_UID:-$(id -u)}}:${SUDO_GID:-${CALLING_GID:-$(id -g)}} ./output
 
-
+build-container image_tag='latest':
+    podman build \
+        -t coreos:{{image_tag}} \
+        . \
+        -f {{image_tag}}.Containerfile
 # ==============================================================================
 # Recipes from dev-tools/scripts/install/write-disk-image-to-disk.sh
 # ==============================================================================
