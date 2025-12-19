@@ -1,6 +1,6 @@
 FROM quay.io/fedora/fedora-bootc:43 AS zfs-builder
 
-ARG ZFS_VERSION=zfs-2.4.0-rc4
+ARG ZFS_VERSION=zfs-2.4
 
 # Copy persistent MOK public key for secure boot
 COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
