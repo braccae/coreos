@@ -5,5 +5,10 @@
 		}
 	],
 	"settings": {
+		"github-actions.workflows.pinned.workflows": [
+			".github/workflows/container.yml",
+			".github/workflows/container-fedora.yml",
+			".github/workflows/container-workstation.yml"
+		]
 	}
 }
