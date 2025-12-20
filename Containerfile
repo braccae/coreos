@@ -20,7 +20,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/
 
 FROM base AS zfs-builder
 
-ARG ZFS_VERSION=zfs-2.4
+ARG ZFS_VERSION=zfs-2.4.0
 
 # Copy persistent MOK public key for secure boot
 COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
