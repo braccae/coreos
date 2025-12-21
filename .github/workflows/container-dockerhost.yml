@@ -197,7 +197,7 @@ jobs:
       - name: Create and push multi-arch manifest
         id: push-manifest
         run: |
-          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
+          REPOSITORY="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BASE }}"
           for IMAGE_TAG in ${{ needs.build-metadata.outputs.tags }}; do
             echo "Creating and pushing manifest for $IMAGE_TAG"
             podman manifest create "$IMAGE_TAG"
@@ -221,7 +221,7 @@ jobs:
 
       - name: Sign multi-arch manifest
         run: |
-          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
+          REPOSITORY="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BASE }}"
           
           # Sign the multi-arch manifest using the full reference
           cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}:${{ env.VARIENT }}"
