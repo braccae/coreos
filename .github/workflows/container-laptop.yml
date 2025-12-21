@@ -211,7 +211,7 @@ jobs:
       - name: Create and push single-arch manifest (AMD64 only)
         id: push-manifest
         run: |
-          REPOSITORY="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BASE }}"
+          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
           for IMAGE_TAG in ${{ needs.build-metadata.outputs.tags }}; do
             echo "Creating and pushing manifest for $IMAGE_TAG (AMD64 only)"
             # For single-arch builds, we can push the image directly or create a single-arch manifest
@@ -238,7 +238,7 @@ jobs:
 
       - name: Sign multi-arch manifest
         run: |
-          REPOSITORY="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BASE }}"
+          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
           
           # Sign the multi-arch manifest using the full reference
           cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}:${{ env.VARIENT }}"
