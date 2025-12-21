@@ -128,7 +128,7 @@ jobs:
           context: .
           containerfiles: ./${{ env.VARIENT }}.Containerfile
           platforms: ${{ matrix.platform }}
-          image: ${{ env.REGISTRY }}/${{ github.repository }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BASE }}
           tags: ${{ needs.build-metadata.outputs.tags }}
           labels: ${{ needs.build-metadata.outputs.labels }}
 
