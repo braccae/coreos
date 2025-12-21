@@ -13,9 +13,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: fedora
+  IMAGE_NAME: ${{ github.repository }}
   VARIENT: fedora
-  IMAGE_NAME_BASE: fedora
+  IMAGE_NAME_BASE: "${{ github.event.repository.name }}" # the name of the image produced by this build, matches repo names
   IMAGE_DESC: "coreos fedora bootc"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}" # do not edit
   ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/23002397?v=4&size=64" # You should put your own image here so that you get a fancy profile image on https://artifacthub.io/!
