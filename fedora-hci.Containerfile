@@ -80,6 +80,7 @@ RUN dnf5 install -y \
     nfs-utils \
     libnfsidmap \
     sssd-nfs-idmap \
+    NetworkManager-wifi \
     && dnf clean all
 
 COPY build/scripts/* ./
