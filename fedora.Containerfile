@@ -1,4 +1,5 @@
-FROM quay.io/fedora/fedora-bootc:43 AS zfs-builder
+FROM quay.io/fedora/fedora-bootc:43 AS base
+FROM base AS zfs-builder
 
 ARG ZFS_VERSION=zfs-2.4.0
 
@@ -9,7 +10,13 @@ COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
 RUN --mount=type=secret,mode=0600,id=LOCALMOK \
     bash /tmp/build_scripts/zfs.sh
 
-FROM quay.io/fedora/fedora-bootc:43
+FROM base AS borgmatic-builder
+
+RUN dnf install -y gcc python3-devel && \
+    mkdir /var/roothome && \
+    uv pip install --prefix=/tmp/borgmatic borgmatic
+
+FROM base AS final
 LABEL containers.bootc 1
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
@@ -59,10 +66,12 @@ RUN dnf5 install -y \
     cifs-utils \
     && dnf clean all
 
-RUN mkdir /var/roothome && \
-    uv pip install --prefix=/usr \
-    borgmatic && \
-    rm -rfv /var/roothome
+# RUN mkdir /var/roothome && \
+#     uv pip install --prefix=/usr \
+#     borgmatic && \
+#     rm -rfv /var/roothome
+
+COPY --from=borgmatic-builder /tmp/borgmatic /usr
 
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
 RUN dnf install -y \

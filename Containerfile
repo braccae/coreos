@@ -18,16 +18,11 @@ COPY repos/*.repo /etc/yum.repos.d/
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 
-FROM base AS zfs-builder
+FROM base AS borgmatic-builder
 
-ARG ZFS_VERSION=zfs-2.4.0
-
-# Copy persistent MOK public key for secure boot
-COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
-
-COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
-RUN --mount=type=secret,mode=0600,id=LOCALMOK \
-    bash /tmp/build_scripts/zfs.sh
+RUN dnf install -y gcc python3-devel && \
+    mkdir /var/roothome && \
+    uv pip install --prefix=/tmp/borgmatic borgmatic
 
 FROM base AS final
 LABEL containers.bootc 1
@@ -69,10 +64,11 @@ RUN dnf install -y \
     cifs-utils \
     && dnf clean all
 
-RUN mkdir /var/roothome && \
-    uv pip install --prefix=/usr \
-    borgmatic && \
-    rm -rfv /var/roothome
+# RUN mkdir /var/roothome && \
+#     uv pip install --prefix=/usr \
+#     borgmatic && \
+#     rm -rfv /var/roothome
+COPY --from=borgmatic-builder /tmp/borgmatic /usr
 
 RUN curl https://rclone.org/install.sh | bash
 
@@ -99,6 +95,19 @@ RUN bash /tmp/build_scripts/wazuh-agent.sh && \
         crowdsec \
         crowdsec-firewall-bouncer-nftables\
     && dnf clean all
+
+FROM base AS zfs-builder
+
+ARG ZFS_VERSION=zfs-2.4.0
+
+# Copy persistent MOK public key for secure boot
+COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
+
+COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
+RUN --mount=type=secret,mode=0600,id=LOCALMOK \
+    bash /tmp/build_scripts/zfs.sh
+
+FROM final
 
 COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
 RUN dnf remove -y zfs-fuse && \
