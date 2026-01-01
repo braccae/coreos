@@ -7,6 +7,7 @@ on:
       - "Containerfile"
       - "rootfs/common/**"
       - "build/scripts/**"
+      - ".github/workflows/container-alma.yml"
   workflow_dispatch:
   schedule:
     - cron: "0 5 1/4 * *"
@@ -55,7 +56,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=${{ env.VARIENT }}
             type=sha,format=short
@@ -115,7 +116,7 @@ jobs:
           context: .
           containerfiles: ./Containerfile
           platforms: ${{ matrix.platform }}
-          image: ${{ env.REGISTRY }}/${{ github.repository }}
+          image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: ${{ needs.build-metadata.outputs.tags }}
           labels: ${{ needs.build-metadata.outputs.labels }}
           extra-args: |
@@ -182,7 +183,7 @@ jobs:
       - name: Create and push multi-arch manifest
         id: push-manifest
         run: |
-          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
+          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
           for IMAGE_TAG in ${{ needs.build-metadata.outputs.tags }}; do
             echo "Creating and pushing manifest for $IMAGE_TAG"
             podman manifest create "$IMAGE_TAG"
@@ -206,7 +207,7 @@ jobs:
 
       - name: Sign multi-arch manifest
         run: |
-          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
+          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
           cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}:${{ env.VARIENT }}"
         env:
           COSIGN_EXPERIMENTAL: false
