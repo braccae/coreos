@@ -1,0 +1,210 @@
+name: Fedora Container
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "fedora.Containerfile"
+      - "rootfs/hci/**"
+      - ".github/workflows/container-fedora.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 1/4 * *"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: fedora
+  VARIENT: latest
+  IMAGE_NAME_BASE: "fedora"
+  IMAGE_DESC: "fedora bootc"
+  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+  ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/23002397?v=4&size=64"
+
+jobs:
+  build-metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+      - name: Get current date
+        id: date
+        run: |
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: Set Image Name and Tag
+        id: set_image_name
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            IMAGE_NAME="${{ env.IMAGE_NAME_BASE }}"
+            TAG=${{ env.VARIENT }}
+          else
+            IMAGE_NAME="${{ env.IMAGE_NAME_BASE }}-${BRANCH_NAME}"
+            TAG="$BRANCH_NAME"
+          fi
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo "DEFAULT_TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ env.VARIENT }}
+            type=sha,format=short
+            type=ref,event=branch
+            type=ref,event=pr
+          labels: |
+            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/refs/heads/main/README.md
+            org.opencontainers.image.created=${{ steps.date.outputs.date }}
+            org.opencontainers.image.description=${{ env.IMAGE_DESC }}
+            org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/refs/heads/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/blob/main/Containerfile
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
+            org.opencontainers.image.version=${{ env.DEFAULT_TAG }}
+            io.artifacthub.package.deprecated=false
+            io.artifacthub.package.keywords=bootc,fedora
+            io.artifacthub.package.license=Apache-2.0
+            io.artifacthub.package.logo-url=${{ env.ARTIFACTHUB_LOGO_URL }}
+            io.artifacthub.package.prerelease=false
+            containers.bootc=1
+          sep-tags: " "
+          sep-annotations: " "
+
+  build:
+    runs-on: ${{ matrix.runner }}
+    needs: build-metadata
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Image
+        uses: redhat-actions/buildah-build@v2
+        id: build
+        with:
+          context: .
+          containerfiles: ./fedora.Containerfile
+          platforms: ${{ matrix.platform }}
+          image: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: ${{ needs.build-metadata.outputs.tags }}
+          labels: ${{ needs.build-metadata.outputs.labels }}
+
+      - name: Push To Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/push-to-registry@v2
+        id: push
+        with:
+          image: ${{ steps.build.outputs.image }}
+          tags: ${{ steps.build.outputs.tags }}
+
+      - name: Upload build info
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p build-info
+          echo "${{ steps.push.outputs.digest }}" > build-info/digest.txt
+          echo "${{ matrix.platform }}" > build-info/platform.txt
+        id: build-info
+
+      - name: Upload artifact for manifest creation
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-info-${{ matrix.arch }}
+          path: build-info/
+
+  create-manifest:
+    runs-on: ubuntu-latest
+    needs: [build-metadata, build]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download amd64 build artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: build-info-amd64
+          path: artifacts/build-info-amd64/
+
+      - name: Download arm64 build artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: build-info-arm64
+          path: artifacts/build-info-arm64/
+
+      - name: Read build info
+        id: read-build-info
+        run: |
+          AMD64_DIGEST=$(cat artifacts/build-info-amd64/digest.txt)
+          ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest.txt)
+          echo "amd64_digest=$AMD64_DIGEST" >> $GITHUB_OUTPUT
+          echo "arm64_digest=$ARM64_DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Create and push multi-arch manifest
+        id: push-manifest
+        run: |
+          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
+          for IMAGE_TAG in ${{ needs.build-metadata.outputs.tags }}; do
+            echo "Creating and pushing manifest for $IMAGE_TAG"
+            podman manifest create "$IMAGE_TAG"
+            podman manifest add "$IMAGE_TAG" \
+              --arch amd64 \
+              --os linux \
+              "$REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}"
+            podman manifest add "$IMAGE_TAG" \
+              --arch arm64 \
+              --os linux \
+              "$REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}"
+            DIGEST=$(podman manifest push "$IMAGE_TAG")
+            TAG="${IMAGE_TAG##*:}"
+            if [[ "$TAG" == "${{ env.VARIENT }}" ]]; then
+              echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad
+
+      - name: Sign multi-arch manifest
+        run: |
+          REPOSITORY="${{ env.REGISTRY }}/${{ github.repository }}"
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}:${{ env.VARIENT }}"
+        env:
+          COSIGN_EXPERIMENTAL: false
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
