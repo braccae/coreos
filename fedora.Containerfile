@@ -1,14 +1,12 @@
 FROM quay.io/fedora/fedora-bootc:43 AS base
-FROM base AS zfs-builder
 
-ARG ZFS_VERSION=zfs-2.4.0
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 
-# Copy persistent MOK public key for secure boot
-COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
+RUN dnf5 install -y dnf5-plugins \
+    && dnf clean all
 
-COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
-RUN --mount=type=secret,mode=0600,id=LOCALMOK \
-    bash /tmp/build_scripts/zfs.sh
+RUN dnf5 config-manager addrepo \
+    --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
 
 FROM base AS borgmatic-builder
 
@@ -18,15 +16,6 @@ RUN dnf install -y gcc python3-devel && \
 
 FROM base AS final
 LABEL containers.bootc 1
-
-RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
-# RUN /usr/bin/uv pip install --system packaging
-
-RUN dnf5 install -y dnf5-plugins \
-    && dnf clean all
-
-RUN dnf5 config-manager addrepo \
-    --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
 
 RUN dnf5 install -y \
     qemu-guest-agent \
@@ -66,11 +55,6 @@ RUN dnf5 install -y \
     cifs-utils \
     && dnf clean all
 
-# RUN mkdir /var/roothome && \
-#     uv pip install --prefix=/usr \
-#     borgmatic && \
-#     rm -rfv /var/roothome
-
 COPY --from=borgmatic-builder /tmp/borgmatic /usr
 
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
@@ -85,6 +69,19 @@ RUN dnf install -y \
 
 COPY build/scripts /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh
+
+FROM base AS zfs-builder
+
+ARG ZFS_VERSION=zfs-2.4.0
+
+# Copy persistent MOK public key for secure boot
+COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
+
+COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
+RUN --mount=type=secret,mode=0600,id=LOCALMOK \
+    bash /tmp/build_scripts/zfs.sh
+
+FROM final
 
 COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
 RUN dnf5 remove -y zfs-fuse && \
