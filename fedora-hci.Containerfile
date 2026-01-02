@@ -1,6 +1,5 @@
-FROM ghcr.io/braccae/coreos:fedora
+FROM ghcr.io/braccae/fedora:latest
 LABEL containers.bootc 1
-
 
 RUN dnf5 install -y --skip-unavailable \
     cockpit-machines \

@@ -1,4 +1,4 @@
-FROM ghcr.io/braccae/coreos:fedora-hci as base
+FROM ghcr.io/braccae/fedora:hci as base
 
 FROM base AS builder
 

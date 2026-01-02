@@ -1,4 +1,4 @@
-FROM ghcr.io/braccae/coreos:latest
+FROM ghcr.io/braccae/alma:latest
 LABEL containers.bootc 1
 
 
