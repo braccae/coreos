@@ -20,6 +20,7 @@ env:
   IMAGE_DESC: "fedora bootc"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
   ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/23002397?v=4&size=64"
+  DEFAULT_TAG: ""
 
 jobs:
   build-metadata:

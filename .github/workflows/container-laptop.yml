@@ -15,7 +15,7 @@ on:
       - ".github/workflows/container-laptop.yml"
   workflow_dispatch:
   schedule:
-    - cron: "0 5 1/4 * *"
+    - cron: "0 5 1/6 * *"
 
 env:
   REGISTRY: ghcr.io
@@ -25,6 +25,7 @@ env:
   IMAGE_DESC: "fedora bootc"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
   ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/23002397?v=4&size=64"
+  DEFAULT_TAG: ""
 
 jobs:
   build-metadata:
