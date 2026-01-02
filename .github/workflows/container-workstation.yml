@@ -186,7 +186,6 @@ jobs:
         id: read-build-info
         run: |
           AMD64_DIGEST=$(cat artifacts/build-info-amd64/digest.txt)
-          ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest.txt)
           echo "amd64_digest=$AMD64_DIGEST" >> $GITHUB_OUTPUT
 
       - name: Create and push multi-arch manifest
