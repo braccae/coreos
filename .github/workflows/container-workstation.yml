@@ -21,7 +21,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: workstation
   VARIENT: latest
-  IMAGE_NAME_BASE: "worjkstation"
+  IMAGE_NAME_BASE: "workstation"
   IMAGE_DESC: "bazzite bootc"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
   ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/23002397?v=4&size=64"
