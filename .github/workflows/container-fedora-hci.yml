@@ -10,7 +10,7 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "fedroa-hci.Containerfile"
+      - "fedora-hci.Containerfile"
       - "rootfs/hci/**"
       - ".github/workflows/container-fedora-hci.yml"
   workflow_dispatch:
@@ -117,7 +117,7 @@ jobs:
         id: build
         with:
           context: .
-          containerfiles: ./fedroa-hci.Containerfile
+          containerfiles: ./fedora-hci.Containerfile
           platforms: ${{ matrix.platform }}
           image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: ${{ needs.build-metadata.outputs.tags }}
