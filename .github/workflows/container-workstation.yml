@@ -99,9 +99,6 @@ jobs:
           - arch: amd64
             platform: linux/amd64
             runner: ubuntu-24.04
-          - arch: arm64
-            platform: linux/arm64
-            runner: ubuntu-24.04-arm
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
@@ -113,6 +110,20 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Maximize build space
+        uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
+
+      - name: Mount BTRFS for podman storage
+        id: container-storage-action
+        uses: ublue-os/container-storage-action@911baca08baf30c8654933e9e9723cb399892140
+
+        # Fallback to the remove-unwanted-software-action if github doesn't allocate enough space
+        # See: https://github.com/ublue-os/container-storage-action/pull/11
+        continue-on-error: true 
+        with:
+          target-dir: /var/lib/containers
+          mount-opts: compress-force=zstd:2
 
       - name: Build Image
         uses: redhat-actions/buildah-build@v2
@@ -171,19 +182,12 @@ jobs:
           name: build-info-amd64
           path: artifacts/build-info-amd64/
 
-      - name: Download arm64 build artifacts
-        uses: actions/download-artifact@v6
-        with:
-          name: build-info-arm64
-          path: artifacts/build-info-arm64/
-
       - name: Read build info
         id: read-build-info
         run: |
           AMD64_DIGEST=$(cat artifacts/build-info-amd64/digest.txt)
           ARM64_DIGEST=$(cat artifacts/build-info-arm64/digest.txt)
           echo "amd64_digest=$AMD64_DIGEST" >> $GITHUB_OUTPUT
-          echo "arm64_digest=$ARM64_DIGEST" >> $GITHUB_OUTPUT
 
       - name: Create and push multi-arch manifest
         id: push-manifest
@@ -196,10 +200,6 @@ jobs:
               --arch amd64 \
               --os linux \
               "$REPOSITORY@${{ steps.read-build-info.outputs.amd64_digest }}"
-            podman manifest add "$IMAGE_TAG" \
-              --arch arm64 \
-              --os linux \
-              "$REPOSITORY@${{ steps.read-build-info.outputs.arm64_digest }}"
             DIGEST=$(podman manifest push "$IMAGE_TAG")
             TAG="${IMAGE_TAG##*:}"
             if [[ "$TAG" == "${{ env.VARIENT }}" ]]; then
