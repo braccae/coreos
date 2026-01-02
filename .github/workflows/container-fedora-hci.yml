@@ -71,7 +71,7 @@ jobs:
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
             org.opencontainers.image.description=${{ env.IMAGE_DESC }}
             org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/refs/heads/main/README.md
-            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/blob/main/fedroa-hci.Containerfile
+            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/blob/main/fedora-hci.Containerfile
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
