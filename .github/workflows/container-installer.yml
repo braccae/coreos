@@ -169,7 +169,7 @@ jobs:
 
       - name: Upload artifact for manifest creation
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: build-info-${{ matrix.arch }}
           path: build-info/
@@ -190,14 +190,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download amd64 build artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: build-info-amd64
           path: artifacts/build-info-amd64/
 
       # ARM64 build artifacts download - commented out until ARM64 runner is available
       # - name: Download arm64 build artifacts
-      #   uses: actions/download-artifact@v6
+      #   uses: actions/download-artifact@v7
       #   with:
       #     name: build-info-arm64
       #     path: artifacts/build-info-arm64/
