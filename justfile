@@ -52,11 +52,11 @@ regen-mok:
 # ==============================================================================
 
 # Builds a qcow2 disk image from a container image.
-# Usage: just build-disk-image <output_dir> <image_tag>
-build-disk-image image_tag='latest':
+# Usage: just build-disk-image <image> <image_tag>
+build-disk-image image='alma' image_tag='latest':
     #!/bin/bash
     set -euo pipefail
-    sudo podman pull ghcr.io/braccae/coreos:{{image_tag}}
+    sudo podman pull ghcr.io/braccae/{{image}}:{{image_tag}}
     sudo mkdir -p ./output/{{image_tag}}
     sudo podman run \
         --rm \
@@ -71,7 +71,7 @@ build-disk-image image_tag='latest':
         --type qcow2 \
         --use-librepo=True \
         --rootfs xfs \
-        ghcr.io/braccae/coreos:{{image_tag}}
+        ghcr.io/braccae/{{image}}:{{image_tag}}
     sudo chown -fR ${SUDO_UID:-${CALLING_UID:-$(id -u)}}:${SUDO_GID:-${CALLING_GID:-$(id -g)}} ./output
 
 build-iso image_tag='latest':
