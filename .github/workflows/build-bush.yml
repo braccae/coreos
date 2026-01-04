@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: fedora
   TAG: latest
 
 jobs:
@@ -44,12 +44,12 @@ jobs:
       - name: Build image using justfile
         id: build-image
         run: |
-          sudo just build-disk-image
+          sudo just build-disk-image ${{ env.IMAGE_NAME }} ${{ env.TAG }}
 
       - name: Push via Rclone
         run: |
           printf "%s\n" "${{ secrets.RCLONE }}" > /tmp/rclone.conf
-          rclone --config /tmp/rclone.conf copyto output/$TAG/qcow2/disk.qcow2 b2:github-braccae/artifacts/alma-$ARCH.qcow2
+          rclone --config /tmp/rclone.conf copyto output/$TAG/qcow2/disk.qcow2 b2:github-braccae/artifacts/${{ env.IMAGE_NAME }}-${{ env.TAG }}-$ARCH.qcow2
 
       # - name: Install b2 via python
       #   run: |
