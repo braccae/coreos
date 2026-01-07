@@ -11,8 +11,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: fedora
-  TAG: latest
+  IMAGE_NAME: alma
+  TAG: hci
 
 jobs:
   build-qcow2:
