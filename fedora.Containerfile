@@ -20,6 +20,8 @@ LABEL containers.bootc 1
 RUN dnf5 install -y \
     qemu-guest-agent \
     container-selinux \
+    microcode_ctl \
+    amd-ucode-firmware \
     just \
     zsh \
     tuned \
