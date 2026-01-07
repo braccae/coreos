@@ -2,7 +2,7 @@ name: HCI Container
 
 on:
   workflow_run:
-    workflows: ["Main Container"]
+    workflows: ["Alma Container"]
     types:
       - completed
     branches:
