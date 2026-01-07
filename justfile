@@ -57,7 +57,7 @@ build-disk-image image='alma' image_tag='latest':
     #!/bin/bash
     set -euo pipefail
     sudo podman pull ghcr.io/braccae/{{image}}:{{image_tag}}
-    sudo mkdir -p ./output/{{image_tag}}
+    sudo mkdir -p ./output/{{image}}/{{image_tag}}
     sudo podman run \
         --rm \
         -it \
@@ -65,7 +65,7 @@ build-disk-image image='alma' image_tag='latest':
         --pull=newer \
         --security-opt label=type:unconfined_t \
         -v ./build/config-img.toml:/config.toml:ro \
-        -v ./output/{{image_tag}}:/output \
+        -v ./output/{{image}}/{{image_tag}}:/output \
         -v /var/lib/containers/storage:/var/lib/containers/storage \
         quay.io/centos-bootc/bootc-image-builder:latest \
         --type qcow2 \
@@ -74,11 +74,11 @@ build-disk-image image='alma' image_tag='latest':
         ghcr.io/braccae/{{image}}:{{image_tag}}
     sudo chown -fR ${SUDO_UID:-${CALLING_UID:-$(id -u)}}:${SUDO_GID:-${CALLING_GID:-$(id -g)}} ./output
 
-build-iso image_tag='latest':
+build-iso image='alma' image_tag='latest':
     #!/bin/bash
     set -euo pipefail
-    sudo podman pull ghcr.io/braccae/coreos:{{image_tag}}
-    sudo mkdir -p ./output/{{image_tag}}
+    sudo podman pull ghcr.io/braccae/{{image}}:{{image_tag}}
+    sudo mkdir -p ./output/{{image}}/{{image_tag}}
     sudo podman run \
         --rm \
         -it \
@@ -86,7 +86,7 @@ build-iso image_tag='latest':
         --pull=newer \
         --security-opt label=type:unconfined_t \
         -v ./build/config-iso.toml:/config.toml:ro \
-        -v ./output/{{image_tag}}:/output \
+        -v ./output/{{image}}/{{image_tag}}:/output \
         -v /var/lib/containers/storage:/var/lib/containers/storage \
         quay.io/centos-bootc/bootc-image-builder:latest \
         --type bootc-installer \
@@ -94,14 +94,14 @@ build-iso image_tag='latest':
         --rootfs xfs \
         --installer-payload-ref ghcr.io/braccae/coreos:installer \
         --verbose \
-        ghcr.io/braccae/coreos:{{image_tag}}
+        ghcr.io/braccae/{{image}}:{{image_tag}}
     sudo chown -fR ${SUDO_UID:-${CALLING_UID:-$(id -u)}}:${SUDO_GID:-${CALLING_GID:-$(id -g)}} ./output
 
-build-container image_tag='latest':
-    podman build \
-        -t coreos:{{image_tag}} \
-        . \
-        -f {{image_tag}}.Containerfile
+# build-container image='alma' image_tag='latest':
+#     podman build \
+#         -t {{image}}:{{image_tag}} \
+#         . \
+#         -f {{image_tag}}.Containerfile
 # ==============================================================================
 # Recipes from dev-tools/scripts/install/write-disk-image-to-disk.sh
 # ==============================================================================
@@ -110,14 +110,14 @@ build-container image_tag='latest':
 # DANGER: This will overwrite the destination disk. Use with extreme caution.
 # Usage: just write-disk-image <image_file> <disk_device>
 # Example: just write-disk-image build/qcow2/disk.qcow2 /dev/sdX
-write-disk-image disk image_tag='latest':
+write-disk-image disk image='alma' image_tag='latest':
     #!/bin/bash
     set -euo pipefail
     echo "DANGER: This will overwrite all data on {{disk}}".
     echo "You have 5 seconds to press Ctrl+C to cancel."
     sleep 5
-    echo "Writing {{image_tag}} to {{disk}}..."
-    sudo qemu-img convert -O raw -p ./output/{{image_tag}}/qcow2/disk.qcow2 {{disk}}
+    echo "Writing {{image}}:{{image_tag}} to {{disk}}..."
+    sudo qemu-img convert -O raw -p ./output/{{image}}/{{image_tag}}/qcow2/disk.qcow2 {{disk}}
     sudo sync -f {{disk}}
     sudo sync {{disk}}
     echo "Write complete."
