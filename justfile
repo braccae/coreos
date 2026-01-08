@@ -91,8 +91,8 @@ build-iso image='alma' image_tag='latest':
         quay.io/centos-bootc/bootc-image-builder:latest \
         --type bootc-installer \
         --use-librepo=True \
-        --rootfs xfs \
-        --installer-payload-ref ghcr.io/braccae/coreos:installer \
+        --rootfs btrfs \
+        --installer-payload-ref ghcr.io/braccae/{{image}}:{{image_tag}} \
         --verbose \
         ghcr.io/braccae/{{image}}:{{image_tag}}
     sudo chown -fR ${SUDO_UID:-${CALLING_UID:-$(id -u)}}:${SUDO_GID:-${CALLING_GID:-$(id -g)}} ./output
