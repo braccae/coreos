@@ -84,8 +84,24 @@ install-game-mode:
     dnf copr enable -y rankyn/xivlauncher
     dnf install -y \
         XIVLauncher
-    
+
+install-virt-tools:
+    dnf install -y \
+        virt-manager \
+        qemu-kvm \
+        qemu-tools \
+        qemu-img \
+        qemu-device-display-virtio-gpu-gl \
+        qemu-device-display-virtio-gpu-pci-gl \
+        qemu-device-display-virtio-gpu \
+        qemu-audio-pipewire \
+        qemu-char-spice \
+        qemu-device-usb-redirect
+
 
 install-dev-mode:
     dnf install -y \
-        code
+        code \
+        pnpm \
+        nodejs \
+        nodejs-npm
