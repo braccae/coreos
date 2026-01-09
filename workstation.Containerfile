@@ -115,3 +115,5 @@ RUN rm -fv /etc/sudoers.d/100-passwordless-wheel /etc/polkit-1/rules.d/10-system
 
 RUN ostree container commit
 RUN bootc container lint
+
+ENTRYPOINT [ "/sbin/init" ]

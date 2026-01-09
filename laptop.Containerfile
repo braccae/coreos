@@ -13,3 +13,4 @@ RUN just install-ansible && \
     just install-misc-tools
 
 RUN ostree container commit
+ENTRYPOINT [ "/sbin/init" ]

@@ -114,3 +114,4 @@ RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -
 
 # RUN sed -i 's/enforcing=1/enforcing=0/g' /usr/lib/bootc/kargs.d/999-selinux.toml
 RUN bootc container lint
+ENTRYPOINT [ "/sbin/init" ]

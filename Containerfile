@@ -140,3 +140,5 @@ RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -
     rm -rfv /var/roothome
 
 RUN bootc container lint
+
+ENTRYPOINT [ "/sbin/init" ]
