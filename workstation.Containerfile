@@ -96,7 +96,7 @@ RUN mkdir -p /var/lib/alternatives && \
 WORKDIR /tmp
 
 RUN just install-java && \
-    just install-misc-tools \
+    just install-misc-tools && \
     just install-virt-tools
 
 RUN just install-dev-mode
