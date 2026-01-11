@@ -84,6 +84,6 @@ RUN bash get-latest-release.sh https://github.com/45Drives/cockpit-identities .r
 
 COPY rootfs/hci/ /
 
-RUN systemctl enable tailscaled selinux-recover
+RUN systemctl enable tailscaled
 
 RUN bootc container lint
