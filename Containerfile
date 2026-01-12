@@ -19,9 +19,9 @@ COPY repos/*.repo /etc/yum.repos.d/
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 
-FROM quay.io/toolbox-images/debian-toolbox:13 AS proxmox-backup-client-getter
+FROM docker.io/debian:trixie-slim AS proxmox-backup-client-getter
 
-COPY --chmod=644 repos/proxmox.sources /etc/apt/sources.list.d/proxmox.sources
+COPY --chmod=644 repos/*.sources /etc/apt/sources.list.d/
 ADD --chmod=644 https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg /usr/share/keyrings/proxmox-archive-keyring.gpg
 
 RUN apt update && apt install -y proxmox-backup-client-static
