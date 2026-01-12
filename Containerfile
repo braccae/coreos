@@ -16,7 +16,15 @@ RUN export EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$
 ADD https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo /etc/yum.repos.d/
 COPY repos/*.repo /etc/yum.repos.d/
 
+
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
+
+FROM docker.io/debian:13-slim AS proxmox-backup-client-getter
+
+COPY --chmod=644 repos/proxmox.sources /etc/apt/sources.list.d/proxmox.sources
+ADD --chmod=644 https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg /usr/share/keyrings/proxmox-archive-keyring.gpg
+
+RUN apt update && apt install -y proxmox-backup-client
 
 FROM base AS borgmatic-builder
 
@@ -69,6 +77,7 @@ RUN dnf install -y \
 #     borgmatic && \
 #     rm -rfv /var/roothome
 COPY --from=borgmatic-builder /tmp/borgmatic /usr
+COPY --from=proxmox-backup-client-getter /usr/bin/proxmox-backup-client /usr/bin
 
 RUN curl https://rclone.org/install.sh | bash
 
