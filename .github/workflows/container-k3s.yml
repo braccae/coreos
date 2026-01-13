@@ -1,4 +1,4 @@
-name: HCI Container
+name: K3s Container
 
 on:
   workflow_run:
