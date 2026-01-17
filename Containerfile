@@ -136,17 +136,17 @@ WORKDIR /tmp/zfs
 RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit \
     && curl https://raw.githubusercontent.com/45Drives/scripts/main/cockpit_font_fix/fix-cockpit.sh | bash
 
-# COPY rootfs/btrfs_config/ /
-COPY rootfs/non_btrfs/ /
-COPY rootfs/common/ /
-
-RUN systemctl enable tailscaled
-
 RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -path "/usr/lib/modules/" -printf "%f\n" | head -1) && \
     cd /usr/lib/modules/$BOOTC_KERNEL_VERSION && \
     mkdir /var/roothome && \
     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
     rm -rfv /var/roothome
+
+# COPY rootfs/btrfs_config/ /
+COPY rootfs/non_btrfs/ /
+COPY rootfs/common/ /
+
+RUN systemctl enable tailscaled
 
 RUN bootc container lint
 
