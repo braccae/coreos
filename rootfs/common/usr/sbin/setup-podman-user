@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+# Check if the script is run as root
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root or using sudo."
+  exit 1
+fi
+
+# Check for correct number of arguments
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <username> <id>"
+    exit 1
+fi
+
+USERNAME=$1
+ID=$2
+
+echo "--- Starting setup for user: $USERNAME (ID: $ID) ---"
+
+# 1. Create the group
+if getent group "$USERNAME" > /dev/null; then
+    echo "Group '$USERNAME' already exists. Skipping..."
+else
+    groupadd -g "$ID" "$USERNAME"
+    echo "Group '$USERNAME' created with GID $ID."
+fi
+
+# 2. Create the user
+if id "$USERNAME" &>/dev/null; then
+    echo "User '$USERNAME' already exists. Skipping..."
+else
+    useradd -u "$ID" -g "$USERNAME" -m -s /bin/bash "$USERNAME"
+    echo "User '$USERNAME' created with UID $ID."
+fi
+
+# 3. Setup subuid and subgid (with idempotency check)
+# Check if the user already has entries in subuid/subgid files
+if grep -q "^$USERNAME:" /etc/subuid && grep -q "^$USERNAME:" /etc/subgid; then
+    echo "SubUID/SubGID mapping already exists for $USERNAME. Skipping configuration..."
+else
+    # Calculate a unique range to prevent overlaps (standard 64k block)
+    SUB_ID_START=$(( 100000 + (ID * 65536) ))
+    echo "Assigning subuid/subgid range starting at $SUB_ID_START..."
+    usermod --add-subuids "${SUB_ID_START}-$((SUB_ID_START + 65535))" "$USERNAME"
+    usermod --add-subgids "${SUB_ID_START}-$((SUB_ID_START + 65535))" "$USERNAME"
+fi
+
+# 4. Enable linger
+loginctl enable-linger "$USERNAME"
+echo "Linger enabled for $USERNAME."
+
+# 5. Create directories using run0 (ensures correct ownership/permissions)
+echo "Creating application and configuration directories..."
+run0 -u "$USERNAME" mkdir -p "/home/$USERNAME/appdata"
+run0 -u "$USERNAME" mkdir -p "/home/$USERNAME/.config/containers/systemd"
+
+# 6. Enable user services using run0
+echo "Enabling user-level Podman services..."
+run0 -u "$USERNAME" systemctl --user enable --now podman-auto-update.timer
+run0 -u "$USERNAME" systemctl --user enable --now podman-clean-transient.service
+
+echo "--- Setup Complete for $USERNAME ---"
