@@ -145,6 +145,7 @@ RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -
 # COPY rootfs/btrfs_config/ /
 COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
+RUN chmod +x /usr/sbin/setup-podman-user
 
 RUN systemctl enable tailscaled
 

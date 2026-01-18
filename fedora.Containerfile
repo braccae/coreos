@@ -100,17 +100,18 @@ RUN dnf5 remove -y zfs-fuse && \
 WORKDIR /tmp/zfs
 RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
 
-# COPY rootfs/btrfs_config/ /
-COPY rootfs/non_btrfs/ /
-COPY rootfs/common/ /
-
-RUN systemctl enable tailscaled
-
 RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -path "/usr/lib/modules/" -printf "%f\n" | head -1) && \
     cd /usr/lib/modules/$BOOTC_KERNEL_VERSION && \
     mkdir /var/roothome && \
     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
     rm -rfv /var/roothome
+
+    # COPY rootfs/btrfs_config/ /
+COPY rootfs/non_btrfs/ /
+COPY rootfs/common/ /
+RUN chmod +x /usr/sbin/setup-podman-user
+
+RUN systemctl enable tailscaled
 
 # RUN sed -i 's/enforcing=1/enforcing=0/g' /usr/lib/bootc/kargs.d/999-selinux.toml
 RUN bootc container lint
