@@ -12,7 +12,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: alma
-  TAG: latest
+  TAG: k3s
 
 jobs:
   build-qcow2:
