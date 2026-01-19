@@ -12,7 +12,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: fedora
-  TAG: latest
+  TAG: dockerhost
 
 jobs:
   build-qcow2:
