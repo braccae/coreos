@@ -11,8 +11,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: alma
-  TAG: k3s
+  IMAGE_NAME: fedora
+  TAG: latest
 
 jobs:
   build-qcow2:
