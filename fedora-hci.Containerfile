@@ -1,15 +1,9 @@
 FROM ghcr.io/braccae/fedora:latest
 LABEL containers.bootc 1
 
-RUN dnf5 install -y --skip-unavailable \
+RUN dnf5 install -y --skip-unavailable --setopt=tsflags=noscripts \
     cockpit-machines \
-    qemu-audio-dbuser \
-    qemu-audio-spiceer \
-    qemu-block-blkioer \
-    qemu-block-curlr \
-    qemu-block-iscsier \
     qemu-block-nfs \
-    qemu-block-rbdriver \
     qemu-block-ssh \
     qemu-char-spice \
     qemu-common \
@@ -33,6 +27,7 @@ RUN dnf5 install -y --skip-unavailable \
     qemu-system-riscv-core \
     qemu-system-x86 \
     qemu-system-x86-core \
+    qemu-tools \
     qemu-ui-curses \
     qemu-ui-dbus \
     libvirt-daemon-driver-storage-zfs \
