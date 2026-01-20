@@ -33,7 +33,6 @@ RUN dnf5 install -y --skip-unavailable \
     qemu-system-riscv-core \
     qemu-system-x86 \
     qemu-system-x86-core \
-    qemu-tools \
     qemu-ui-curses \
     qemu-ui-dbus \
     libvirt-daemon-driver-storage-zfs \
