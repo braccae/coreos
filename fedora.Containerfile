@@ -53,6 +53,8 @@ RUN dnf5 install -y \
     samba-client \
     samba-common-tools \
     cifs-utils \
+    grub2-pc \
+    grub2-tools \
     && dnf clean all
 
 COPY --from=borgmatic-builder /tmp/borgmatic /usr
