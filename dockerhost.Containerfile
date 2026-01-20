@@ -16,7 +16,7 @@ WORKDIR /tmp/build
 
 RUN git clone https://github.com/chabad360/cockpit-docker.git \
     && cd cockpit-docker \
-    && NODE_ENV=production make rpm
+    && NODE_ENV=production make install
 
 FROM base AS final
 
@@ -30,6 +30,8 @@ RUN dnf config-manager addrepo \
     docker-compose-plugin \
     && systemctl enable docker
 
-RUN --mount=type=bind,from=builder,source=/tmp/build/cockpit-docker,target=/tmp/build/cockpit-docker \
-    rpm -i --nodeps \
-    /tmp/build/cockpit-docker/*.rpm
+COPY --from=builder /usr/local/share/cockpit/docker /usr/share/cockpit/docker
+
+# RUN --mount=type=bind,from=builder,source=/tmp/build/cockpit-docker,target=/tmp/build/cockpit-docker \
+#     rpm -i --nodeps \
+#     /tmp/build/cockpit-docker/*.rpm
