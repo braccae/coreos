@@ -1,4 +1,4 @@
-FROM ghcr.io/braccae/fedora:latest as base
+FROM ghcr.io/braccae/alma:latest as base
 
 FROM base AS builder
 
@@ -7,7 +7,6 @@ RUN dnf install -y \
     gettext \
     nodejs \
     make \
-    rpmbuild \
     libappstream-glib \
     libappstream-glib-devel
 
@@ -20,8 +19,7 @@ RUN git clone https://github.com/chabad360/cockpit-docker.git \
 
 FROM base AS final
 
-RUN dnf config-manager addrepo \
-    --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo \
+RUN dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo \
     && dnf install -y \
     docker-ce \
     docker-ce-cli \
