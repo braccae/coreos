@@ -16,10 +16,10 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: fedora
+  IMAGE_NAME: alma
   VARIENT: dockerhost
-  IMAGE_NAME_BASE: "fedora"
-  IMAGE_DESC: "fedora bootc"
+  IMAGE_NAME_BASE: "alma"
+  IMAGE_DESC: "alma bootc"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
   ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/23002397?v=4&size=64"
   DEFAULT_TAG: ""
