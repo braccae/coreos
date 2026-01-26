@@ -71,6 +71,7 @@ RUN dnf install -y \
     samba-common-tools \
     cifs-utils \
     nodejs \
+    nodejs-full-i18n \
     nodejs-npm \
     && dnf clean all
 
