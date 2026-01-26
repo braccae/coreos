@@ -70,6 +70,8 @@ RUN dnf install -y \
     samba-client \
     samba-common-tools \
     cifs-utils \
+    nodejs \
+    nodejs-npm \
     && dnf clean all
 
 # RUN mkdir /var/roothome && \
