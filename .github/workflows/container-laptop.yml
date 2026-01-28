@@ -15,7 +15,7 @@ on:
       - ".github/workflows/container-laptop.yml"
   workflow_dispatch:
   schedule:
-    - cron: "0 5 1/6 * *"
+    - cron: "0 5 1/2 * *"
 
 env:
   REGISTRY: ghcr.io
