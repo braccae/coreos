@@ -1,0 +1,56 @@
+// Load the external JSON file
+local.file "targets" {
+  filename = "/etc/alloy/servers.json"
+}
+
+// Using encoding.from_json inline since Alloy has no locals block
+
+// --- PROMETHEUS REMOTE WRITE ---
+prometheus.remote_write "homelab" {
+  endpoint {
+    url = encoding.from_json(local.file.targets.content)["prometheus_address"]
+  }
+}
+
+// --- LOKI LOG PUSH ---
+loki.write "homelab" {
+  endpoint {
+    url = encoding.from_json(local.file.targets.content)["loki_address"]
+  }
+
+  external_labels = {
+    env  = encoding.from_json(local.file.targets.content)["environment"],
+    host = constants.hostname,
+  }
+}
+
+// Example: Standard System Metrics
+prometheus.exporter.unix "node" { }
+
+prometheus.scrape "system_metrics" {
+  targets    = prometheus.exporter.unix.node.targets
+  forward_to = [prometheus.remote_write.homelab.receiver]
+}
+
+// --- SYSTEMD JOURNAL LOGS ---
+loki.source.journal "systemd" {
+  forward_to = [loki.write.homelab.receiver]
+
+  relabel_rules = loki.relabel.journal.rules
+}
+
+loki.relabel "journal" {
+  forward_to = []
+
+  // Keep only warning (4) and above; drop notice (5), info (6), debug (7)
+  rule {
+    source_labels = ["__journal__priority"]
+    regex         = "[5-7]"
+    action        = "drop"
+  }
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+}

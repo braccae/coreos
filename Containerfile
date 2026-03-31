@@ -10,12 +10,16 @@ RUN export EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$
     $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL 
     # $OPENZFS_REPO_URL
 
+
 # RUN dnf config-manager -y --disable zfs \
 #     && dnf -y config-manager --enable zfs-kmod
 
 ADD https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo /etc/yum.repos.d/
 COPY repos/*.repo /etc/yum.repos.d/
 
+WORKDIR /tmp
+ADD https://rpm.grafana.com/gpg.key /tmp/grafana.key
+RUN rpm --import /tmp/grafana.key
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 
@@ -73,6 +77,7 @@ RUN dnf install -y \
     nodejs \
     nodejs-full-i18n \
     nodejs-npm \
+    alloy \
     && dnf clean all
 
 # RUN mkdir /var/roothome && \

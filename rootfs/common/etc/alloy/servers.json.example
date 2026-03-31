@@ -1,0 +1,5 @@
+{
+  "loki_address": "http://[IP_ADDRESS]/loki/api/v1/push",
+  "prometheus_address": "http://[IP_ADDRESS]/api/v1/write",
+  "environment": "homelab-alpha"
+}
