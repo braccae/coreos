@@ -11,8 +11,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: fedora
-  TAG: dockerhost
+  IMAGE_NAME: alma
+  TAG: k3s
 
 jobs:
   build-qcow2:
