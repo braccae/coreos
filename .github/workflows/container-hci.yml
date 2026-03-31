@@ -1,18 +1,18 @@
 name: HCI Container
 
 on:
-  workflow_run:
-    workflows: ["Alma Container"]
-    types:
-      - completed
-    branches:
-      - main
-  push:
-    branches: ["main"]
-    paths:
-      - "hci.Containerfile"
-      - "rootfs/hci/**"
-      - ".github/workflows/container-hci.yml"
+  # workflow_run:
+  #   workflows: ["Alma Container"]
+  #   types:
+  #     - completed
+  #   branches:
+  #     - main
+  # push:
+  #   branches: ["main"]
+  #   paths:
+  #     - "hci.Containerfile"
+  #     - "rootfs/hci/**"
+  #     - ".github/workflows/container-hci.yml"
   workflow_dispatch:
 
 env:

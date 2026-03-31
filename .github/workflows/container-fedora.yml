@@ -1,16 +1,16 @@
 name: fedora Container
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "fedora.Containerfile"
-      - "rootfs/common/**"
-      - "build/scripts/**"
-      - ".github/workflows/container-fedora.yml"
+  # push:
+  #   branches: ["main"]
+  #   paths:
+  #     - "fedora.Containerfile"
+  #     - "rootfs/common/**"
+  #     - "build/scripts/**"
+  #     - ".github/workflows/container-fedora.yml"
   workflow_dispatch:
-  schedule:
-    - cron: "0 5 1/2 * *"
+  # schedule:
+  #   - cron: "0 5 1/2 * *"
 
 env:
   REGISTRY: ghcr.io
