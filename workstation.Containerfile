@@ -6,7 +6,7 @@ COPY build/justfile /tmp/
 
 FROM base AS zfs-builder
 
-ARG ZFS_VERSION=zfs-2.4.0
+ARG ZFS_VERSION=zfs-2.4.1
 
 # Copy persistent MOK public key for secure boot
 COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
