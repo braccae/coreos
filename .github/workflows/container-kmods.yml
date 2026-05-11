@@ -69,6 +69,7 @@ jobs:
   bundle:
     runs-on: ubuntu-24.04
     needs: build
+    if: always() && !cancelled()
     permissions:
       contents: read
       packages: write
@@ -77,18 +78,21 @@ jobs:
         uses: actions/checkout@v6.0.2
 
       - name: Download Fedora RPMs
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: zfs-rpms-fedora
           path: zfs/fedora/
 
       - name: Download Alma RPMs
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: zfs-rpms-alma
           path: zfs/alma/
 
       - name: Download Bazzite RPMs
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: zfs-rpms-bazzite
