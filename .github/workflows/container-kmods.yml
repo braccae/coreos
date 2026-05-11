@@ -2,7 +2,7 @@ name: Kmods Container
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "feat/kmods-kernel-check"]
     paths:
       - "kmods.Containerfile"
       - "build/scripts/build-zfs.sh"
