@@ -57,5 +57,6 @@ jobs:
         uses: redhat-actions/push-to-registry@v2
         id: push
         with:
+          registry: ${{ env.REGISTRY }}
           image: ${{ steps.build.outputs.image }}
           tags: ${{ steps.build.outputs.tags }}
