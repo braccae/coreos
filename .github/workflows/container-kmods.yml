@@ -48,10 +48,12 @@ jobs:
 
       - name: Extract RPMs from built image
         run: |
-          CONTAINER=$(podman create kmods-${{ matrix.variant }}:build)
+          CONTAINER=$(buildah from kmods-${{ matrix.variant }}:build)
+          MOUNT=$(buildah mount "$CONTAINER")
           mkdir -p rpms
-          podman cp "$CONTAINER:/zfs/." rpms/
-          podman rm "$CONTAINER"
+          cp -r "$MOUNT/zfs/"* rpms/
+          buildah umount "$CONTAINER"
+          buildah rm "$CONTAINER"
           echo "Extracted RPMs for ${{ matrix.variant }}:"
           ls -la rpms/
 
