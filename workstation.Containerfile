@@ -55,7 +55,7 @@ RUN dnf install -y \
 COPY build/scripts /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh
 
-COPY --from=kmods /zfs/ /tmp/rpms/
+COPY --from=kmods /zfs/bazzite/ /tmp/rpms/
 RUN KMOD_KERNEL=$(cat /tmp/rpms/kernel-version.txt) && \
     echo "kmods built for kernel: ${KMOD_KERNEL}" && \
     CURRENT_KERNEL=$(just -f /tmp/justfile get-active-kernel) && \

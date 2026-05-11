@@ -11,6 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME: kmods
 
 jobs:
   build:
@@ -18,16 +19,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variant: fedora
-            base_image: quay.io/fedora/fedora-bootc:43
-          - variant: alma
-            base_image: quay.io/almalinuxorg/almalinux-bootc:10
-          - variant: workstation
-            base_image: ghcr.io/ublue-os/bazzite:stable-43
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -46,11 +37,10 @@ jobs:
         with:
           context: .
           containerfiles: ./kmods.Containerfile
-          image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/kmods-${{ matrix.variant }}
+          image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: latest
           extra-args: |
             --secret id=LOCALMOK,env=LOCALMOK
-            --build-arg BASE_IMAGE=${{ matrix.base_image }}
 
       - name: Push To Registry
         if: github.event_name != 'pull_request'
