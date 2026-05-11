@@ -5,6 +5,7 @@ on:
     branches: ["main", "feat/kmods-kernel-check"]
     paths:
       - "kmods.Containerfile"
+      - "kmods-bundle.Containerfile"
       - "build/scripts/build-zfs.sh"
       - ".github/workflows/container-kmods.yml"
   workflow_dispatch:
@@ -19,9 +20,85 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: fedora
+            base_image: quay.io/fedora/fedora-bootc:43
+          - variant: alma
+            base_image: quay.io/almalinuxorg/almalinux-bootc:10
+          - variant: bazzite
+            base_image: ghcr.io/ublue-os/bazzite:stable-43
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
+
+      - name: Build Kmods
+        uses: redhat-actions/buildah-build@v2
+        id: build
+        with:
+          context: .
+          containerfiles: ./kmods.Containerfile
+          image: kmods-${{ matrix.variant }}
+          tags: build
+          extra-args: |
+            --secret id=LOCALMOK,env=LOCALMOK
+            --build-arg BASE_IMAGE=${{ matrix.base_image }}
+
+      - name: Extract RPMs from built image
+        run: |
+          CONTAINER=$(podman create kmods-${{ matrix.variant }}:build)
+          mkdir -p rpms
+          podman cp "$CONTAINER:/zfs/." rpms/
+          podman rm "$CONTAINER"
+          echo "Extracted RPMs for ${{ matrix.variant }}:"
+          ls -la rpms/
+
+      - name: Upload RPMs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zfs-rpms-${{ matrix.variant }}
+          path: rpms/
+          retention-days: 1
+
+  bundle:
+    runs-on: ubuntu-24.04
+    needs: build
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Download Fedora RPMs
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-fedora
+          path: zfs/fedora/
+
+      - name: Download Alma RPMs
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-alma
+          path: zfs/alma/
+
+      - name: Download Bazzite RPMs
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-bazzite
+          path: zfs/bazzite/
+
+      - name: Verify bundle contents
+        run: |
+          echo "=== Bundle contents ==="
+          find zfs/ -type f | sort
+          echo ""
+          echo "=== Kernel versions ==="
+          for variant in fedora alma bazzite; do
+            echo "$variant: $(cat zfs/$variant/kernel-version.txt)"
+          done
 
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -31,16 +108,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Image
+      - name: Build Bundle Image
         uses: redhat-actions/buildah-build@v2
-        id: build
+        id: build-bundle
         with:
           context: .
-          containerfiles: ./kmods.Containerfile
+          containerfiles: ./kmods-bundle.Containerfile
           image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: latest
-          extra-args: |
-            --secret id=LOCALMOK,env=LOCALMOK
 
       - name: Push To Registry
         if: github.event_name != 'pull_request'
@@ -48,5 +123,5 @@ jobs:
         id: push
         with:
           registry: ${{ env.REGISTRY }}
-          image: ${{ steps.build.outputs.image }}
-          tags: ${{ steps.build.outputs.tags }}
+          image: ${{ steps.build-bundle.outputs.image }}
+          tags: ${{ steps.build-bundle.outputs.tags }}
