@@ -4,18 +4,8 @@ FROM ghcr.io/ublue-os/bazzite:stable-43 as base
 COPY repos/ /etc/yum.repos.d/
 COPY build/justfile /tmp/
 
-FROM base AS zfs-builder
-
-ARG ZFS_VERSION=zfs-2.4.1
-
-# Copy persistent MOK public key for secure boot
-COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
-
-# COPY --from=ghcr.io/ublue-os/akmods:coreos-stable-43 / /tmp/ublue/akmods
-
-COPY build/scripts/build-zfs.sh /tmp/build_scripts/zfs.sh
-RUN --mount=type=secret,mode=0600,id=LOCALMOK \
-    bash /tmp/build_scripts/zfs.sh
+ARG KMODS_IMAGE=localhost/kmods:latest
+FROM ${KMODS_IMAGE} AS kmods
 
 FROM base AS final
 LABEL containers.bootc 1
@@ -65,17 +55,23 @@ RUN dnf install -y \
 COPY build/scripts /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh
 
-COPY --from=zfs-builder /tmp/zfs-rpms/ /tmp/rpms/
-RUN dnf5 remove -y zfs-fuse && \
+COPY --from=kmods /zfs/ /tmp/rpms/
+RUN KMOD_KERNEL=$(cat /tmp/rpms/kernel-version.txt) && \
+    echo "kmods built for kernel: ${KMOD_KERNEL}" && \
+    CURRENT_KERNEL=$(just -f /tmp/justfile get-active-kernel) && \
+    echo "Current base kernel: ${CURRENT_KERNEL}" && \
+    if [ "$CURRENT_KERNEL" != "$KMOD_KERNEL" ]; then \
+        echo "ERROR: Kernel version mismatch!" >&2; \
+        exit 1; \
+    fi && \
+    dnf5 remove -y zfs-fuse && \
     ls /tmp/rpms/ && \
     dnf5 install -y /tmp/rpms/*.rpm && \
     echo "Correcting ZFS kernel module dependencies..." && \
-    KERNEL_VERSION=$(just -f /tmp/justfile get-active-kernel) && \
-    echo "Found kernel version: ${KERNEL_VERSION}" && \
     depmod -a \
-    --filesyms /usr/lib/modules/${KERNEL_VERSION}/System.map \
-    ${KERNEL_VERSION} && \
-    echo "✓ depmod completed successfully for kernel ${KERNEL_VERSION}" && \
+    --filesyms /usr/lib/modules/${CURRENT_KERNEL}/System.map \
+    ${CURRENT_KERNEL} && \
+    echo "✓ depmod completed successfully for kernel ${CURRENT_KERNEL}" && \
     \
     dnf clean all
 

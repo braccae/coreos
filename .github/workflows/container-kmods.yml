@@ -1,0 +1,61 @@
+name: Kmods Container
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "kmods.Containerfile"
+      - "build/scripts/build-zfs.sh"
+      - ".github/workflows/container-kmods.yml"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: fedora
+            base_image: quay.io/fedora/fedora-bootc:43
+          - variant: alma
+            base_image: quay.io/almalinuxorg/almalinux-bootc:10
+          - variant: workstation
+            base_image: ghcr.io/ublue-os/bazzite:stable-43
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Image
+        uses: redhat-actions/buildah-build@v2
+        id: build
+        with:
+          context: .
+          containerfiles: ./kmods.Containerfile
+          image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/kmods-${{ matrix.variant }}
+          tags: latest
+          extra-args: |
+            --secret id=LOCALMOK,env=LOCALMOK
+            --build-arg BASE_IMAGE=${{ matrix.base_image }}
+
+      - name: Push To Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/push-to-registry@v2
+        id: push
+        with:
+          image: ${{ steps.build.outputs.image }}
+          tags: ${{ steps.build.outputs.tags }}
