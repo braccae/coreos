@@ -22,8 +22,43 @@ env:
   ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/23002397?v=4&size=64"
 
 jobs:
+  kernel-check:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    outputs:
+      mismatch: ${{ steps.check.outputs.mismatch }}
+    steps:
+      - name: Check Kernel Mismatch
+        id: check
+        run: |
+          # Pull base image and extract kernel version
+          podman pull quay.io/almalinuxorg/almalinux-bootc:10
+          BASE_KERNEL=$(podman run --rm quay.io/almalinuxorg/almalinux-bootc:10 sh -c 'basename /lib/modules/* | head -1')
+          echo "Base image kernel: $BASE_KERNEL"
+          
+          # Pull kmods image and extract Alma amd64 kernel version
+          KMODS_IMAGE="ghcr.io/${{ github.repository_owner }}/kmods:latest"
+          podman pull $KMODS_IMAGE || true
+          KMOD_KERNEL=$(podman run --rm $KMODS_IMAGE cat /zfs/alma/amd64/kernel-version.txt 2>/dev/null || echo "none")
+          echo "Kmods image kernel: $KMOD_KERNEL"
+          
+          if [ "$BASE_KERNEL" != "$KMOD_KERNEL" ]; then
+            echo "mismatch=true" >> $GITHUB_OUTPUT
+            echo "::warning ::Kernel mismatch detected (Base: $BASE_KERNEL, Kmods: $KMOD_KERNEL). Triggering kmods build..."
+            gh workflow run container-kmods.yml --ref ${{ github.ref_name }}
+          else
+            echo "mismatch=false" >> $GITHUB_OUTPUT
+            echo "Kernel versions match ($BASE_KERNEL)."
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-metadata:
     runs-on: ubuntu-latest
+    needs: kernel-check
+    if: always() && needs.kernel-check.result == 'success'
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
