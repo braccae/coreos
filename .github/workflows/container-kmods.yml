@@ -16,7 +16,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
@@ -25,11 +25,25 @@ jobs:
       matrix:
         include:
           - variant: fedora
+            arch: amd64
             base_image: quay.io/fedora/fedora-bootc:43
+            runner: ubuntu-24.04
+          - variant: fedora
+            arch: arm64
+            base_image: quay.io/fedora/fedora-bootc:43
+            runner: ubuntu-24.04-arm
           - variant: alma
+            arch: amd64
             base_image: quay.io/almalinuxorg/almalinux-bootc:10
+            runner: ubuntu-24.04
+          - variant: alma
+            arch: arm64
+            base_image: quay.io/almalinuxorg/almalinux-bootc:10
+            runner: ubuntu-24.04-arm
           - variant: bazzite
+            arch: amd64
             base_image: ghcr.io/ublue-os/bazzite:stable-43
+            runner: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -40,7 +54,7 @@ jobs:
         with:
           context: .
           containerfiles: ./kmods.Containerfile
-          image: kmods-${{ matrix.variant }}
+          image: kmods-${{ matrix.variant }}-${{ matrix.arch }}
           tags: build
           extra-args: |
             --secret id=LOCALMOK,env=LOCALMOK
@@ -50,19 +64,19 @@ jobs:
         run: |
           mkdir -p rpms
           buildah unshare sh -c '
-            CONTAINER=$(buildah from kmods-${{ matrix.variant }}:build)
+            CONTAINER=$(buildah from kmods-${{ matrix.variant }}-${{ matrix.arch }}:build)
             MOUNT=$(buildah mount "$CONTAINER")
             cp -r "$MOUNT/zfs/"* rpms/
             buildah umount "$CONTAINER"
             buildah rm "$CONTAINER"
           '
-          echo "Extracted RPMs for ${{ matrix.variant }}:"
+          echo "Extracted RPMs for ${{ matrix.variant }} (${{ matrix.arch }}):"
           ls -la rpms/
 
       - name: Upload RPMs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: zfs-rpms-${{ matrix.variant }}
+          name: zfs-rpms-${{ matrix.variant }}-${{ matrix.arch }}
           path: rpms/
           retention-days: 1
 
@@ -77,26 +91,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
 
-      - name: Download Fedora RPMs
+      - name: Download Fedora RPMs (amd64)
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: zfs-rpms-fedora
-          path: zfs/fedora/
+          name: zfs-rpms-fedora-amd64
+          path: zfs/fedora/amd64/
 
-      - name: Download Alma RPMs
+      - name: Download Fedora RPMs (arm64)
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: zfs-rpms-alma
-          path: zfs/alma/
+          name: zfs-rpms-fedora-arm64
+          path: zfs/fedora/arm64/
 
-      - name: Download Bazzite RPMs
+      - name: Download Alma RPMs (amd64)
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: zfs-rpms-bazzite
-          path: zfs/bazzite/
+          name: zfs-rpms-alma-amd64
+          path: zfs/alma/amd64/
+
+      - name: Download Alma RPMs (arm64)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-alma-arm64
+          path: zfs/alma/arm64/
+
+      - name: Download Bazzite RPMs (amd64)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-bazzite-amd64
+          path: zfs/bazzite/amd64/
 
       - name: Verify bundle contents
         run: |
@@ -104,9 +132,7 @@ jobs:
           find zfs/ -type f | sort
           echo ""
           echo "=== Kernel versions ==="
-          for variant in fedora alma bazzite; do
-            echo "$variant: $(cat zfs/$variant/kernel-version.txt)"
-          done
+          find zfs/ -name "kernel-version.txt" -exec sh -c 'echo "{}: $(cat {})"' \;
 
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'

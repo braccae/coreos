@@ -113,7 +113,8 @@ FROM ${KMODS_IMAGE} AS kmods
 
 FROM final
 
-COPY --from=kmods /zfs/alma/ /tmp/rpms/
+ARG TARGETARCH
+COPY --from=kmods /zfs/alma/${TARGETARCH}/ /tmp/rpms/
 RUN KMOD_KERNEL=$(cat /tmp/rpms/kernel-version.txt) && \
     echo "kmods built for kernel: ${KMOD_KERNEL}" && \
     CURRENT_KERNEL=$(basename /lib/modules/*) && \
