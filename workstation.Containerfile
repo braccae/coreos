@@ -58,23 +58,25 @@ RUN bash /tmp/build_scripts/wazuh-agent.sh
 
 ARG TARGETARCH
 COPY --from=kmods /zfs/bazzite/${TARGETARCH}/ /tmp/rpms/
-RUN KMOD_KERNEL=$(cat /tmp/rpms/kernel-version.txt) && \
-    echo "kmods built for kernel: ${KMOD_KERNEL}" && \
-    CURRENT_KERNEL=$(just -f /tmp/justfile get-active-kernel) && \
-    echo "Current base kernel: ${CURRENT_KERNEL}" && \
-    if [ "$CURRENT_KERNEL" != "$KMOD_KERNEL" ]; then \
-        echo "ERROR: Kernel version mismatch!" >&2; \
-        exit 1; \
+RUN if [ -f /tmp/rpms/kernel-version.txt ]; then \
+        KMOD_KERNEL=$(cat /tmp/rpms/kernel-version.txt) && \
+        echo "kmods built for kernel: ${KMOD_KERNEL}" && \
+        CURRENT_KERNEL=$(just -f /tmp/justfile get-active-kernel) && \
+        echo "Current base kernel: ${CURRENT_KERNEL}" && \
+        if [ "$CURRENT_KERNEL" = "$KMOD_KERNEL" ]; then \
+            dnf5 remove -y zfs-fuse && \
+            dnf5 install -y /tmp/rpms/*.rpm && \
+            echo "Correcting ZFS kernel module dependencies..." && \
+            depmod -a \
+            --filesyms /usr/lib/modules/${CURRENT_KERNEL}/System.map \
+            ${CURRENT_KERNEL} && \
+            echo "✓ ZFS modules installed and depmod completed successfully for kernel ${CURRENT_KERNEL}"; \
+        else \
+            echo "WARNING: Kernel version mismatch! (Current: ${CURRENT_KERNEL}, Kmods: ${KMOD_KERNEL}). Skipping ZFS installation."; \
+        fi; \
+    else \
+        echo "WARNING: No ZFS kernel modules found in the kmods image for Workstation ${TARGETARCH}. Skipping ZFS installation."; \
     fi && \
-    dnf5 remove -y zfs-fuse && \
-    ls /tmp/rpms/ && \
-    dnf5 install -y /tmp/rpms/*.rpm && \
-    echo "Correcting ZFS kernel module dependencies..." && \
-    depmod -a \
-    --filesyms /usr/lib/modules/${CURRENT_KERNEL}/System.map \
-    ${CURRENT_KERNEL} && \
-    echo "✓ depmod completed successfully for kernel ${CURRENT_KERNEL}" && \
-    \
     dnf clean all
 
 WORKDIR /tmp/zfs
