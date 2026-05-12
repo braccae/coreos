@@ -128,6 +128,9 @@ jobs:
 
       - name: Verify bundle contents
         run: |
+          mkdir -p zfs/fedora/amd64 zfs/fedora/arm64
+          mkdir -p zfs/alma/amd64 zfs/alma/arm64
+          mkdir -p zfs/bazzite/amd64
           echo "=== Bundle contents ==="
           find zfs/ -type f | sort
           echo ""
