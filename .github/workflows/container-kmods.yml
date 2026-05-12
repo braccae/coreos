@@ -1,0 +1,174 @@
+name: Kmods Container
+
+on:
+  push:
+    branches: ["main", "feat/kmods-kernel-check"]
+    paths:
+      - "kmods.Containerfile"
+      - "kmods-bundle.Containerfile"
+      - "build/scripts/build-zfs.sh"
+      - ".github/workflows/container-kmods.yml"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: kmods
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: fedora
+            arch: amd64
+            base_image: quay.io/fedora/fedora-bootc:43
+            runner: ubuntu-24.04
+          - variant: fedora
+            arch: arm64
+            base_image: quay.io/fedora/fedora-bootc:43
+            runner: ubuntu-24.04-arm
+          - variant: alma
+            arch: amd64
+            base_image: quay.io/almalinuxorg/almalinux-bootc:10
+            runner: ubuntu-24.04
+          - variant: alma
+            arch: arm64
+            base_image: quay.io/almalinuxorg/almalinux-bootc:10
+            runner: ubuntu-24.04-arm
+          - variant: bazzite
+            arch: amd64
+            base_image: ghcr.io/ublue-os/bazzite:stable-43
+            runner: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Build Kmods
+        uses: redhat-actions/buildah-build@v2
+        id: build
+        with:
+          context: .
+          containerfiles: ./kmods.Containerfile
+          image: kmods-${{ matrix.variant }}-${{ matrix.arch }}
+          tags: build
+          extra-args: |
+            --secret id=LOCALMOK,env=LOCALMOK
+            --build-arg BASE_IMAGE=${{ matrix.base_image }}
+
+      - name: Extract RPMs from built image
+        run: |
+          mkdir -p rpms
+          buildah unshare sh -c '
+            CONTAINER=$(buildah from kmods-${{ matrix.variant }}-${{ matrix.arch }}:build)
+            MOUNT=$(buildah mount "$CONTAINER")
+            cp -r "$MOUNT/zfs/"* rpms/
+            buildah umount "$CONTAINER"
+            buildah rm "$CONTAINER"
+          '
+          echo "Extracted RPMs for ${{ matrix.variant }} (${{ matrix.arch }}):"
+          ls -la rpms/
+
+      - name: Upload RPMs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zfs-rpms-${{ matrix.variant }}-${{ matrix.arch }}
+          path: rpms/
+          retention-days: 1
+
+  bundle:
+    runs-on: ubuntu-24.04
+    needs: build
+    if: always() && !cancelled()
+    permissions:
+      contents: read
+      packages: write
+      actions: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Download Fedora RPMs (amd64)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-fedora-amd64
+          path: zfs/fedora/amd64/
+
+      - name: Download Fedora RPMs (arm64)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-fedora-arm64
+          path: zfs/fedora/arm64/
+
+      - name: Download Alma RPMs (amd64)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-alma-amd64
+          path: zfs/alma/amd64/
+
+      - name: Download Alma RPMs (arm64)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-alma-arm64
+          path: zfs/alma/arm64/
+
+      - name: Download Bazzite RPMs (amd64)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: zfs-rpms-bazzite-amd64
+          path: zfs/bazzite/amd64/
+
+      - name: Verify bundle contents
+        run: |
+          mkdir -p zfs/fedora/amd64 zfs/fedora/arm64
+          mkdir -p zfs/alma/amd64 zfs/alma/arm64
+          mkdir -p zfs/bazzite/amd64
+          echo "=== Bundle contents ==="
+          find zfs/ -type f | sort
+          echo ""
+          echo "=== Kernel versions ==="
+          find zfs/ -name "kernel-version.txt" -exec sh -c 'echo "{}: $(cat {})"' \;
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Bundle Image
+        uses: redhat-actions/buildah-build@v2
+        id: build-bundle
+        with:
+          context: .
+          containerfiles: ./kmods-bundle.Containerfile
+          image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: latest
+
+      - name: Push To Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/push-to-registry@v2
+        id: push
+        with:
+          registry: ${{ env.REGISTRY }}
+          image: ${{ steps.build-bundle.outputs.image }}
+          tags: ${{ steps.build-bundle.outputs.tags }}
+
+      - name: Trigger downstream builds
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "Triggering Alma and Workstation builds..."
+          gh workflow run container.yml --ref ${{ github.ref_name }}
+          gh workflow run container-workstation.yml --ref ${{ github.ref_name }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

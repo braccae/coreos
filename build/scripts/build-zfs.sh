@@ -98,15 +98,17 @@ dnf install -y \
     libaio-devel \
     libattr-devel \
     libffi-devel \
-    libunwind-devel \
     python3 \
     python3-devel \
     python3-cffi \
     python3-setuptools \
     openssl \
-    ncompress \
     tree \
     $([ "$KERNEL_DEVEL_INSTALLED" -eq 0 ] && echo "kernel-devel" || true)
+
+# Install optional packages that may not be available on all distros (e.g. AlmaLinux)
+dnf install -y libunwind-devel ncompress 2>/dev/null || \
+    log "⚠ Some optional packages (libunwind-devel, ncompress) not available — skipping"
 
 log "✓ Build dependencies installed successfully"
 

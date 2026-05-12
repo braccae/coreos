@@ -138,6 +138,7 @@ jobs:
           labels: ${{ needs.build-metadata.outputs.labels }}
           extra-args: |
             --secret id=LOCALMOK,env=LOCALMOK
+            --build-arg KMODS_IMAGE=${{ env.REGISTRY }}/${{ github.repository_owner }}/kmods:latest
 
       - name: Push To Registry
         if: github.event_name != 'pull_request'
