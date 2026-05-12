@@ -43,7 +43,7 @@ jobs:
           podman pull $KMODS_IMAGE || true
           
           # Use podman create/cp since it is a scratch image
-          CONTAINER_ID=$(podman create $KMODS_IMAGE)
+          CONTAINER_ID=$(podman create $KMODS_IMAGE true)
           if [ -n "$CONTAINER_ID" ]; then
             podman cp "$CONTAINER_ID:/zfs/alma/amd64/kernel-version.txt" ./kmod-version.txt 2>/dev/null || echo "none" > ./kmod-version.txt
             KMOD_KERNEL=$(cat ./kmod-version.txt)
