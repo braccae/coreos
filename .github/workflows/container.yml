@@ -41,7 +41,16 @@ jobs:
           # Pull kmods image and extract Alma amd64 kernel version
           KMODS_IMAGE="ghcr.io/${{ github.repository_owner }}/kmods:latest"
           podman pull $KMODS_IMAGE || true
-          KMOD_KERNEL=$(podman run --rm $KMODS_IMAGE cat /zfs/alma/amd64/kernel-version.txt 2>/dev/null || echo "none")
+          
+          # Use podman create/cp since it is a scratch image
+          CONTAINER_ID=$(podman create $KMODS_IMAGE)
+          if [ -n "$CONTAINER_ID" ]; then
+            podman cp "$CONTAINER_ID:/zfs/alma/amd64/kernel-version.txt" ./kmod-version.txt 2>/dev/null || echo "none" > ./kmod-version.txt
+            KMOD_KERNEL=$(cat ./kmod-version.txt)
+            podman rm "$CONTAINER_ID"
+          else
+            KMOD_KERNEL="none"
+          fi
           echo "Kmods image kernel: $KMOD_KERNEL"
           
           if [ "$BASE_KERNEL" != "$KMOD_KERNEL" ]; then
