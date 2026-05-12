@@ -1,3 +1,4 @@
+ARG KMODS_IMAGE=localhost/kmods:latest
 FROM quay.io/almalinuxorg/almalinux-bootc:10 AS base
 
 
@@ -108,7 +109,6 @@ RUN bash /tmp/build_scripts/wazuh-agent.sh && \
         crowdsec-firewall-bouncer-nftables\
     && dnf clean all
 
-ARG KMODS_IMAGE=localhost/kmods:latest
 FROM ${KMODS_IMAGE} AS kmods
 
 FROM final

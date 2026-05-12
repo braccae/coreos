@@ -1,3 +1,4 @@
+ARG KMODS_IMAGE=localhost/kmods:latest
 FROM quay.io/fedora/fedora-bootc:43 AS base
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
@@ -70,7 +71,6 @@ RUN dnf install -y \
 COPY build/scripts /tmp/build_scripts
 RUN bash /tmp/build_scripts/wazuh-agent.sh
 
-ARG KMODS_IMAGE=localhost/kmods:latest
 FROM ${KMODS_IMAGE} AS kmods
 
 FROM final
