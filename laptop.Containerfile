@@ -10,7 +10,8 @@ RUN mkdir -p /var/lib/alternatives && \
 
 RUN just install-ansible && \
     just install-java && \
-    just install-misc-tools
+    just install-misc-tools && \
+    just install-dev-mode
 
 RUN ostree container commit
 ENTRYPOINT [ "/sbin/init" ]
