@@ -1,5 +1,6 @@
 FROM ghcr.io/ublue-os/bazzite-dx-gnome
 
+COPY repos/ /etc/yum.repos.d/
 COPY rootfs/workstation/ /
 COPY build/justfile /tmp/
 
