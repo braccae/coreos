@@ -30,6 +30,13 @@ jobs:
     outputs:
       mismatch: ${{ steps.check.outputs.mismatch }}
     steps:
+      - name: Login to GitHub Container Registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Check Kernel Mismatch
         id: check
         run: |
@@ -56,7 +63,7 @@ jobs:
           if [ "$BASE_KERNEL" != "$KMOD_KERNEL" ]; then
             echo "mismatch=true" >> $GITHUB_OUTPUT
             echo "::warning ::Kernel mismatch detected (Base: $BASE_KERNEL, Kmods: $KMOD_KERNEL). Triggering kmods build..."
-            gh workflow run container-kmods.yml --ref ${{ github.ref_name }}
+            gh workflow run container-kmods.yml -R ${{ github.repository }} --ref ${{ github.ref_name }}
           else
             echo "mismatch=false" >> $GITHUB_OUTPUT
             echo "Kernel versions match ($BASE_KERNEL)."
@@ -67,7 +74,7 @@ jobs:
   build-metadata:
     runs-on: ubuntu-latest
     needs: kernel-check
-    if: always() && needs.kernel-check.result == 'success'
+    if: always() && needs.kernel-check.result == 'success' && needs.kernel-check.outputs.mismatch == 'false'
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}

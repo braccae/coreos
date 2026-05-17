@@ -167,8 +167,9 @@ jobs:
       - name: Trigger downstream builds
         if: github.event_name != 'pull_request'
         run: |
-          echo "Triggering Alma and Workstation builds..."
-          gh workflow run container.yml --ref ${{ github.ref_name }}
-          gh workflow run container-workstation.yml --ref ${{ github.ref_name }}
+          echo "Triggering downstream container builds..."
+          gh workflow run container.yml -R ${{ github.repository }} --ref ${{ github.ref_name }}
+          gh workflow run container-fedora.yml -R ${{ github.repository }} --ref ${{ github.ref_name }}
+          gh workflow run container-workstation.yml -R ${{ github.repository }} --ref ${{ github.ref_name }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
