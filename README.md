@@ -36,6 +36,9 @@ This project builds upon bootc-compatible base images to create customized, immu
   - Fully supports running in completely **unprivileged (non-privileged) mode** by stripping capabilities to bypass the kernel's `no_new_privs` restriction
   - Out-of-the-box support for AMD/Intel GPU hardware acceleration passthrough
 
+> [!WARNING]
+> **EXPERIMENTAL**: The Webtop container is highly experimental. Many full desktop systems and applications do not currently function as expected. Specifically, launching **Steam**, deep desktop-container **networking**, and the **Software Center / Bazaar (Discover/flatpaks)** are currently unsupported and do not work.
+
 ## Project Structure
 
 ```
