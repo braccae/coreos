@@ -1,0 +1,16 @@
+[Unit]
+Description=Fedora KDE Webtop Container with Selkies (Pixelflux Wayland)
+After=network-online.target
+
+[Container]
+Image=grcr.io/braccae/webtop:latest
+PublishPort=3000:3000
+AddDevice=/dev/dri
+Systemd=always
+Volume=webtop-home:/home/webtop
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target default.target

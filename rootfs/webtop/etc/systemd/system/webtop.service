@@ -1,0 +1,11 @@
+[Unit]
+Description=Webtop Service (Selkies)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/start-webtop.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

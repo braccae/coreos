@@ -29,9 +29,12 @@ This project builds upon bootc-compatible base images to create customized, immu
 
 
 ### 5. Webtop (`webtop.Containerfile`)
-- **Purpose**: Desktop environment in container
-#### Currently on hold due to upstream fedora removing x11
-(EXPERIMENTAL: Linuxserverio style webtop with kasmVNC using systemd and podman instead of s6)
+- **Purpose**: Fully-featured Fedora KDE desktop environment inside a systemd-managed container
+- **Key Features**:
+  - **Selkies (Pixelflux Wayland)** for high-performance WebRTC streaming on port 3000
+  - Runs **systemd** inside the container as PID 1 to orchestrate desktop and portal services cleanly
+  - Fully supports running in completely **unprivileged (non-privileged) mode** by stripping capabilities to bypass the kernel's `no_new_privs` restriction
+  - Out-of-the-box support for AMD/Intel GPU hardware acceleration passthrough
 
 ## Project Structure
 
@@ -95,6 +98,46 @@ podman build -f Containerfile -t my-alma:latest .
 
 # Build HCI image
 podman build -f hci.Containerfile -t my-hci:latest .
+
+# Build Webtop image
+podman build -f webtop.Containerfile -t fedora-webtop:latest .
+```
+
+### Running the Webtop Container
+
+#### 1. Direct Podman CLI (Unprivileged & Secure)
+You can run the container securely without the `--privileged` flag by passing `--systemd=always` and mapping the GPU device:
+
+```bash
+podman run -d \
+  --name webtop-run \
+  --systemd=always \
+  --device /dev/dri \
+  --volume webtop-home:/home/webtop \
+  -p 3000:3000 \
+  localhost/fedora-webtop:latest
+```
+
+After starting, navigate to `http://localhost:3000` in your web browser to access the interactive Fedora KDE desktop! All your custom desktop preferences, configurations, and files inside `/home/webtop` will be persisted!
+
+#### 2. Running as a Systemd Service via Quadlet
+To manage the Webtop container automatically via systemd, copy the provided [webtop.container](file:///home/pants/Projects/container_projects/coreos/webtop.container) file to your systemd Quadlet directory:
+
+* **System-wide**: `/etc/containers/systemd/`
+* **Rootless/User**: `~/.config/containers/systemd/`
+
+Once copied, reload the systemd daemon to automatically generate the transient service and start it:
+
+```bash
+# For system-wide services:
+sudo systemctl daemon-reload
+sudo systemctl start webtop.service
+sudo systemctl enable webtop.service
+
+# For rootless/user-level services:
+systemctl --user daemon-reload
+systemctl --user start webtop.service
+systemctl --user enable webtop.service
 ```
 
 ### Deployment
