@@ -1,15 +1,15 @@
 # CoreOS Custom Images Project
 
-These are my custom Fedora CoreOS and bootc-based container images tailored for different infrastructure use cases, including hyperconverged infrastructure (HCI), development environments, and specialized workloads.
+These are my custom bootc-based container images tailored for different infrastructure use cases, including hyperconverged infrastructure (HCI), workstations, development environments, and specialized workloads.
 
 ## Overview
 
-This project builds upon Fedora bootc and uCore to create customized, immutable operating system images with pre-configured software stacks. The images are designed for modern container-native infrastructure with automatic updates and declarative configuration.
+This project builds upon bootc-compatible base images to create customized, immutable operating system images with pre-configured software stacks. The images are designed for modern container-native infrastructure with automatic updates and declarative configuration.
 
 ## Available Images
 
-### 1. Base Fedora bootc (`Containerfile`)
-- **Base**: Fedora bootc 42
+### 1. Base AlmaLinux bootc (`Containerfile`)
+- **Base**: AlmaLinux bootc 10
 - **Purpose**: General-purpose server image
 - **Key Features**:
   - Tailscale VPN integration
@@ -26,17 +26,7 @@ This project builds upon Fedora bootc and uCore to create customized, immutable 
   - File sharing capabilities
   - Comprehensive virtualization device support
 
-### 3. HCI uCore (`hci-ucore.Containerfile`)
-- **Base**: uCore HCI stable-zfs
-- **Purpose**: Hyperconverged Infrastructure with ZFS support (x86_64 Only)
-- **Key Features**:
-  - ZFS filesystem support via Cockpit ZFS Manager
-(Once I figure out zfs support, this varient will be depreciated)
 
-### 4. CentOS-based (`centos.Containerfile`)
-- **Base**: CentOS Stream bootc
-- **Purpose**: Enterprise-focused deployment
-(EXPERIMENTAL: Currently does not boot as of 06/28/25)
 
 ### 5. Webtop (`webtop.Containerfile`)
 - **Purpose**: Desktop environment in container
@@ -46,19 +36,17 @@ This project builds upon Fedora bootc and uCore to create customized, immutable 
 ## Project Structure
 
 ```
-├── Containerfile              # Main Fedora bootc image
-├── hci-ucore.Containerfile   # HCI image with ZFS
-├── centos.Containerfile      # CentOS-based image
-├── hci.Containerfile         # Alternative HCI image
-├── webtop.Containerfile      # Desktop environment
-├── config.toml               # Image build configuration
-├── ucore-hci.bu             # Butane configuration for auto-rebase
-├── ucore-hci.ign            # Generated Ignition config
+├── Containerfile              # Main AlmaLinux bootc image
+├── hci.Containerfile         # HCI image (AlmaLinux-based)
+├── workstation.Containerfile # Workstation image (Bazzite-based)
+├── laptop.Containerfile      # Laptop image (Bazzite-based)
+├── dockerhost.Containerfile  # Docker Host image
+├── webtop.Containerfile      # Desktop environment in container
 ├── rootfs/                   # Filesystem overlays
 │   ├── btrfs_config/        # Btrfs-specific configurations
 │   ├── common/              # Shared configurations
 │   ├── hci/                 # HCI-specific files
-│   ├── centos/              # CentOS-specific files
+│   ├── workstation/         # Workstation-specific files
 │   └── webtop/              # Desktop environment files
 ├── build/                    # Build artifacts
 ├── scripts/                  # Build and deployment scripts
@@ -102,11 +90,11 @@ This project builds upon Fedora bootc and uCore to create customized, immutable 
 ### Building Images
 
 ```bash
-# Build base Fedora image
-podman build -f Containerfile -t my-coreos:latest .
+# Build base AlmaLinux image
+podman build -f Containerfile -t my-alma:latest .
 
-# Build HCI image with ZFS
-podman build -f hci-ucore.Containerfile -t my-coreos-hci:latest .
+# Build HCI image
+podman build -f hci.Containerfile -t my-hci:latest .
 ```
 
 ### Deployment

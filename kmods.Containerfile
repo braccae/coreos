@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=quay.io/fedora/fedora-bootc:43
+ARG BASE_IMAGE=quay.io/almalinuxorg/almalinux-bootc:10
 FROM ${BASE_IMAGE} AS zfs-builder
 
 ARG ZFS_VERSION="zfs-2.4.1"

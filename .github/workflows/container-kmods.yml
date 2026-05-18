@@ -24,14 +24,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - variant: fedora
-            arch: amd64
-            base_image: quay.io/fedora/fedora-bootc:43
-            runner: ubuntu-24.04
-          - variant: fedora
-            arch: arm64
-            base_image: quay.io/fedora/fedora-bootc:43
-            runner: ubuntu-24.04-arm
           - variant: alma
             arch: amd64
             base_image: quay.io/almalinuxorg/almalinux-bootc:10
@@ -92,19 +84,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
 
-      - name: Download Fedora RPMs (amd64)
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: zfs-rpms-fedora-amd64
-          path: zfs/fedora/amd64/
-
-      - name: Download Fedora RPMs (arm64)
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: zfs-rpms-fedora-arm64
-          path: zfs/fedora/arm64/
 
       - name: Download Alma RPMs (amd64)
         continue-on-error: true
@@ -129,7 +108,6 @@ jobs:
 
       - name: Verify bundle contents
         run: |
-          mkdir -p zfs/fedora/amd64 zfs/fedora/arm64
           mkdir -p zfs/alma/amd64 zfs/alma/arm64
           mkdir -p zfs/bazzite/amd64
           echo "=== Bundle contents ==="
@@ -169,7 +147,6 @@ jobs:
         run: |
           echo "Triggering downstream container builds..."
           gh workflow run container.yml -R ${{ github.repository }} --ref ${{ github.ref_name }}
-          gh workflow run container-fedora.yml -R ${{ github.repository }} --ref ${{ github.ref_name }}
           gh workflow run container-workstation.yml -R ${{ github.repository }} --ref ${{ github.ref_name }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
