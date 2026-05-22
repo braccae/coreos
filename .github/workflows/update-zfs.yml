@@ -1,0 +1,98 @@
+name: Update ZFS Version
+
+on:
+  schedule:
+    # Run daily at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-zfs:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Check and Update ZFS Version
+        id: check_version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Fetch latest release tag from openzfs/zfs
+          export LATEST_VERSION=$(gh api repos/openzfs/zfs/releases/latest --jq '.tag_name')
+          echo "Latest OpenZFS version from upstream: $LATEST_VERSION"
+          
+          if [ -z "$LATEST_VERSION" ]; then
+            echo "Error: Could not retrieve latest ZFS version from GitHub API."
+            exit 1
+          fi
+
+          python3 -c "
+          import re, os, sys
+
+          latest_version = os.environ.get('LATEST_VERSION')
+          if not latest_version:
+              print('Error: LATEST_VERSION env var not set.')
+              sys.exit(1)
+
+          # Read current version from kmods.Containerfile
+          with open('kmods.Containerfile', 'r') as f:
+              content = f.read()
+          match = re.search(r'ARG ZFS_VERSION=\"([^\"]+)\"', content)
+          if not match:
+              print('Error: Could not find ARG ZFS_VERSION in kmods.Containerfile')
+              sys.exit(1)
+          current_version = match.group(1)
+
+          print(f'Current version in repo: {current_version}')
+          print(f'Latest version available: {latest_version}')
+
+          if current_version == latest_version:
+              print('ZFS version is already up-to-date.')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('updated=false\n')
+              sys.exit(0)
+
+          # Update kmods.Containerfile
+          new_content = re.sub(r'ARG ZFS_VERSION=\"[^\"]+\"', f'ARG ZFS_VERSION=\"{latest_version}\"', content)
+          with open('kmods.Containerfile', 'w') as f:
+              f.write(new_content)
+
+          # Update build/scripts/build-zfs.sh
+          with open('build/scripts/build-zfs.sh', 'r') as f:
+              sh_content = f.read()
+          new_sh_content = re.sub(
+              r'ZFS_VERSION=\"\$\{ZFS_VERSION:-zfs-[^\"]+\}\"',
+              f'ZFS_VERSION=\"${{ZFS_VERSION:-{latest_version}}}\"',
+              sh_content
+          )
+          with open('build/scripts/build-zfs.sh', 'w') as f:
+              f.write(new_sh_content)
+
+          # Write outputs for subsequent steps
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('updated=true\n')
+              f.write(f'latest_version={latest_version}\n')
+              f.write(f'current_version={current_version}\n')
+          print('Successfully updated ZFS version in kmods.Containerfile and build-zfs.sh.')
+          "
+
+      - name: Create Pull Request
+        if: steps.check_version.outputs.updated == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(deps): update OpenZFS to ${{ steps.check_version.outputs.latest_version }}"
+          title: "chore(deps): update OpenZFS to ${{ steps.check_version.outputs.latest_version }}"
+          body: |
+            Automated update of OpenZFS version from `${{ steps.check_version.outputs.current_version }}` to `${{ steps.check_version.outputs.latest_version }}`.
+
+            Please review the changes and verify if downstream builds are triggered successfully.
+          branch: "update-zfs-version"
+          delete-branch: true
+          labels: |
+            dependencies
+            automated-pr
