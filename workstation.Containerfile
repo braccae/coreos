@@ -1,7 +1,7 @@
 # FROM quay.io/fedora-ostree-desktops/kinoite:43 as base
 ARG KMODS_IMAGE=localhost/kmods:latest
 
-FROM ghcr.io/ublue-os/bazzite:stable-43 as base
+FROM ghcr.io/ublue-os/bazzite:stable-44 as base
 
 COPY repos/ /etc/yum.repos.d/
 COPY build/justfile /tmp/
