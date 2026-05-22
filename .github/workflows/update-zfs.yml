@@ -66,7 +66,7 @@ jobs:
               sh_content = f.read()
           new_sh_content = re.sub(
               r'ZFS_VERSION=\"\$\{ZFS_VERSION:-zfs-[^\"]+\}\"',
-              f'ZFS_VERSION=\"${{ZFS_VERSION:-{latest_version}}}\"',
+              'ZFS_VERSION="${ZFS_VERSION:-' + latest_version + '}"',
               sh_content
           )
           with open('build/scripts/build-zfs.sh', 'w') as f:
