@@ -34,7 +34,7 @@ jobs:
             runner: ubuntu-24.04-arm
           - variant: bazzite
             arch: amd64
-            base_image: ghcr.io/ublue-os/bazzite:stable-43
+            base_image: ghcr.io/ublue-os/bazzite:stable-44
             runner: ubuntu-24.04
     steps:
       - name: Checkout
