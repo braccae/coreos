@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=quay.io/almalinuxorg/almalinux-bootc:10
 FROM ${BASE_IMAGE} AS zfs-builder
 
-ARG ZFS_VERSION="zfs-2.4.1"
+ARG ZFS_VERSION="zfs-2.4.2"
 
 # Copy persistent MOK public key for secure boot
 COPY keys/mok/LOCALMOK.der /etc/pki/mok/LOCALMOK.der
