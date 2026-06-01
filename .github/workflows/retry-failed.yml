@@ -36,4 +36,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Triggering retry for run ID: ${{ github.event.workflow_run.id }} (Attempt: ${{ github.event.workflow_run.run_attempt }})"
-          gh run rerun ${{ github.event.workflow_run.id }} --failed
+          gh run rerun ${{ github.event.workflow_run.id }} --failed --repo ${{ github.repository }}
