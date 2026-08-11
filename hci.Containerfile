@@ -60,7 +60,7 @@ RUN dnf install -y \
 
 COPY build/scripts/* ./
 
-RUN bash get-latest-release.sh https://github.com/45Drives/cockpit-identities .rpm \
+RUN bash get-latest-release.sh https://github.com/45Drives/cockpit-identities .rpm el9 noarch\
     && bash get-latest-release.sh https://github.com/45Drives/cockpit-file-sharing .rpm el9 noarch \
     && ls -al /var/ \
     && mkdir /var/roothome \
