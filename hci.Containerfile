@@ -86,4 +86,6 @@ COPY rootfs/hci/ /
 
 RUN systemctl enable tailscaled
 
+RUN setfiles -F /etc/selinux/targeted/contexts/files/file_contexts /
+
 RUN bootc container lint
