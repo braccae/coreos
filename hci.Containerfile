@@ -86,8 +86,7 @@ COPY rootfs/hci/ /
 
 RUN systemctl enable tailscaled
 
-RUN setfiles -c /etc/selinux/targeted/policy/policy.* \
-    -F /etc/selinux/targeted/contexts/files/file_contexts \
-    /usr /etc /root /var
+RUN POLICY_FILE=$(ls -1 /etc/selinux/targeted/policy/policy.* | sort -V | tail -n 1) && \
+    setfiles -F -c "$POLICY_FILE" /etc/selinux/targeted/contexts/files/file_contexts /usr /etc /root /var
 
 RUN bootc container lint
