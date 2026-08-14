@@ -124,7 +124,8 @@ jobs:
           tags: ${{ needs.build-metadata.outputs.tags }}
           labels: ${{ needs.build-metadata.outputs.labels }}
           extra-args: |
-            --secret id=LOCALMOK,env=LOCALMOK--cap-add=CAP_MAC_ADMIN
+            --secret id=LOCALMOK,env=LOCALMOK
+            --cap-add=CAP_MAC_ADMIN
             --security-opt label=disable
             --isolation=chroot
 
