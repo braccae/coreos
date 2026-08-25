@@ -32,10 +32,10 @@ jobs:
             arch: arm64
             base_image: quay.io/almalinuxorg/almalinux-bootc:10
             runner: ubuntu-24.04-arm
-          # - variant: bazzite
-          #   arch: amd64
-          #   base_image: ghcr.io/ublue-os/bazzite:stable-44
-          #   runner: ubuntu-24.04
+          - variant: bazzite
+            arch: amd64
+            base_image: ghcr.io/ublue-os/bazzite:stable-44
+            runner: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
