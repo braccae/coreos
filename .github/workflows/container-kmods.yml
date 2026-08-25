@@ -130,7 +130,7 @@ jobs:
         with:
           context: .
           containerfiles: ./kmods-bundle.Containerfile
-          image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          image: ${{ env.IMAGE_NAME }}
           tags: latest
 
       - name: Push To Registry
@@ -140,6 +140,7 @@ jobs:
         with:
           image: ${{ steps.build-bundle.outputs.image }}
           tags: ${{ steps.build-bundle.outputs.tags }}
+          registry: ${{ env.REGISTRY }}/${{ github.repository_owner }}
 
       - name: Trigger downstream builds
         if: github.event_name != 'pull_request'
