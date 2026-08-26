@@ -113,23 +113,19 @@ COPY rootfs/workstation/ /
 # -------------------------------------------------------------
 # SETFILES INTERCEPTOR & SELINUX COMPILATION DEBUGGER
 # -------------------------------------------------------------
-RUN mv /usr/bin/setfiles /usr/bin/setfiles.real
-
-RUN <<'EOF' cat > /usr/bin/setfiles
-#!/bin/bash
-echo "==================== [INTERCEPTED SETFILES CALL] ====================" >&2
-echo "Arguments: $@" >&2
-TMP_INPUT=$(mktemp)
-cat - > "${TMP_INPUT}"
-echo "Context definitions count: $(wc -l < ${TMP_INPUT})" >&2
-/usr/bin/setfiles.real -v -v $(echo "$@" | sed 's/-q//g') < "${TMP_INPUT}" 2>&1
-EXIT_CODE=${PIPESTATUS[0]}
-echo "Setfiles exited with code: ${EXIT_CODE}" >&2
-echo "=====================================================================" >&2
-exit ${EXIT_CODE}
-EOF
-
-RUN chmod +x /usr/bin/setfiles
+RUN mv /usr/bin/setfiles /usr/bin/setfiles.real && \
+    printf '#!/bin/bash\n\
+echo "==================== [INTERCEPTED SETFILES CALL] ====================" >&2\n\
+echo "Arguments: $@" >&2\n\
+TMP_INPUT=$(mktemp)\n\
+cat - > "${TMP_INPUT}"\n\
+echo "Context definitions count: $(wc -l < ${TMP_INPUT})" >&2\n\
+/usr/bin/setfiles.real -v -v $(echo "$@" | sed "s/-q//g") < "${TMP_INPUT}" 2>&1\n\
+EXIT_CODE=${PIPESTATUS[0]}\n\
+echo "Setfiles exited with code: ${EXIT_CODE}" >&2\n\
+echo "=====================================================================" >&2\n\
+exit ${EXIT_CODE}\n' > /usr/bin/setfiles && \
+    chmod +x /usr/bin/setfiles
 
 RUN semodule -v -B || true
 
