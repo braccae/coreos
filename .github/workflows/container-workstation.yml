@@ -12,6 +12,7 @@ on:
     paths:
       - "workstation.Containerfile"
       - "rootfs/workstation/**"
+      - "rootfs/common/**"
       - ".github/workflows/container-workstation.yml"
   workflow_dispatch:
   schedule:
