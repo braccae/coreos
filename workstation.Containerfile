@@ -111,38 +111,50 @@ COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
 # -------------------------------------------------------------
-# SETFILES INTERCEPTOR & SELINUX COMPILATION DEBUGGER
+# SEFCONTEXT_COMPILE INTERCEPTOR & REGEX VALIDATOR
 # -------------------------------------------------------------
-RUN SETFILES_BIN=$(readlink -f $(which setfiles || echo /usr/sbin/setfiles)) && \
-    echo "Found real setfiles at: ${SETFILES_BIN}" && \
-    mv "${SETFILES_BIN}" "${SETFILES_BIN}.real" && \
+RUN SEF_BIN=$(readlink -f $(which sefcontext_compile 2>/dev/null || echo /usr/sbin/sefcontext_compile)) && \
+    echo "Found sefcontext_compile at: ${SEF_BIN}" && \
+    mv "${SEF_BIN}" "${SEF_BIN}.real" && \
     printf '#!/bin/bash\n\
-LOG=/tmp/setfiles_debug.log\n\
-echo "==================== [INTERCEPTED SETFILES CALL] ====================" | tee -a $LOG >&2\n\
-echo "Arguments: $@" | tee -a $LOG >&2\n\
-TMP_INPUT=$(mktemp)\n\
-cat - > "${TMP_INPUT}"\n\
-echo "Context definitions count: $(wc -l < ${TMP_INPUT})" | tee -a $LOG >&2\n\
-echo "--- Running setfiles validation ---" | tee -a $LOG >&2\n\
-"'%s.real'" -v -v $(echo "$@" | sed "s/-q//g") < "${TMP_INPUT}" 2>&1 | tee -a $LOG\n\
-EXIT_CODE=${PIPESTATUS[0]}\n\
-echo "Setfiles exited with code: ${EXIT_CODE}" | tee -a $LOG >&2\n\
-echo "=====================================================================" | tee -a $LOG >&2\n\
-exit ${EXIT_CODE}\n' "${SETFILES_BIN}" > "${SETFILES_BIN}" && \
-    chmod +x "${SETFILES_BIN}" && \
-    ln -sf "${SETFILES_BIN}" /usr/sbin/setfiles 2>/dev/null || true && \
-    ln -sf "${SETFILES_BIN}" /usr/bin/setfiles 2>/dev/null || true && \
-    ln -sf "${SETFILES_BIN}" /sbin/setfiles 2>/dev/null || true
+echo "==================== [INTERCEPTED SEFCONTEXT_COMPILE CALL] ====================" >&2\n\
+echo "Target file to compile: $@" >&2\n\
+"'%s.real'" "$@" 2>&1\n\
+EXIT_CODE=$?\n\
+echo "sefcontext_compile exited with code: ${EXIT_CODE}" >&2\n\
+if [ ${EXIT_CODE} -ne 0 ]; then\n\
+    echo ">>> Scanning for invalid regex in $@ ... " >&2\n\
+    python3 -c '\''\n\
+import sys, re\n\
+target = sys.argv[1]\n\
+with open(target, "r", errors="replace") as f:\n\
+    for idx, line in enumerate(f, 1):\n\
+        line = line.strip()\n\
+        if not line or line.startswith("#"):\n\
+            continue\n\
+        parts = line.split()\n\
+        regex = parts[0]\n\
+        try:\n\
+            re.compile(regex)\n\
+        except Exception as e:\n\
+            print(f"FAILED REGEX AT LINE {idx}: {line} | ERROR: {e}", file=sys.stderr)\n\
+'\'' "$1" 2>&1 >&2\n\
+fi\n\
+echo "===============================================================================" >&2\n\
+exit ${EXIT_CODE}\n' "${SEF_BIN}" > "${SEF_BIN}" && \
+    chmod +x "${SEF_BIN}" && \
+    ln -sf "${SEF_BIN}" /usr/sbin/sefcontext_compile 2>/dev/null || true && \
+    ln -sf "${SEF_BIN}" /usr/bin/sefcontext_compile 2>/dev/null || true && \
+    ln -sf "${SEF_BIN}" /sbin/sefcontext_compile 2>/dev/null || true
 
 RUN semodule -v -B || true
 
-RUN cat /tmp/setfiles_debug.log 2>/dev/null || echo "No setfiles log recorded"
-
-# Restore original setfiles binary
-RUN SETFILES_BIN=$(readlink -f /usr/sbin/setfiles.real 2>/dev/null || echo /usr/sbin/setfiles.real) && \
-    ORIG_BIN="${SETFILES_BIN%.real}" && \
-    rm -f "${ORIG_BIN}" && \
-    mv "${SETFILES_BIN}" "${ORIG_BIN}"
+# Restore original sefcontext_compile binary
+RUN SEF_BIN=$(readlink -f $(which sefcontext_compile 2>/dev/null || echo /usr/sbin/sefcontext_compile)) && \
+    if [ -f "${SEF_BIN}.real" ]; then \
+        rm -f "${SEF_BIN}" && \
+        mv "${SEF_BIN}.real" "${SEF_BIN}"; \
+    fi
 
 
 RUN ostree container commit
