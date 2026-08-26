@@ -110,13 +110,37 @@ COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
-RUN rm -fv /etc/sudoers.d/100-passwordless-wheel /etc/polkit-1/rules.d/10-systemd-nopasswd.rules
+# -------------------------------------------------------------
+# SELINUX DIAGNOSTIC AND DEBUG STEP
+# -------------------------------------------------------------
+RUN dnf install -y policycoreutils && \
+    echo "==================== [1] LOCATING SETFILES & POLICY ====================" && \
+    which setfiles || find / -name setfiles 2>/dev/null && \
+    LATEST_POLICY=$(ls -1 /etc/selinux/targeted/policy/policy.* 2>/dev/null | tail -n1) && \
+    echo "Active Policy: ${LATEST_POLICY}" && \
+    \
+    echo "==================== [2] ACTIVE SELINUX MODULES ====================" && \
+    semodule -l || true && \
+    echo "--- Active Modules in store ---" && \
+    find /var/lib/selinux/ /etc/selinux/ -name "*.cil" -o -name "*.pp" 2>/dev/null || true && \
+    \
+    echo "==================== [3] CHECKING LOCAL FILE CONTEXTS ====================" && \
+    find /etc/selinux /var/lib/selinux -name "file_contexts.local*" -exec echo "--- {} ---" \; -exec cat {} \; 2>/dev/null || true && \
+    \
+    echo "==================== [4] RUNNING SETFILES VALIDATION ====================" && \
+    if [ -f "${LATEST_POLICY}" ]; then \
+        echo "Validating /etc/selinux/targeted/contexts/files/file_contexts ..."; \
+        setfiles -v -v -c "${LATEST_POLICY}" /etc/selinux/targeted/contexts/files/file_contexts || true; \
+        if [ -f /var/lib/selinux/targeted/active/contexts/files/file_contexts ]; then \
+            echo "Validating /var/lib/selinux active file_contexts ..."; \
+            setfiles -v -v -c "${LATEST_POLICY}" /var/lib/selinux/targeted/active/contexts/files/file_contexts || true; \
+        fi; \
+    fi && \
+    \
+    echo "==================== [5] VERBOSE SEMODULE REBUILD ====================" && \
+    semodule -v -v -v -B || true && \
+    echo "==================== END SELINUX DIAGNOSTICS ===================="
 
-RUN /usr/sbin/setfiles -v -c $(ls -1 /etc/selinux/targeted/policy/policy.* | tail -n1) /etc/selinux/targeted/contexts/files/file_contexts || true
-
-RUN dnf reinstall -y selinux-policy-targeted && \
-    semodule -B && \
-    dnf clean all
 
 RUN ostree container commit
 RUN bootc container lint
