@@ -103,10 +103,11 @@ COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
-RUN rm -fv /etc/sudoers.d/100-passwordless-wheel /etc/polkit-1/rules.d/10-systemd-nopasswd.rules
+RUN dnf5 -y reinstall selinux-policy-targeted policycoreutils policycoreutils-python-utils \
+    && dnf5 clean all
 
+RUN setfiles -c /etc/selinux/targeted/policy/policy.* /etc/selinux/targeted/contexts/files/file_contexts 2>/dev/null || true
 
-RUN ostree container commit
 RUN bootc container lint
 
 ENTRYPOINT [ "/sbin/init" ]
