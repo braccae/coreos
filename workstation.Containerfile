@@ -111,35 +111,30 @@ COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
 # -------------------------------------------------------------
-# SELINUX DIAGNOSTIC AND DEBUG STEP
+# SETFILES INTERCEPTOR & SELINUX COMPILATION DEBUGGER
 # -------------------------------------------------------------
-RUN dnf install -y policycoreutils && \
-    echo "==================== [1] LOCATING SETFILES & POLICY ====================" && \
-    which setfiles || find / -name setfiles 2>/dev/null && \
-    LATEST_POLICY=$(ls -1 /etc/selinux/targeted/policy/policy.* 2>/dev/null | tail -n1) && \
-    echo "Active Policy: ${LATEST_POLICY}" && \
-    \
-    echo "==================== [2] ACTIVE SELINUX MODULES ====================" && \
-    semodule -l || true && \
-    echo "--- Active Modules in store ---" && \
-    find /var/lib/selinux/ /etc/selinux/ -name "*.cil" -o -name "*.pp" 2>/dev/null || true && \
-    \
-    echo "==================== [3] CHECKING LOCAL FILE CONTEXTS ====================" && \
-    find /etc/selinux /var/lib/selinux -name "file_contexts.local*" -exec echo "--- {} ---" \; -exec cat {} \; 2>/dev/null || true && \
-    \
-    echo "==================== [4] RUNNING SETFILES VALIDATION ====================" && \
-    if [ -f "${LATEST_POLICY}" ]; then \
-        echo "Validating /etc/selinux/targeted/contexts/files/file_contexts ..."; \
-        setfiles -v -v -c "${LATEST_POLICY}" /etc/selinux/targeted/contexts/files/file_contexts || true; \
-        if [ -f /var/lib/selinux/targeted/active/contexts/files/file_contexts ]; then \
-            echo "Validating /var/lib/selinux active file_contexts ..."; \
-            setfiles -v -v -c "${LATEST_POLICY}" /var/lib/selinux/targeted/active/contexts/files/file_contexts || true; \
-        fi; \
-    fi && \
-    \
-    echo "==================== [5] VERBOSE SEMODULE REBUILD ====================" && \
-    semodule -v -v -v -B || true && \
-    echo "==================== END SELINUX DIAGNOSTICS ===================="
+RUN mv /usr/bin/setfiles /usr/bin/setfiles.real
+
+RUN <<'EOF' cat > /usr/bin/setfiles
+#!/bin/bash
+echo "==================== [INTERCEPTED SETFILES CALL] ====================" >&2
+echo "Arguments: $@" >&2
+TMP_INPUT=$(mktemp)
+cat - > "${TMP_INPUT}"
+echo "Context definitions count: $(wc -l < ${TMP_INPUT})" >&2
+/usr/bin/setfiles.real -v -v $(echo "$@" | sed 's/-q//g') < "${TMP_INPUT}" 2>&1
+EXIT_CODE=${PIPESTATUS[0]}
+echo "Setfiles exited with code: ${EXIT_CODE}" >&2
+echo "=====================================================================" >&2
+exit ${EXIT_CODE}
+EOF
+
+RUN chmod +x /usr/bin/setfiles
+
+RUN semodule -v -B || true
+
+# Restore original setfiles binary
+RUN rm -f /usr/bin/setfiles && mv /usr/bin/setfiles.real /usr/bin/setfiles
 
 
 RUN ostree container commit
