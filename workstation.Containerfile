@@ -101,7 +101,7 @@ RUN just install-dev-mode
 
 RUN rm -rv /opt && mkdir /opt
 
-RUN just install-game-mode
+# RUN just install-game-mode
 
 RUN just install-kde-utils
 
