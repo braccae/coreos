@@ -5,12 +5,12 @@ RUN rm -rv /etc/yum.repos.d/wazuh.repo /etc/yum.repos.d/crowdsec.repo
 
 COPY build/justfile /tmp/
 
-FROM ghcr.io/braccae/kmods:latest AS kmods
+# FROM ghcr.io/braccae/kmods:latest AS kmods
 
 FROM base AS final
 LABEL containers.bootc 1
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
+# RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
 # RUN /usr/bin/uv pip install --system packaging
 
 RUN dnf5 install -y \
@@ -83,10 +83,10 @@ COPY build/scripts /tmp/build_scripts
 #     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
 #     rm -rfv /var/roothome
 
+WORKDIR /tmp
+
 RUN mkdir -p /var/lib/alternatives && \
     just install-ublue-repos
-
-WORKDIR /tmp
 
 RUN just install-java && \
     just install-misc-tools && \
