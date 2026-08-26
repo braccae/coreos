@@ -40,14 +40,14 @@ RUN mkdir /var/roothome && \
     rm -rfv /var/roothome
 
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
-RUN dnf install -y \
-    setroubleshoot-server \
-    policycoreutils \
-    policycoreutils-python-utils \
-    policycoreutils-restorecond \
-    selinuxconlist \
-    selinuxdefcon \
-    && dnf clean all
+# RUN dnf install -y \
+#     setroubleshoot-server \
+#     policycoreutils \
+#     policycoreutils-python-utils \
+#     policycoreutils-restorecond \
+#     selinuxconlist \
+#     selinuxdefcon \
+#     && dnf clean all
 
 COPY build/scripts /tmp/build_scripts
 # RUN bash /tmp/build_scripts/wazuh-agent.sh
@@ -110,7 +110,10 @@ COPY rootfs/workstation/ /
 
 RUN rm -fv /etc/sudoers.d/100-passwordless-wheel /etc/polkit-1/rules.d/10-systemd-nopasswd.rules
 
-RUN semodule -B || true
+RUN dnf reinstall -y selinux-policy-targeted && \
+    semodule -B && \
+    dnf clean all
+
 RUN ostree container commit
 RUN bootc container lint
 
