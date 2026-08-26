@@ -1,6 +1,8 @@
 FROM ghcr.io/ublue-os/bazzite:stable-44 AS base
 
 COPY repos/ /etc/yum.repos.d/
+RUN rm -rv /etc/yum.repos.d/wazuh.repo /etc/yum.repos.d/crowdsec.repo
+
 COPY build/justfile /tmp/
 
 FROM ghcr.io/braccae/kmods:latest AS kmods
@@ -109,6 +111,8 @@ COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
 RUN rm -fv /etc/sudoers.d/100-passwordless-wheel /etc/polkit-1/rules.d/10-systemd-nopasswd.rules
+
+RUN /usr/sbin/setfiles -v -c $(ls -1 /etc/selinux/targeted/policy/policy.* | tail -n1) /etc/selinux/targeted/contexts/files/file_contexts || true
 
 RUN dnf reinstall -y selinux-policy-targeted && \
     semodule -B && \
