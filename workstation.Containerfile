@@ -49,39 +49,39 @@ RUN dnf5 install -y \
 COPY build/scripts /tmp/build_scripts
 # RUN bash /tmp/build_scripts/wazuh-agent.sh
 
-ARG TARGETARCH
-COPY --from=kmods /zfs/bazzite/${TARGETARCH}/ /tmp/rpms/
-RUN if [ -f /tmp/rpms/kernel-version.txt ]; then \
-        KMOD_KERNEL=$(cat /tmp/rpms/kernel-version.txt) && \
-        echo "kmods built for kernel: ${KMOD_KERNEL}" && \
-        CURRENT_KERNEL=$(just -f /tmp/justfile get-active-kernel) && \
-        echo "Current base kernel: ${CURRENT_KERNEL}" && \
-        if [ "$CURRENT_KERNEL" = "$KMOD_KERNEL" ]; then \
-            dnf5 remove -y zfs-fuse && \
-            dnf5 install -y /tmp/rpms/*.rpm && \
-            echo "Correcting ZFS kernel module dependencies..." && \
-            depmod -a \
-            --filesyms /usr/lib/modules/${CURRENT_KERNEL}/System.map \
-            ${CURRENT_KERNEL} && \
-            echo "✓ ZFS modules installed and depmod completed successfully for kernel ${CURRENT_KERNEL}"; \
-        else \
-            echo "WARNING: Kernel version mismatch! (Current: ${CURRENT_KERNEL}, Kmods: ${KMOD_KERNEL}). Skipping ZFS installation."; \
-        fi; \
-    else \
-        echo "WARNING: No ZFS kernel modules found in the kmods image for Workstation ${TARGETARCH}. Skipping ZFS installation."; \
-    fi && \
-    dnf clean all
+# ARG TARGETARCH
+# COPY --from=kmods /zfs/bazzite/${TARGETARCH}/ /tmp/rpms/
+# RUN if [ -f /tmp/rpms/kernel-version.txt ]; then \
+#         KMOD_KERNEL=$(cat /tmp/rpms/kernel-version.txt) && \
+#         echo "kmods built for kernel: ${KMOD_KERNEL}" && \
+#         CURRENT_KERNEL=$(just -f /tmp/justfile get-active-kernel) && \
+#         echo "Current base kernel: ${CURRENT_KERNEL}" && \
+#         if [ "$CURRENT_KERNEL" = "$KMOD_KERNEL" ]; then \
+#             dnf5 remove -y zfs-fuse && \
+#             dnf5 install -y /tmp/rpms/*.rpm && \
+#             echo "Correcting ZFS kernel module dependencies..." && \
+#             depmod -a \
+#             --filesyms /usr/lib/modules/${CURRENT_KERNEL}/System.map \
+#             ${CURRENT_KERNEL} && \
+#             echo "✓ ZFS modules installed and depmod completed successfully for kernel ${CURRENT_KERNEL}"; \
+#         else \
+#             echo "WARNING: Kernel version mismatch! (Current: ${CURRENT_KERNEL}, Kmods: ${KMOD_KERNEL}). Skipping ZFS installation."; \
+#         fi; \
+#     else \
+#         echo "WARNING: No ZFS kernel modules found in the kmods image for Workstation ${TARGETARCH}. Skipping ZFS installation."; \
+#     fi && \
+#     dnf clean all
 
-WORKDIR /tmp/zfs
-RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
+# WORKDIR /tmp/zfs
+# # RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit
 
-RUN systemctl enable tailscaled
+# RUN systemctl enable tailscaled
 
-RUN export BOOTC_KERNEL_VERSION=$(just -f /tmp/justfile get-active-kernel) && \
-    cd /usr/lib/modules/$BOOTC_KERNEL_VERSION && \
-    mkdir /var/roothome && \
-    dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
-    rm -rfv /var/roothome
+# RUN export BOOTC_KERNEL_VERSION=$(just -f /tmp/justfile get-active-kernel) && \
+#     cd /usr/lib/modules/$BOOTC_KERNEL_VERSION && \
+#     mkdir /var/roothome && \
+#     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
+#     rm -rfv /var/roothome
 
 RUN mkdir -p /var/lib/alternatives && \
     just install-ublue-repos
@@ -102,11 +102,6 @@ RUN just install-kde-utils
 COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 COPY rootfs/workstation/ /
-
-RUN dnf5 -y reinstall selinux-policy-targeted policycoreutils policycoreutils-python-utils \
-    && dnf5 clean all
-
-RUN setfiles -c /etc/selinux/targeted/policy/policy.* /etc/selinux/targeted/contexts/files/file_contexts 2>/dev/null || true
 
 RUN bootc container lint
 
