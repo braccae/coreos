@@ -111,50 +111,52 @@ COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
 # -------------------------------------------------------------
-# SEFCONTEXT_COMPILE INTERCEPTOR & REGEX VALIDATOR
+# EXHAUSTIVE SELINUX FILE CONTEXT & REGEX VALIDATOR
 # -------------------------------------------------------------
-RUN SEF_BIN=$(readlink -f $(which sefcontext_compile 2>/dev/null || echo /usr/sbin/sefcontext_compile)) && \
-    echo "Found sefcontext_compile at: ${SEF_BIN}" && \
-    mv "${SEF_BIN}" "${SEF_BIN}.real" && \
-    printf '#!/bin/bash\n\
-echo "==================== [INTERCEPTED SEFCONTEXT_COMPILE CALL] ====================" >&2\n\
-echo "Target file to compile: $@" >&2\n\
-"'%s.real'" "$@" 2>&1\n\
-EXIT_CODE=$?\n\
-echo "sefcontext_compile exited with code: ${EXIT_CODE}" >&2\n\
-if [ ${EXIT_CODE} -ne 0 ]; then\n\
-    echo ">>> Scanning for invalid regex in $@ ... " >&2\n\
-    python3 -c '\''\n\
-import sys, re\n\
-target = sys.argv[1]\n\
-with open(target, "r", errors="replace") as f:\n\
-    for idx, line in enumerate(f, 1):\n\
-        line = line.strip()\n\
-        if not line or line.startswith("#"):\n\
-            continue\n\
-        parts = line.split()\n\
-        regex = parts[0]\n\
-        try:\n\
-            re.compile(regex)\n\
-        except Exception as e:\n\
-            print(f"FAILED REGEX AT LINE {idx}: {line} | ERROR: {e}", file=sys.stderr)\n\
-'\'' "$1" 2>&1 >&2\n\
-fi\n\
-echo "===============================================================================" >&2\n\
-exit ${EXIT_CODE}\n' "${SEF_BIN}" > "${SEF_BIN}" && \
-    chmod +x "${SEF_BIN}" && \
-    ln -sf "${SEF_BIN}" /usr/sbin/sefcontext_compile 2>/dev/null || true && \
-    ln -sf "${SEF_BIN}" /usr/bin/sefcontext_compile 2>/dev/null || true && \
-    ln -sf "${SEF_BIN}" /sbin/sefcontext_compile 2>/dev/null || true
+RUN python3 -c '
+import re, glob, os, sys, subprocess
+
+print("==================== [1] SCANNING ALL .FC AND FILE_CONTEXTS ====================")
+all_files = (
+    glob.glob("/etc/selinux/**/file_contexts*", recursive=True) +
+    glob.glob("/var/lib/selinux/**/file_contexts*", recursive=True) +
+    glob.glob("/var/lib/selinux/**/*.fc", recursive=True) +
+    glob.glob("/usr/share/selinux/**/*.fc", recursive=True)
+)
+
+failed = False
+for f in all_files:
+    if not os.path.isfile(f) or f.endswith(".bin") or f.endswith(".homedirs"):
+        continue
+    # Run sefcontext_compile directly
+    res = subprocess.run(["/usr/sbin/sefcontext_compile", "-o", "/dev/null", f], capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"FAILED SEFCONTEXT_COMPILE on {f}:")
+        print(res.stderr or res.stdout)
+        failed = True
+    
+    # Test line by line
+    with open(f, "r", errors="replace") as fh:
+        for idx, line in enumerate(fh, 1):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split()
+            if not parts:
+                continue
+            pattern = parts[0]
+            try:
+                re.compile(pattern)
+            except Exception as e:
+                print(f"  [REGEX ERROR] {f}:{idx}: {line} -> Error: {e}")
+                failed = True
+
+if not failed:
+    print("All scanned context files passed regex compilation!")
+print("================================================================================")
+'
 
 RUN semodule -v -B || true
-
-# Restore original sefcontext_compile binary
-RUN SEF_BIN=$(readlink -f $(which sefcontext_compile 2>/dev/null || echo /usr/sbin/sefcontext_compile)) && \
-    if [ -f "${SEF_BIN}.real" ]; then \
-        rm -f "${SEF_BIN}" && \
-        mv "${SEF_BIN}.real" "${SEF_BIN}"; \
-    fi
 
 
 RUN ostree container commit
