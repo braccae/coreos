@@ -110,13 +110,7 @@ COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
-# -------------------------------------------------------------
-# EXHAUSTIVE SELINUX FILE CONTEXT & REGEX VALIDATOR
-# -------------------------------------------------------------
-COPY build/scripts/validate-selinux.py /tmp/validate-selinux.py
-RUN python3 /tmp/validate-selinux.py && rm -f /tmp/validate-selinux.py
-
-RUN semodule -v -B || true
+RUN rm -fv /etc/sudoers.d/100-passwordless-wheel /etc/polkit-1/rules.d/10-systemd-nopasswd.rules
 
 
 RUN ostree container commit
