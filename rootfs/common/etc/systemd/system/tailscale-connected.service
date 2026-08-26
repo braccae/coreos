@@ -5,7 +5,7 @@ Requires=tailscaled.service
 
 [Service]
 Type=oneshot
-ExecStart=bash /opt/scripts/tailscale-connectivity-check.sh
+ExecStart=bash /usr/libexec/coreos/tailscale-connectivity-check.sh
 TimeoutStartSec=90s
 
 [Install]

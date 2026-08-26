@@ -8,7 +8,7 @@ Requires=systemd-sysusers.service
 
 [Service]
 Type=oneshot
-ExecStart=/opt/setup/qemu-guest-agent-firstboot.sh
+ExecStart=/usr/libexec/coreos/qemu-guest-agent-firstboot.sh
 RemainAfterExit=yes
 
 [Install]

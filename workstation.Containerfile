@@ -36,11 +36,6 @@ RUN dnf5 install -y \
     samba-usershares \
     && dnf clean all
 
-RUN mkdir /var/roothome && \
-    uv pip install --prefix=/usr \
-    borgmatic && \
-    rm -rfv /var/roothome
-
 # SELinux utilities See: https://github.com/SELinuxProject/selinux/wiki/Tools
 # RUN dnf install -y \
 #     setroubleshoot-server \
@@ -98,8 +93,6 @@ RUN just install-java && \
     just install-virt-tools
 
 RUN just install-dev-mode
-
-RUN rm -rv /opt && mkdir /opt
 
 # RUN just install-game-mode
 
