@@ -113,24 +113,36 @@ COPY rootfs/workstation/ /
 # -------------------------------------------------------------
 # SETFILES INTERCEPTOR & SELINUX COMPILATION DEBUGGER
 # -------------------------------------------------------------
-RUN mv /usr/bin/setfiles /usr/bin/setfiles.real && \
+RUN SETFILES_BIN=$(readlink -f $(which setfiles || echo /usr/sbin/setfiles)) && \
+    echo "Found real setfiles at: ${SETFILES_BIN}" && \
+    mv "${SETFILES_BIN}" "${SETFILES_BIN}.real" && \
     printf '#!/bin/bash\n\
-echo "==================== [INTERCEPTED SETFILES CALL] ====================" >&2\n\
-echo "Arguments: $@" >&2\n\
+LOG=/tmp/setfiles_debug.log\n\
+echo "==================== [INTERCEPTED SETFILES CALL] ====================" | tee -a $LOG >&2\n\
+echo "Arguments: $@" | tee -a $LOG >&2\n\
 TMP_INPUT=$(mktemp)\n\
 cat - > "${TMP_INPUT}"\n\
-echo "Context definitions count: $(wc -l < ${TMP_INPUT})" >&2\n\
-/usr/bin/setfiles.real -v -v $(echo "$@" | sed "s/-q//g") < "${TMP_INPUT}" 2>&1\n\
+echo "Context definitions count: $(wc -l < ${TMP_INPUT})" | tee -a $LOG >&2\n\
+echo "--- Running setfiles validation ---" | tee -a $LOG >&2\n\
+"'%s.real'" -v -v $(echo "$@" | sed "s/-q//g") < "${TMP_INPUT}" 2>&1 | tee -a $LOG\n\
 EXIT_CODE=${PIPESTATUS[0]}\n\
-echo "Setfiles exited with code: ${EXIT_CODE}" >&2\n\
-echo "=====================================================================" >&2\n\
-exit ${EXIT_CODE}\n' > /usr/bin/setfiles && \
-    chmod +x /usr/bin/setfiles
+echo "Setfiles exited with code: ${EXIT_CODE}" | tee -a $LOG >&2\n\
+echo "=====================================================================" | tee -a $LOG >&2\n\
+exit ${EXIT_CODE}\n' "${SETFILES_BIN}" > "${SETFILES_BIN}" && \
+    chmod +x "${SETFILES_BIN}" && \
+    ln -sf "${SETFILES_BIN}" /usr/sbin/setfiles 2>/dev/null || true && \
+    ln -sf "${SETFILES_BIN}" /usr/bin/setfiles 2>/dev/null || true && \
+    ln -sf "${SETFILES_BIN}" /sbin/setfiles 2>/dev/null || true
 
 RUN semodule -v -B || true
 
+RUN cat /tmp/setfiles_debug.log 2>/dev/null || echo "No setfiles log recorded"
+
 # Restore original setfiles binary
-RUN rm -f /usr/bin/setfiles && mv /usr/bin/setfiles.real /usr/bin/setfiles
+RUN SETFILES_BIN=$(readlink -f /usr/sbin/setfiles.real 2>/dev/null || echo /usr/sbin/setfiles.real) && \
+    ORIG_BIN="${SETFILES_BIN%.real}" && \
+    rm -f "${ORIG_BIN}" && \
+    mv "${SETFILES_BIN}" "${ORIG_BIN}"
 
 
 RUN ostree container commit
