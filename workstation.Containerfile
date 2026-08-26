@@ -1,12 +1,9 @@
-# FROM quay.io/fedora-ostree-desktops/kinoite:43 as base
-ARG KMODS_IMAGE=localhost/kmods:latest
-
-FROM ghcr.io/ublue-os/bazzite:stable-44 as base
+FROM ghcr.io/ublue-os/bazzite:stable-44 AS base
 
 COPY repos/ /etc/yum.repos.d/
 COPY build/justfile /tmp/
 
-FROM ${KMODS_IMAGE} AS kmods
+FROM ghcr.io/braccae/kmods:latest AS kmods
 
 FROM base AS final
 LABEL containers.bootc 1
@@ -16,7 +13,6 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/
 
 RUN dnf5 install -y \
     qemu-guest-agent \
-    container-selinux \
     just \
     zsh \
     tuned \
@@ -54,7 +50,7 @@ RUN dnf install -y \
     && dnf clean all
 
 COPY build/scripts /tmp/build_scripts
-RUN bash /tmp/build_scripts/wazuh-agent.sh
+# RUN bash /tmp/build_scripts/wazuh-agent.sh
 
 ARG TARGETARCH
 COPY --from=kmods /zfs/bazzite/${TARGETARCH}/ /tmp/rpms/
@@ -114,6 +110,7 @@ COPY rootfs/workstation/ /
 
 RUN rm -fv /etc/sudoers.d/100-passwordless-wheel /etc/polkit-1/rules.d/10-systemd-nopasswd.rules
 
+RUN semodule -B || true
 RUN ostree container commit
 RUN bootc container lint
 
