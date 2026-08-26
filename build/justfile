@@ -76,8 +76,7 @@ install-misc-tools:
         ghostty \
         chromium \
         chromium-headless \
-        chromedriver \
-        virt-manager
+        chromedriver
 
 install-game-mode:
     #!/usr/bin/env bash
