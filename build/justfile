@@ -115,7 +115,6 @@ install-virt-tools:
 install-dev-mode:
     dnf install -y \
         code \
-        antigravity \
         pnpm \
         nodejs \
         nodejs-npm
