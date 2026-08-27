@@ -13,24 +13,6 @@ LABEL containers.bootc 1
 RUN dnf5 install -y \
     qemu-guest-agent \
     just \
-    zsh \
-    tuned \
-    realmd \
-    sssd \
-    tailscale \
-    firewalld \
-    sqlite \
-    borgbackup \
-    fuse \
-    rclone \
-    rsync \
-    bees \
-    python3-pip \
-    git \
-    tmux \
-    samba \
-    samba-common-tools \
-    samba-usershares \
     && dnf clean all
 
 COPY build/scripts /tmp/build_scripts
@@ -71,13 +53,11 @@ RUN mkdir -p /var/lib/alternatives && \
     just install-ublue-repos
 
 RUN just install-java && \
-    just install-misc-tools
-
-RUN just install-dev-mode
-
-# RUN just install-game-mode
-
-RUN just install-kde-utils
+    just install-misc-tools && \
+    just install-virt-tools && \
+    just install-dev-mode && \
+    just install-kde-utils \
+    && dnf clean all
 
 COPY rootfs/btrfs_config/ /
 # COPY rootfs/non_btrfs/ /

@@ -76,7 +76,21 @@ install-misc-tools:
         ghostty \
         chromium \
         chromium-headless \
-        chromedriver
+        chromedriver \
+        tuned \
+        realmd \
+        sssd \
+        tailscale \
+        sqlite \
+        borgbackup \
+        rclone \
+        rsync \
+        bees \
+        git \
+        tmux \
+        samba \
+        samba-common-tools \
+        samba-usershares \
 
 install-game-mode:
     #!/usr/bin/env bash
