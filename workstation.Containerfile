@@ -79,9 +79,9 @@ RUN just install-dev-mode
 
 RUN just install-kde-utils
 
-# COPY rootfs/btrfs_config/ /
-COPY rootfs/non_btrfs/ /
-COPY rootfs/common/ /
+COPY rootfs/btrfs_config/ /
+# COPY rootfs/non_btrfs/ /
+# COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
 RUN systemctl enable tailscaled

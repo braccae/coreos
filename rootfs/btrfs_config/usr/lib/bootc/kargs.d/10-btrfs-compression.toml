@@ -1,1 +1,1 @@
-kargs = ["rootflags=compress=zstd:6"]
+kargs = ["rootflags=compress=zstd:2"]
