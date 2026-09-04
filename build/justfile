@@ -91,6 +91,7 @@ install-misc-tools:
         samba \
         samba-common-tools \
         samba-usershares \
+        bat
 
 install-game-mode:
     #!/usr/bin/env bash
@@ -117,4 +118,5 @@ install-dev-mode:
         code \
         pnpm \
         nodejs \
-        nodejs-npm
+        nodejs-npm \
+        gh
