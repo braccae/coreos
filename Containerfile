@@ -151,7 +151,15 @@ COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 RUN chmod +x /usr/sbin/setup-podman-user
 
-RUN systemctl enable tailscaled
+RUN systemctl enable tailscaled podman.socket nix-init.service
+
+RUN dnf install -y \
+    podman \
+    podman-docker \
+    podman-compose \
+    fuse-overlayfs \
+    nix \
+    && dnf clean all
 
 RUN bootc container lint
 

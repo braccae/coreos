@@ -1,0 +1,12 @@
+[Unit]
+Description=Tailscale sidecar for hermes-dev pod
+
+[Container]
+Image=docker.io/tailscale/tailscale:latest
+Pod=hermes-dev.pod
+AddDevice=/dev/net/tun
+Volume=hermes-dev-ts.volume:/var/lib/tailscale:Z
+Environment=TS_STATE_DIR=/var/lib/tailscale
+
+[Install]
+WantedBy=default.target
