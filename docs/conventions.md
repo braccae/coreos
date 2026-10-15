@@ -36,7 +36,7 @@ git worktree remove .worktrees/feature-name
 
 ### Rules
 1. **Never develop in the primary root repository checkout**: The root directory tracks `main` and should remain clean.
-2. **Path Convention**: Always place worktrees under `.worktrees/<descriptor>`. The directory `.worktrees` is explicitly ignored by [.gitignore](file:///home/pants/Projects/container_projects/coreos/.gitignore#L10).
+2. **Path Convention**: Always place worktrees under `.worktrees/<descriptor>`. The directory `.worktrees` is explicitly ignored by [.gitignore](.gitignore#L10).
 3. **Clean Up**: Remove worktrees when work is merged or abandoned to avoid stale branch locks.
 
 ---

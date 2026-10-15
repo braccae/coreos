@@ -72,25 +72,25 @@ The bootc ostree sysroot preparation requires filesystem-aware mount and compose
   - Used when the target root filesystem is Btrfs.
   - Deploys `10-btrfs-compression.toml` setting kernel arguments `rootflags=compress=zstd:2`.
   - Configures `prepare-root.conf` with `[composefs] enabled = verity`, `[sysroot] readonly = true`, `[root] transient = true`, `[etc] transient = false`.
-  - Active in [workstation.Containerfile](file:///home/pants/Projects/container_projects/coreos/workstation.Containerfile) and ISO installations.
+  - Active in [workstation.Containerfile](workstation.Containerfile) and ISO installations.
 - **`rootfs/non_btrfs/`**:
   - Used when the target root filesystem is XFS or ext4.
   - Configures `prepare-root.conf` with `[composefs] enabled = true`, `[sysroot] readonly = false`, `[root] transient = true`, `[etc] transient = false`.
-  - Active in the standard AlmaLinux [Containerfile](file:///home/pants/Projects/container_projects/coreos/Containerfile).
+  - Active in the standard AlmaLinux [Containerfile](Containerfile).
 
 ### 3. `rootfs/hci/` (Hyperconverged Infrastructure Overlay)
-- **Target**: [hci.Containerfile](file:///home/pants/Projects/container_projects/coreos/hci.Containerfile).
+- **Target**: [hci.Containerfile](hci.Containerfile).
 - **Purpose**: Provides Cockpit web administration integration, Cockpit Web Service quadlet container (`cockpit-ws.container.builtin`), and Samba daemon sharing configurations (`smb.conf`, `smb.conf.d/10-global.conf`, `smb.conf.d/20-zfs-global.conf`).
 
 ### 4. `rootfs/webtop/` (Webtop Container Overlay)
-- **Target**: [webtop.Containerfile](file:///home/pants/Projects/container_projects/coreos/webtop.Containerfile).
+- **Target**: [webtop.Containerfile](webtop.Containerfile).
 - **Purpose**: Configures headless KDE Wayland desktop streaming inside a rootless container:
   - `etc/nginx/conf.d/webtop.conf`: Reverse proxy serving the Selkies web interface over HTTP port 3000.
   - `etc/systemd/system/webtop.service`: Systemd service orchestrating the desktop startup sequence.
   - Helper scripts: `start-webtop.sh`, `kwin-xwayland.py`, and `patch-selkies.py`.
 
 ### 5. `rootfs/workstation/` (Bazzite Workstation Overlay)
-- **Target**: [workstation.Containerfile](file:///home/pants/Projects/container_projects/coreos/workstation.Containerfile) and [laptop.Containerfile](file:///home/pants/Projects/container_projects/coreos/laptop.Containerfile).
+- **Target**: [workstation.Containerfile](workstation.Containerfile) and [laptop.Containerfile](laptop.Containerfile).
 - **Purpose**: Configures desktop memory management (`zram-generator.conf` enabling ZRAM swap) and desktop application security policies (`com.bitwarden.Bitwarden.policy`).
 
 ---
@@ -101,15 +101,15 @@ The table below documents which Containerfile copies which `rootfs` subdirectory
 
 | Containerfile | Base Image (FROM) | `rootfs` Path Copied | Destination | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| [Containerfile](file:///home/pants/Projects/container_projects/coreos/Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | `rootfs/non_btrfs/`<br>`rootfs/common/` | `/`<br>`/` | Line 149 (`rootfs/btrfs_config/`) is commented out; non-btrfs is active. |
-| [dx.Containerfile](file:///home/pants/Projects/container_projects/coreos/dx.Containerfile) | `ghcr.io/braccae/alma:latest` | Inherited from base | N/A | Inherits `rootfs/common/` and `rootfs/non_btrfs/`. Note: dx assets live in `rootfs/common/`. |
-| [dockerhost.Containerfile](file:///home/pants/Projects/container_projects/coreos/dockerhost.Containerfile) | `ghcr.io/braccae/alma:latest` | Inherited from base | N/A | Inherits `rootfs/common/` and `rootfs/non_btrfs/` via `base`. |
-| [hci.Containerfile](file:///home/pants/Projects/container_projects/coreos/hci.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/hci/` | `/` | Inherits `common` from base; adds HCI-specific Cockpit and Samba files. |
-| [installer.Containerfile](file:///home/pants/Projects/container_projects/coreos/installer.Containerfile) | `ghcr.io/braccae/coreos:workstation` | None | N/A | Inherits from `$installer_base`. |
-| [k3s.Containerfile](file:///home/pants/Projects/container_projects/coreos/k3s.Containerfile) | `ghcr.io/braccae/alma:latest` | Inherited from base | N/A | Inherits `common` from base; installs k3s binary and systemd service directly. |
-| [kmods.Containerfile](file:///home/pants/Projects/container_projects/coreos/kmods.Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | None | N/A | Builds ZFS kernel modules into a scratch image. |
-| [kmods-bundle.Containerfile](file:///home/pants/Projects/container_projects/coreos/kmods-bundle.Containerfile) | `scratch` | None | N/A | Bundles pre-built multi-arch RPM trees from `zfs/`. |
+| [Containerfile](Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | `rootfs/non_btrfs/`<br>`rootfs/common/` | `/`<br>`/` | Line 149 (`rootfs/btrfs_config/`) is commented out; non-btrfs is active. |
+| [dx.Containerfile](dx.Containerfile) | `ghcr.io/braccae/alma:latest` | Inherited from base | N/A | Inherits `rootfs/common/` and `rootfs/non_btrfs/`. Note: dx assets live in `rootfs/common/`. |
+| [dockerhost.Containerfile](dockerhost.Containerfile) | `ghcr.io/braccae/alma:latest` | Inherited from base | N/A | Inherits `rootfs/common/` and `rootfs/non_btrfs/` via `base`. |
+| [hci.Containerfile](hci.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/hci/` | `/` | Inherits `common` from base; adds HCI-specific Cockpit and Samba files. |
+| [installer.Containerfile](installer.Containerfile) | `ghcr.io/braccae/coreos:workstation` | None | N/A | Inherits from `$installer_base`. |
+| [k3s.Containerfile](k3s.Containerfile) | `ghcr.io/braccae/alma:latest` | Inherited from base | N/A | Inherits `common` from base; installs k3s binary and systemd service directly. |
+| [kmods.Containerfile](kmods.Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | None | N/A | Builds ZFS kernel modules into a scratch image. |
+| [kmods-bundle.Containerfile](kmods-bundle.Containerfile) | `scratch` | None | N/A | Bundles pre-built multi-arch RPM trees from `zfs/`. |
 | `test.Containerfile` | Configurable | None (Scratch) | N/A | Local developer scratch containerfile. |
-| [laptop.Containerfile](file:///home/pants/Projects/container_projects/coreos/laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | `rootfs/workstation/` | `/` | Copies workstation overlay on top of Bazzite DX GNOME. |
-| [webtop.Containerfile](file:///home/pants/Projects/container_projects/coreos/webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | `rootfs/common/`<br>`rootfs/webtop/` | `/`<br>`/` | Reuses core system utilities from `common/` alongside desktop streaming files from `webtop/`. |
-| [workstation.Containerfile](file:///home/pants/Projects/container_projects/coreos/workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/btrfs_config/`<br>`rootfs/workstation/` | `/`<br>`/` | **FROZEN PRODUCTION IMAGE**. Lines 63-64 (`non_btrfs/`, `common/`) are commented out. |
+| [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | `rootfs/workstation/` | `/` | Copies workstation overlay on top of Bazzite DX GNOME. |
+| [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | `rootfs/common/`<br>`rootfs/webtop/` | `/`<br>`/` | Reuses core system utilities from `common/` alongside desktop streaming files from `webtop/`. |
+| [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/btrfs_config/`<br>`rootfs/workstation/` | `/`<br>`/` | **FROZEN PRODUCTION IMAGE**. Lines 63-64 (`non_btrfs/`, `common/`) are commented out. |
