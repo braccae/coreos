@@ -12,3 +12,4 @@ output/*
 cosign.key
 .secrets
 test.Containerfile
+.worktrees/
