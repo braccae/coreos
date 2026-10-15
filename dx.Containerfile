@@ -9,7 +9,6 @@ RUN dnf install -y \
     nix \
     && dnf clean all
 
-COPY rootfs/dx/ /
 RUN systemctl enable podman.socket nix-init.service
 
 RUN bootc container lint
