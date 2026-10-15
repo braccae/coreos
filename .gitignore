@@ -13,3 +13,4 @@ cosign.key
 .secrets
 test.Containerfile
 .worktrees/
+.hermes
