@@ -1,0 +1,12 @@
+[Unit]
+Description=Upgrade-safe /etc persistence sync for container mode
+ConditionVirtualization=container
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/coreos/etc-overlay-sync.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

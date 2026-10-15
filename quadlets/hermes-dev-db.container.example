@@ -1,0 +1,12 @@
+# Optional database/vector-store sidecar example
+[Unit]
+Description=Example DB sidecar for hermes-dev pod
+
+[Container]
+Image=docker.io/postgres:16
+Pod=hermes-dev.pod
+# PublishPort=127.0.0.1:5432:5432
+Environment=POSTGRES_PASSWORD=change-me
+
+[Install]
+WantedBy=default.target

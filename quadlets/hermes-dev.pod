@@ -1,0 +1,8 @@
+[Unit]
+Description=Hermes dev pod
+
+[Pod]
+PodName=hermes-dev
+
+[Install]
+WantedBy=default.target

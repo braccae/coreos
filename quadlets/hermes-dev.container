@@ -1,0 +1,17 @@
+[Unit]
+Description=Alma DX system container for hermes-dev pod
+
+[Container]
+Image=ghcr.io/braccae/alma:dx
+Pod=hermes-dev.pod
+Systemd=true
+ReadOnly=true
+SecurityLabelDisable=true
+Privileged=true
+AddDevice=/dev/fuse
+Volume=hermes-dev-var.volume:/var:Z
+Volume=%h/.local/share/containers/storage:/var/lib/host-containers:ro,rslave
+Volume=hermes-dev-nix.volume:/nix:Z
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=Initialize Nix on /nix
+ConditionPathIsMountPoint=/nix
+ConditionPathExists=!/nix/store
+After=local-fs.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/sh -c 'curl -L https://nixos.org/nix/install | sh -s -- --no-daemon'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
