@@ -1,0 +1,20 @@
+[Unit]
+Description=Bind mount /var/lib/nix onto /nix
+Documentation=man:mount(8) https://nix.dev/manual/nix/stable/installation/nix-security.html
+# /var/lib/nix is the persistent backing directory; /nix lives on the
+# read-only composefs deployment root and would not survive updates.
+# Seed /var/lib/nix from /nix at image build time, then bind it over /nix.
+RequiresMountsFor=/var
+After=local-fs.target
+Before=nix-daemon.service nix-daemon.socket
+# Recreate the mount point if a previous deployment lacked it.
+ConditionPathIsDirectory=/var/lib/nix
+
+[Mount]
+What=/var/lib/nix
+Where=/nix
+Type=none
+Options=bind
+
+[Install]
+WantedBy=multi-user.target
