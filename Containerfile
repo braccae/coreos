@@ -151,7 +151,7 @@ COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 RUN chmod +x /usr/sbin/setup-podman-user
 
-RUN systemctl enable tailscaled podman.socket nix-init.service
+RUN systemctl enable tailscaled podman.socket nix-init.service etc-overlay-sync.service
 
 RUN dnf install -y \
     podman \
@@ -160,6 +160,8 @@ RUN dnf install -y \
     fuse-overlayfs \
     nix \
     && dnf clean all
+
+RUN mkdir -p /usr/share/factory/etc && cp -a /etc/. /usr/share/factory/etc/
 
 RUN bootc container lint
 
