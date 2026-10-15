@@ -151,7 +151,7 @@ COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 RUN chmod +x /usr/sbin/setup-podman-user
 
-RUN systemctl enable tailscaled podman.socket nix-daemon.socket nix.mount etc-overlay-sync.service
+RUN systemctl enable tailscaled podman.socket nix.mount etc-overlay-sync.service
 
 RUN dnf install -y \
     podman \
@@ -160,6 +160,11 @@ RUN dnf install -y \
     fuse-overlayfs \
     nix \
     && dnf clean all
+
+# nix-daemon.socket is shipped by the nix RPM above, so it can only be enabled
+# after that install (the old nix-init.service was a static file from
+# rootfs/common/, which is why the original ordering worked).
+RUN systemctl enable nix-daemon.socket
 
 # --- Nix persistence -------------------------------------------------------
 # /nix sits on the read-only composefs deployment root, so the store would be
