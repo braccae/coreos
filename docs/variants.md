@@ -18,7 +18,7 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
 | [kmods-bundle.Containerfile](file:///home/pants/Projects/container_projects/coreos/kmods-bundle.Containerfile) | `scratch` | Aggregates compiled multi-arch ZFS RPM trees into a unified distribution container | AlmaLinux | `.github/workflows/container-kmods.yml` (bundle job) | Emits `ghcr.io/braccae/kmods:latest` containing `/zfs/`. |
 | `test.Containerfile` | Configurable | Ephemeral test container definition for local validation | AlmaLinux | **None** | Explicitly git-ignored. Used for scratch builds. |
 | [laptop.Containerfile](file:///home/pants/Projects/container_projects/coreos/laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | Mobile developer workstation with GNOME desktop environment | Bazzite | `.github/workflows/container-laptop.yml` | Installs developer tooling, Ansible, Java, and Bazzite overlays. |
-| [webtop.Containerfile](file:///home/pants/Projects/container_projects/coreos/webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | Containerized remote KDE Wayland desktop accessible over HTTP via Selkies | Bazzite | **None** | No automated CI workflow. Experimental rootless desktop streaming container. |
+| [webtop.Containerfile](file:///home/pants/Projects/container_projects/coreos/webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | Containerized remote KDE Wayland desktop accessible over HTTP via Selkies | Bazzite | `.github/workflows/container-webtop.yml` | Experimental rootless desktop streaming container. |
 | [workstation.Containerfile](file:///home/pants/Projects/container_projects/coreos/workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Primary desktop workstation image with KDE, ZFS, and virtualization tools | Bazzite | `.github/workflows/container-workstation.yml` | **FROZEN PRODUCTION IMAGE**. Must not be modified. |
 
 ---
@@ -81,7 +81,7 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
     - **Build Source**: `FROM ghcr.io/ublue-os/bazzite:stable-43 as base`.
     - **Role**: Browser-accessible KDE Wayland desktop streaming environment running inside an unprivileged rootless container. Uses Selkies/Pixelflux WebRTC streaming on port 3000.
     - **Overlay**: Copies `rootfs/common/` and `rootfs/webtop/`.
-    - **CI Note**: No automated CI workflow exists; experimental status.
+    - **CI Note**: Automated CI workflow `.github/workflows/container-webtop.yml`.
 
 12. **[workstation.Containerfile](file:///home/pants/Projects/container_projects/coreos/workstation.Containerfile)**
     - **Build Source**: `FROM ghcr.io/ublue-os/bazzite:stable-44 AS base`.
@@ -104,4 +104,4 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
 | `.github/workflows/container-laptop.yml` | [laptop.Containerfile](file:///home/pants/Projects/container_projects/coreos/laptop.Containerfile) | Push to `main`, `laptop.Containerfile` | None |
 | `.github/workflows/container-workstation.yml` | [workstation.Containerfile](file:///home/pants/Projects/container_projects/coreos/workstation.Containerfile) | Push to `main`, `workstation.Containerfile`, `rootfs/workstation/**` | None |
 | *(None)* | [dx.Containerfile](file:///home/pants/Projects/container_projects/coreos/dx.Containerfile) | N/A (Manual / Local builds only) | None |
-| *(None)* | [webtop.Containerfile](file:///home/pants/Projects/container_projects/coreos/webtop.Containerfile) | N/A (Manual / Local builds only) | None |
+| `.github/workflows/container-webtop.yml` | [webtop.Containerfile](file:///home/pants/Projects/container_projects/coreos/webtop.Containerfile) | Push to `main`, `webtop.Containerfile`, `rootfs/webtop/**` | None |
