@@ -130,7 +130,7 @@ write-disk-image disk image='alma' image_tag='latest':
 # Default variables for the test VM
 _VM_MEMORY        := "2048"
 _VM_VCPUS         := "2"
-_VM_REMOTE_IMAGE  := "ghcr.io/braccae/rhel:centos"
+_VM_REMOTE_IMAGE  := "ghcr.io/braccae/alma:latest"
 _VM_LOCAL_TAG     := "localhost/rhel-test:latest"
 _VM_BUILD_DIR     := "output/test-vm"
 _VM_DISK_IMAGE    := _VM_BUILD_DIR + "/qcow2/disk.qcow2"

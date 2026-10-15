@@ -193,5 +193,5 @@ bootc container lint
 
 1. Fork the repository
 2. Create feature branch
-3. Test changes with `bootc container lint` and `dev-tools/testvm.sh`
+3. Test changes with `bootc container lint` and `just test-vm`
 4. Submit pull request
