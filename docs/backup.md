@@ -35,7 +35,7 @@ flowchart TD
 ```
 
 ### 1. Build Stage Integration
-In [Containerfile](file:///home/pants/Projects/container_projects/coreos/Containerfile#L30-L35):
+In [Containerfile](Containerfile#L30-L35):
 - A dedicated multi-stage build stage `borgmatic-builder` inherits from `base`.
 - Installs `gcc` and `python3-devel`.
 - Uses Astral `uv` to build Borgmatic into `/tmp/borgmatic`:
@@ -99,6 +99,6 @@ When implementing changes or transitioning systems:
 1. **Do Not Prematurely Remove Borgmatic Units**:
    - Both `borgmatic.service` and `borgmatic.timer` must remain intact in `rootfs/common/` until Restic and Databasus deployments are verified in production.
 2. **Phase Out `borgmatic-builder`**:
-   - Once all host targets switch to Restic, remove the `borgmatic-builder` multi-stage block in [Containerfile](file:///home/pants/Projects/container_projects/coreos/Containerfile) and clean up `build/selinux/borgmatic/`.
+   - Once all host targets switch to Restic, remove the `borgmatic-builder` multi-stage block in [Containerfile](Containerfile) and clean up `build/selinux/borgmatic/`.
 3. **Appdata Consistency**:
    - Ensure that application quadlets and database containers expose standard dump volumes or database ports accessible by Databasus prior to filesystem snapshotting.

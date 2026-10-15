@@ -124,7 +124,7 @@ podman run -d \
 After starting, navigate to `http://localhost:3000` in your web browser to access the interactive Fedora KDE desktop! All your custom desktop preferences, configurations, and files inside `/home/webtop` will be persisted!
 
 #### 2. Running as a Systemd Service via Quadlet
-To manage the Webtop container automatically via systemd, copy the provided [webtop.container](file:///home/pants/Projects/container_projects/coreos/webtop.container) file to your systemd Quadlet directory:
+To manage the Webtop container automatically via systemd, copy the provided [webtop.container](webtop.container) file to your systemd Quadlet directory:
 
 * **System-wide**: `/etc/containers/systemd/`
 * **Rootless/User**: `~/.config/containers/systemd/`

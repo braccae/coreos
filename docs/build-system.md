@@ -8,7 +8,7 @@ This document describes the multi-stage Containerfile build pipelines, bootc val
 
 Multi-staging is utilized extensively across the repository to keep deployment container images minimal, decouple build tooling from runtime environments, and manage external dependencies cleanly.
 
-### 1. Base AlmaLinux Multi-Stage Pipeline ([Containerfile](file:///home/pants/Projects/container_projects/coreos/Containerfile))
+### 1. Base AlmaLinux Multi-Stage Pipeline ([Containerfile](Containerfile))
 The primary base image uses a five-stage build pipeline:
 
 ```mermaid
@@ -33,7 +33,7 @@ Key stages:
 - **`kmods`**: Parameterized import stage driven by `ARG KMODS_IMAGE=localhost/kmods:latest`.
 - **Final Assembly**: Copies kernel modules for the target architecture (`$TARGETARCH`), performs a kernel version compatibility check against `/tmp/rpms/kernel-version.txt`, installs the matching ZFS RPMs, executes `depmod -a`, runs `dracut -f`, copies filesystem overlays (`rootfs/non_btrfs/`, `rootfs/common/`), and runs `bootc container lint`.
 
-### 2. Docker Host Multi-Stage Pipeline ([dockerhost.Containerfile](file:///home/pants/Projects/container_projects/coreos/dockerhost.Containerfile))
+### 2. Docker Host Multi-Stage Pipeline ([dockerhost.Containerfile](dockerhost.Containerfile))
 - **Stage 1 (`base`)**: `FROM ghcr.io/braccae/alma:latest as base`.
 - **Stage 2 (`builder`)**: Installs compilation dependencies (`nodejs`, `make`, `rpm-build`, `libappstream-glib`), clones `https://github.com/chabad360/cockpit-docker.git`, and builds the cockpit-docker RPM via `NODE_ENV=production make rpm`.
 - **Stage 3 (`final`)**: Configures the upstream Docker CE repository, installs Docker engine packages, and installs the compiled Cockpit Docker RPM from the builder stage via a bind mount (`--mount=type=bind,from=builder,...`).
@@ -49,11 +49,11 @@ RUN bootc container lint
 ```
 
 Present in:
-- [Containerfile](file:///home/pants/Projects/container_projects/coreos/Containerfile#L166)
-- [dx.Containerfile](file:///home/pants/Projects/container_projects/coreos/dx.Containerfile#L15)
-- [hci.Containerfile](file:///home/pants/Projects/container_projects/coreos/hci.Containerfile#L89)
-- [k3s.Containerfile](file:///home/pants/Projects/container_projects/coreos/k3s.Containerfile#L34)
-- [workstation.Containerfile](file:///home/pants/Projects/container_projects/coreos/workstation.Containerfile#L69)
+- [Containerfile](Containerfile#L166)
+- [dx.Containerfile](dx.Containerfile#L15)
+- [hci.Containerfile](hci.Containerfile#L89)
+- [k3s.Containerfile](k3s.Containerfile#L34)
+- [workstation.Containerfile](workstation.Containerfile#L69)
 
 ### Verification Contract
 `bootc container lint` ensures the image adheres to the bootable container specification:
@@ -134,7 +134,7 @@ If the kernel versions do not match, the build logs a warning and skips ZFS inst
 
 ## Build Automation: `build/justfile`
 
-The [build/justfile](file:///home/pants/Projects/container_projects/coreos/build/justfile) contains specialized modular recipes invoked inside the container build context (especially by Bazzite images):
+The [build/justfile](build/justfile) contains specialized modular recipes invoked inside the container build context (especially by Bazzite images):
 
 - `get-active-kernel`: Finds the active kernel release directory under `/usr/lib/modules/*/` containing `vmlinuz`.
 - `get-active-kernel-base`: Extracts the semver base string of the active kernel.
@@ -151,10 +151,10 @@ The [build/justfile](file:///home/pants/Projects/container_projects/coreos/build
 
 ## Build Scripts: `build/scripts/`
 
-The [build/scripts/](file:///home/pants/Projects/container_projects/coreos/build/scripts/) directory houses reusable shell and Python scripts:
+The [build/scripts/](build/scripts/) directory houses reusable shell and Python scripts:
 
 - **`build-zfs.sh`**: Clones and builds OpenZFS RPMs. Auto-detects kernel header locations, configures kmod build parameters, generates RPM packages, and signs all `.ko` binaries using the provided MOK private key.
-- **`get-latest-release.sh`**: Queries GitHub API to locate and download release assets by substring matching (used in [hci.Containerfile](file:///home/pants/Projects/container_projects/coreos/hci.Containerfile) to fetch 45Drives Cockpit plugin RPMs).
+- **`get-latest-release.sh`**: Queries GitHub API to locate and download release assets by substring matching (used in [hci.Containerfile](hci.Containerfile) to fetch 45Drives Cockpit plugin RPMs).
 - **`validate-selinux.py`**: Python script that parses targeted SELinux policies using `setfiles -c`. Tests policy files line-by-line against the system file context database to identify and isolate policy syntax errors before image deployment.
 - **`wazuh-agent.sh`**: Configures Wazuh repositories and installs the host security agent.
 
@@ -202,7 +202,7 @@ Enables essential Anaconda installer modules for automated storage partitioning,
 
 ## The `build-disk-image` Recipe
 
-Defined in [justfile](file:///home/pants/Projects/container_projects/coreos/justfile#L56), this recipe encapsulates the call to `bootc-image-builder`:
+Defined in [justfile](justfile#L56), this recipe encapsulates the call to `bootc-image-builder`:
 
 ```bash
 just build-disk-image [image='alma'] [image_tag='latest']

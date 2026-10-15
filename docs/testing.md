@@ -22,7 +22,7 @@ flowchart LR
 
 - **Description**: Boots the built `.qcow2` disk image inside a virtual machine running a virtual UEFI firmware, validating full operating system initialization, kernel module loading, systemd targets, and networking.
 - **Execution Target**:
-  - **Locally**: Accelerated hardware virtualization via KVM using `just test-vm` or [dev-tools/testvm.sh](file:///home/pants/Projects/container_projects/coreos/dev-tools/testvm.sh).
+  - **Locally**: Accelerated hardware virtualization via KVM using `just test-vm` (recipes defined in [justfile](justfile)).
   - **In CI**: Software emulation via QEMU TCG (`--accel tcg`) where hardware nested virtualization is unavailable.
 - **Acceptance Criteria**:
   1. **UEFI Boot**: Firmware successfully locates the EFI bootloader (`systemd-boot` or GRUB) and executes the installed kernel and initramfs without kernel panics.
@@ -37,7 +37,7 @@ flowchart LR
 ### 2. `rootless-systemd` (Containerized Systemd as Unprivileged User)
 
 - **Description**: Runs the container image under rootless Podman with systemd enabled as PID 1 (`podman run --systemd=always`) under a normal, non-root user account.
-- **Typical Use Case**: The [webtop.Containerfile](file:///home/pants/Projects/container_projects/coreos/webtop.Containerfile) desktop container or service quadlets.
+- **Typical Use Case**: The [webtop.Containerfile](webtop.Containerfile) desktop container or service quadlets.
 - **Execution Command**:
   ```bash
   podman run -d \
@@ -75,7 +75,7 @@ flowchart LR
 ### 4. `rootless-multi` (Multi-Process User Namespace with `fuse-overlayfs`)
 
 - **Description**: Multi-process container or nested container runtime operating under an unprivileged user account using user namespaces, subuids/subgids, and `fuse-overlayfs` for container storage.
-- **Typical Use Case**: Nested Podman within Alma developer images ([dx.Containerfile](file:///home/pants/Projects/container_projects/coreos/dx.Containerfile), `rootfs/common/etc/containers/containers.conf.d/20-nested.conf`).
+- **Typical Use Case**: Nested Podman within Alma developer images ([dx.Containerfile](dx.Containerfile), `rootfs/common/etc/containers/containers.conf.d/20-nested.conf`).
 - **Configuration Contract**:
   - Subuid/subgid allocation configured via `/usr/sbin/setup-podman-user <user> <id>`.
   - Storage driver set to `fuse-overlayfs` with `additionalimagestores = ["/var/lib/host-containers"]`.
@@ -93,14 +93,14 @@ flowchart LR
 When reproducing bugs or testing changes locally, you must observe these strict system limits:
 
 ### 1. Memory Cap: 2048 MB RAM
-- **Constraint**: Local test VMs must not exceed **2048 MB RAM** and **2 vCPUs**.
-- **Rationale**: Host memory is constrained; spinning up higher-memory VMs risks triggering the host Linux Out-Of-Memory (OOM) killer.
-- **Enforcement**: Default configuration in [justfile](file:///home/pants/Projects/container_projects/coreos/justfile#L131) and [dev-tools/testvm.sh](file:///home/pants/Projects/container_projects/coreos/dev-tools/testvm.sh#L8) enforces:
+- **Constraint**: Local test VMs default to **2048 MB RAM** and **2 vCPUs**. Keep values modest so the host stays responsive; `just test-vm` accepts overrides (e.g. `just test-vm latest 4096 4`) when a specific test needs more.
+- **Rationale**: Host memory is constrained; spinning up oversized VMs risks triggering the host Linux Out-Of-Memory (OOM) killer.
+- **Enforcement**: Default configuration in [justfile](justfile#L131) enforces:
   ```just
   _VM_MEMORY := "2048"
   _VM_VCPUS  := "2"
   ```
-  Never override these defaults with values exceeding 2048 MB during automated validation.
+  Keep the defaults for automated validation unless a specific test needs more headroom.
 
 ### 2. Privilege Model: Rootless Podman + Rootful KVM
 - **Rootless Podman**: General container inspection, layer extraction, and application testing run as the unprivileged user.
