@@ -13,7 +13,7 @@ PP_FILE := $(POLICY_NAME).pp
 # Context-only module: no new types, just file contexts reusing standard
 # Fedora types. Adapted from nix-community/nix-installers/selinux, the
 # policy Fedora adopted in selinux-policy PR #3454. Compiled at the
-# current policy version (matches build/selinux/borgmatic/Makefile).
+# current policy version.
 .PHONY: all clean install uninstall validate
 
 all: $(PP_FILE)

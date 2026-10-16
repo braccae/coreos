@@ -14,7 +14,7 @@ This project builds upon bootc-compatible base images to create customized, immu
 - **Key Features**:
   - Tailscale VPN integration
   - Cockpit plugins for a remote cockpit-ws instance
-  - Backup tools (borgmatic, rclone, rsync)
+  - Backup tools (Restic, Databasus, rclone, rsync)
   - QEMU guest agent for virtualization
   - Firewall and security tools
 
@@ -76,7 +76,7 @@ This project builds upon bootc-compatible base images to create customized, immu
   - File management
 
 ### Backup & Storage
-- **Borgmatic**: Automated, deduplicated backups
+- **Restic & Databasus**: Automated, deduplicated file and database backups
 - **Rclone**: Cloud storage synchronization
 - **ZFS**: Advanced filesystem with snapshots (HCI images)
 - **Btrfs**: Copy-on-write filesystem support

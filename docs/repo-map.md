@@ -29,7 +29,7 @@ rootfs/
 │   │   └── tmpfiles.d/         # Ephemeral directory creation rules
 │   ├── usr/
 │   │   ├── lib/
-│   │   │   ├── systemd/system/ # Base systemd services & timers (borgmatic, etc.)
+│   │   │   ├── systemd/system/ # Base systemd services & timers
 │   │   │   ├── sysusers.d/     # System user & group declarations
 │   │   │   └── tmpfiles.d/     # Persistent storage paths for services
 │   │   ├── libexec/coreos/     # Operational helper scripts

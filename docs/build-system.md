@@ -9,27 +9,23 @@ This document describes the multi-stage Containerfile build pipelines, bootc val
 Multi-staging is utilized extensively across the repository to keep deployment container images minimal, decouple build tooling from runtime environments, and manage external dependencies cleanly.
 
 ### 1. Base AlmaLinux Multi-Stage Pipeline ([Containerfile](Containerfile))
-The primary base image uses a five-stage build pipeline:
+The primary base image uses a four-stage build pipeline:
 
 ```mermaid
 flowchart TD
     Base["Stage 1: base<br/>FROM quay.io/almalinuxorg/almalinux-bootc:10<br/>(Repositories, EPEL, Astral uv)"]
-    Borg["Stage 2: borgmatic-builder<br/>FROM base AS borgmatic-builder<br/>(Builds borgmatic wheel into /tmp/borgmatic)"]
-    Final["Stage 3: final<br/>FROM base AS final<br/>(Core system packages, Cockpit, DNF tools)"]
-    Kmods["Stage 4: kmods<br/>FROM ${KMODS_IMAGE} AS kmods<br/>(Imports compiled ZFS RPMs)"]
-    Assembly["Stage 5: Final Assembly<br/>FROM final<br/>(Install ZFS RPMs, depmod, dracut, rootfs overlays, bootc lint)"]
+    Final["Stage 2: final<br/>FROM base AS final<br/>(Core system packages, Cockpit, DNF tools)"]
+    Kmods["Stage 3: kmods<br/>FROM ${KMODS_IMAGE} AS kmods<br/>(Imports compiled ZFS RPMs)"]
+    Assembly["Stage 4: Final Assembly<br/>FROM final<br/>(Install ZFS RPMs, depmod, dracut, rootfs overlays, bootc lint)"]
 
-    Base --> Borg
     Base --> Final
-    Borg -- "COPY /tmp/borgmatic /usr" --> Final
     Final --> Assembly
     Kmods -- "COPY /zfs/alma/${TARGETARCH}/ /tmp/rpms/" --> Assembly
 ```
 
 Key stages:
 - **`base`**: Initializes upstream AlmaLinux 10 repositories, EPEL, RPM Fusion, and installs Astral `uv` for isolated Python tool compilation.
-- **`borgmatic-builder`**: Installs `gcc` and `python3-devel`, compiling Borgmatic into an isolated prefix (`/tmp/borgmatic`) using `uv pip install`.
-- **`final`**: Installs core systemd services, Cockpit modules, virtualization drivers, and copies `/tmp/borgmatic` into `/usr`.
+- **`final`**: Installs core systemd services, Cockpit modules, and virtualization drivers.
 - **`kmods`**: Parameterized import stage driven by `ARG KMODS_IMAGE=localhost/kmods:latest`.
 - **Final Assembly**: Copies kernel modules for the target architecture (`$TARGETARCH`), performs a kernel version compatibility check against `/tmp/rpms/kernel-version.txt`, installs the matching ZFS RPMs, executes `depmod -a`, runs `dracut -f`, copies filesystem overlays (`rootfs/non_btrfs/`, `rootfs/common/`), and runs `bootc container lint`.
 
@@ -142,7 +138,7 @@ The [build/justfile](build/justfile) contains specialized modular recipes invoke
 - `install-ansible`: Installs the Ansible automation engine, linter, and core collections.
 - `install-java`: Installs OpenJDK 21 headless/runtime packages.
 - `install-kde-utils`: Installs KDE desktop utilities, Discover package management plugins, Konsole, and Qt6 dependencies.
-- `install-misc-tools`: Installs operational utilities (`tailscale`, `zsh`, `rclone`, `borgmatic`, `samba`, `bat`, `bees`).
+- `install-misc-tools`: Installs operational utilities (`tailscale`, `zsh`, `rclone`, `borgbackup`, `samba`, `bat`, `bees`).
 - `install-game-mode`: Enables COPR repository and installs XIVLauncher.
 - `install-virt-tools`: Installs QEMU/KVM userland tools, `virt-manager`, and virtio graphics drivers.
 - `install-dev-mode`: Installs development tools (Visual Studio Code, `pnpm`, `nodejs`, `gh`).

@@ -1,0 +1,5 @@
+[Unit]
+Description=Volume for Databasus persistent data
+
+[Volume]
+VolumeName=databasus-data
