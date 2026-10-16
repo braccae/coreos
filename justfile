@@ -539,7 +539,7 @@ test-rootless-multi image='localhost/alma:latest':
     podman exec "$CONTAINER_NAME" /usr/sbin/setup-podman-user "$USER_NAME" "$USER_UID" > "$EVID_DIR/setup-podman-user.log" 2>&1 || true
 
     # rootless-multi.1: fuse-overlayfs storage
-    podman exec "$CONTAINER_NAME" sh -c 'podman info --format "{{{{.Store.GraphDriverName}}"' > "$EVID_DIR/podman-info.txt" 2>&1 || true
+    podman exec "$CONTAINER_NAME" sh -c 'podman info --format "{{{{.Store.GraphDriverName}}"' > "$EVID_DIR/podman-info.txt" 2> "$EVID_DIR/podman-info.err" || true
     podman exec "$CONTAINER_NAME" sh -c 'mount | grep fuse-overlayfs || true' > "$EVID_DIR/mount.txt" 2>&1 || true
     GRAPH_DRIVER="$(tr -d '[:space:]' < "$EVID_DIR/podman-info.txt")"
     if [ "$GRAPH_DRIVER" != "fuse-overlayfs" ] || grep -qi "operation not permitted" "$EVID_DIR/mount.txt"; then
