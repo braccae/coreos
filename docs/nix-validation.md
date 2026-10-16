@@ -127,3 +127,42 @@ IMAGE=localhost/alma:nix-base \
 
 A skipped VM (exit `2`) does not fail the `all` run; a VM failure (exit `1`)
 does.
+
+## Verified runs
+
+The harness was validated end-to-end against a nix-enabled AlmaLinux 10 base
+image carrying the BUG-5 sshd fix. A single `all` invocation passed every mode
+(`EXIT=0`, `RESULT: all executed modes passed`):
+
+| Mode | Command | Evidence dir (UTC) | Result |
+|------|---------|--------------------|--------|
+| app | `IMAGE=localhost/alma:nix-test validate-nix-runmodes.sh app` | `output/evidence/nix-app/20261016T130934Z` | pass — `hello` executed, `Hello, world!` |
+| systemd | `... validate-nix-runmodes.sh systemd` | `output/evidence/nix-systemd/20261016T130956Z` | pass — `nix.mount` active, `nix-daemon.socket` active |
+| vm | `... validate-nix-runmodes.sh vm` | `output/evidence/nix-vm/20261016T131044Z` | pass — base disk `…/bug5-vm/bug5-cfg.qcow2`, `nix 2.31.5` |
+
+Key facts from the VM run's `guest-run.txt`:
+
+```
+=== user=core home=/var/home/core ===
+=== nix version ===
+nix (Nix) 2.31.5
+=== install nixpkgs.hello ===
+copying path '…/hello-2.12.3' from 'https://cache.nixos.org'...
+=== execute  ===
+Hello, world!
+```
+
+The VM base disk is the BUG-5-fixed, config-built qcow2 (core user + sshd
+host-key SELinux fix), i.e. the same change set as `localhost/alma:bug5-fixed`.
+The vm `result.json` records the resolved disk in its `base_disk` field.
+
+### Known-good base disks
+
+| Disk | Notes |
+|------|-------|
+| `…/scratch/bug5-vm/bug5-cfg.qcow2` | BUG-5 sshd fix + config-built `core` user + nix stack. Used in the verified run above. |
+| `output/alma/nix-base/qcow2/disk.qcow2` | Freshly built by `build-nix-base-disk.sh` from a nix+BUG-5 image. Preferred for CI. |
+
+Nix-only disks (nix stack but pre-BUG-5 sshd) are **not** candidates: sshd
+fails under enforcing and the VM mode cannot reach the guest.
+
