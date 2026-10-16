@@ -46,6 +46,7 @@ RUN dnf install -y \
     sssd \
     tailscale \
     borgbackup \
+    restic \
     firewalld \
     sqlite \
     fuse \

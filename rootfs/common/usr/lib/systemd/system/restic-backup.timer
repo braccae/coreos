@@ -1,0 +1,11 @@
+[Unit]
+Description=restic backup timer
+Documentation=https://restic.readthedocs.io/
+
+[Timer]
+# Run daily at 04:30 (offset from borgmatic's 04:00)
+OnCalendar=*-*-* 04:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
