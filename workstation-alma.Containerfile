@@ -34,10 +34,12 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc
 #    - input-leap: omitted; not packaged in EPEL 10 or RPMFusion EL10.
 #    - pnpm: omitted from RPM transaction; installed globally via npm below.
 #    - ghostty: omitted; Fedora COPR only, no EL10 package available.
-#    - chromium-qt6-ui, fedora-chromium-config-kde: omitted; Fedora-specific configs.
+#    - fedora-chromium-config-kde: omitted; Fedora-specific config, not in EL10.
 #    - plasma-discover-flatpak, plasma-discover-rpm-ostree: omitted; Fedora packaging.
 #    - bees: omitted; Fedora deduplication package not in EPEL 10.
 #    - XIVLauncher: omitted; Fedora game COPR only.
+# Note: chromium, chromium-headless, chromedriver and chromium-qt6-ui ARE available
+#    in EPEL 10 (155.0.x) and are installed below to match the bazzite workstation set.
 RUN dnf install -y \
         plasma-workspace \
         plasma-desktop \
@@ -77,6 +79,11 @@ RUN dnf install -y \
         waypipe \
         mpv \
         bat \
+        chromium \
+        chromium-headless \
+        chromedriver \
+        chromium-qt6-ui \
+        sqlite-devel \
         code \
         gh \
     && dnf clean all
