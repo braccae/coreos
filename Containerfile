@@ -187,6 +187,17 @@ RUN dnf install -y checkpolicy make && \
     rm -rf /tmp/nix-selinux && \
     dnf clean all
 
+# --- Hermes Agent CLI -------------------------------------------------------
+# Ship the Hermes CLI in the base image so a deployed host has a working
+# `hermes` command. Installed system-wide under /usr/local (FHS layout); the
+# installer runs with --skip-browser --skip-computer-use because this is a
+# server/OS image, not a browser host (see build/scripts/install-hermes.sh).
+# HERMES_HOME is baked into the image env so the committed dependency
+# environment resolves for a bare `podman run ... hermes`, not just a login
+# shell — this mirrors the upstream Hermes image's `ENV HERMES_HOME`.
+RUN bash /tmp/build_scripts/install-hermes.sh
+ENV HERMES_HOME=/usr/local/lib/hermes-agent
+
 RUN mkdir -p /usr/share/factory/etc && cp -a /etc/. /usr/share/factory/etc/
 
 RUN bootc container lint
