@@ -27,6 +27,18 @@ export XDG_CURRENT_DESKTOP=KDE
 export DESKTOP_SESSION=plasma
 
 # --- streaming ---------------------------------------------------------------
+# selkies-session defaults to an X11 backend and refuses to start without Xvfb;
+# force the Wayland backend so it brings up its own compositor instead.
+export SELKIES_WAYLAND=true
+
+# selkies-session wraps the desktop in dbus-run-session unless a session bus is
+# already advertised. The systemd user manager (user@1000.service) owns
+# $XDG_RUNTIME_DIR/bus, and Plasma needs *that* bus to reach
+# org.freedesktop.systemd1 — point at it instead of spawning a private one.
+if [ -S "${XDG_RUNTIME_DIR}/bus" ]; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+fi
+
 # Selkies has basic auth ON by default and refuses to start without a password.
 # Default to "webtop"; override with SELKIES_BASIC_AUTH_PASSWORD in the unit's
 # environment file (/etc/webtop-alma/session.env). To serve without a web login

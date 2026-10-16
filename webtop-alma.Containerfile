@@ -15,6 +15,9 @@ FROM ghcr.io/braccae/alma:latest
 # --- KDE Plasma 6 desktop, Wayland + Xwayland, audio ------------------------
 # plasma-workspace/plasma-desktop/kwin are 6.6.4 in EPEL 10. Xwayland and mesa
 # are needed for X11 client apps; pipewire + wireplumber are the audio stack.
+# dbus-daemon provides /usr/bin/dbus-run-session on EL 10 (it lives in
+# dbus-tools on Fedora) — /usr/libexec/plasma-dbus-run-session-if-needed execs
+# it before startplasma-wayland, so without it the Plasma session never starts.
 RUN dnf install -y \
         plasma-workspace \
         plasma-desktop \
@@ -35,6 +38,7 @@ RUN dnf install -y \
         pipewire-pulseaudio \
         pulseaudio-utils \
         alsa-utils \
+        dbus-daemon \
     && dnf clean all
 
 # --- Selkies streaming server (from PyPI; bundles the web dashboard) ---------
@@ -52,16 +56,28 @@ RUN uv venv /opt/selkies --python python3 && \
 # for core (/var/lib/systemd/linger/core) and points sshd's host keys at
 # /var/lib/sshd, so nothing else needs adding for SSH or user services.
 #
-# `video`/`render` (GID 39/105) come from systemd-sysusers: they resolve via NSS
-# but are NOT in /etc/group on disk, and useradd/usermod/gpasswd validate against
-# /etc/group directly — so `useradd -G wheel,video` fails and `usermod -aG video`
-# silently no-ops. Materialize the group lines first, then add membership by GID.
-RUN useradd -m -u 1000 -G wheel core && \
+# Container mode has two traps:
+#
+#  * etc-overlay-sync.service (ConditionVirtualization=container) copies the
+#    immutable snapshot /usr/share/factory/etc over /etc on every boot, so a
+#    plain `useradd` is discarded and systemd fails with "User=core" 217/USER.
+#    Create the account in /etc, then refresh the factory snapshot from it.
+#  * `video`/`render` (GID 39/105) come from systemd-sysusers: they resolve via
+#    NSS but are NOT in /etc/group on disk, and useradd/usermod/gpasswd validate
+#    against /etc/group directly — so `useradd -G wheel,video` fails and
+#    `usermod -aG video` silently no-ops. Materialize the group lines first,
+#    then add membership by name.
+#
+# -d /home/core matches the unit's HOME and the quadlet's volume mount point.
+RUN groupadd -g 1000 core && \
+    useradd -m -u 1000 -g 1000 -G wheel -s /bin/bash -d /home/core core && \
     grep -q '^video:'  /etc/group || echo 'video:x:39:'   >> /etc/group; \
     grep -q '^render:' /etc/group || echo 'render:x:105:' >> /etc/group; \
-    usermod -aG 39,105 core && \
+    usermod -aG video,render core && \
     echo 'core:webtop' | chpasswd && \
-    echo "core ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/core
+    echo "core ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/core && \
+    cp -a /etc/passwd /etc/group /etc/shadow /etc/gshadow /usr/share/factory/etc/ && \
+    cp -a /etc/sudoers.d/core /usr/share/factory/etc/sudoers.d/core
 
 # --- session overlay ---------------------------------------------------------
 # webtop.service + the launcher; see rootfs/webtop-alma/.
