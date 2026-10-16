@@ -30,15 +30,15 @@ cd "$WD"
 # --- base disk resolution ----------------------------------------------------
 # The base qcow2 must contain BOTH the nix stack AND the BUG-5 sshd host-key
 # SELinux fix (so sshd starts under enforcing), and a `core` admin user whose
-# authorized key matches ${IDKEY}.pub.  Resolution order:
+# authorized key matches ${IDKEY}.pub.  A nix-ONLY disk (e.g. an image built
+# before BUG-5 landed) has no working sshd and would hang here, so such disks
+# are deliberately NOT candidates.  Resolution order:
 #   1. explicit $BASE_DISK (if set and readable)
 #   2. first readable path in the candidate list below
 # If nothing usable is found we SKIP (exit 2) and print how to build one with
 # build/scripts/build-nix-base-disk.sh — never a silent false pass.
 _BASE_CANDIDATES=(
     "$WD/output/alma/nix-base/qcow2/disk.qcow2"
-    "$WD/output/alma/nix-test/qcow2/disk.qcow2"
-    "/home/pants/Projects/container_projects/coreos/.worktrees/nix-base/output/alma/nix-test/qcow2/disk.qcow2"
     "/home/pants/.hermes/profiles/cody-the-coder/cache/scratch/bug5-vm/bug5-cfg.qcow2"
     "/home/pants/.hermes/profiles/cody-the-coder/cache/scratch/bib-out2/qcow2/disk.qcow2"
 )
