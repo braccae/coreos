@@ -1,0 +1,40 @@
+# ==============================================================================
+# System-wide justfile — AlmaLinux bootc base image (ghcr.io/braccae/alma)
+# ==============================================================================
+#
+# This file is installed at /justfile by the base Containerfile: the active
+# "COPY rootfs/common/ /" line copies rootfs/common/justfile into the image
+# root. The `just` command runner itself is already installed by the base
+# image's dnf install list, so this file needs no Containerfile change.
+#
+# How it becomes "system-wide":
+#   just resolves a recipe by searching the current working directory and every
+#   ancestor directory up to the filesystem root, stopping at the first justfile
+#   it finds. Because /justfile is an ancestor of every path on the system, the
+#   recipes below are reachable from ANY working directory.
+#
+# Precedence:
+#   A justfile closer to the working directory wins. A user's ~/justfile or a
+#   project justfile therefore overrides these recipes. That is intended.
+#
+# Scope:
+#   Keep this file to system-wide, base-image-level recipes only. Image-, host-
+#   or task-specific recipes belong in the repository justfiles (./justfile,
+#   ./build/justfile) or in the relevant rootfs overlay.
+#
+# Recipes:
+#   default        List the recipes in this justfile.
+#   be USER        Become another user in a login shell (default: root).
+#
+# See docs/system-justfile.md for details and verification steps.
+# ==============================================================================
+
+# List the recipes available from this system-wide justfile.
+default:
+    @just --list
+
+# Become another user in a login shell — the `just be USER` shortcut.
+be USER="root":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    exec run0 --user="{{ USER }}" -i
