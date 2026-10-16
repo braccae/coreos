@@ -1,0 +1,11 @@
+#!/bin/sh
+# If running in a container where host kernel (uname -r) is not in /lib/modules,
+# fall back to the kernel version installed in the container image.
+if [ -d "/lib/modules/$(uname -r)" ]; then
+    exec /usr/sbin/modinfo "$@"
+fi
+kver=$(find /usr/lib/modules -maxdepth 1 -mindepth 1 -type d -printf '%f\n' 2>/dev/null | head -1)
+if [ -n "$kver" ]; then
+    exec /usr/sbin/modinfo -k "$kver" "$@"
+fi
+exec /usr/sbin/modinfo "$@"
