@@ -432,8 +432,12 @@ test-rootless-app image='localhost/alma:latest' command='echo ok':
     C4="pass"
 
     # rootless-app.1 & rootless-app.3: Long-running command, PID 1 check, and SIGTERM handling
+    # PID 1 with a default disposition ignores SIGTERM, so the workload must install a
+    # SIGTERM handler for signal propagation to be observable (the shell is the passed
+    # command here — still not systemd/init).
     podman rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-    podman run --rm --name "$CONTAINER_NAME" -d --entrypoint "" "$IMAGE" sleep 300 >/dev/null
+    podman run --rm --name "$CONTAINER_NAME" -d --entrypoint "" "$IMAGE" \
+        sh -c 'trap "exit 143" TERM; sleep 300 & wait' >/dev/null
 
     PID1_COMM="$(podman exec "$CONTAINER_NAME" ps -o comm= -p 1 2>/dev/null | tr -d '[:space:]' || true)"
     echo "$PID1_COMM" > "$EVID_DIR/pid1.txt"
@@ -444,8 +448,9 @@ test-rootless-app image='localhost/alma:latest' command='echo ok':
 
     podman kill --signal SIGTERM "$CONTAINER_NAME" >/dev/null
     set +e
-    SIG_EXIT="$(timeout "${APP_STOP_TIMEOUT}" podman wait "$CONTAINER_NAME" 2>/dev/null | tr -d '[:space:]')"
+    SIG_EXIT="$(timeout "${APP_STOP_TIMEOUT}" podman wait "$CONTAINER_NAME" 2>/dev/null)"
     WAIT_RC=$?
+    SIG_EXIT="$(echo "$SIG_EXIT" | tr -d '[:space:]')"
     set -e
     echo "exit=${SIG_EXIT:-$WAIT_RC}" > "$EVID_DIR/signal-exit.txt"
     if [ "$WAIT_RC" -ne 0 ] || { [ "$SIG_EXIT" != "0" ] && [ "$SIG_EXIT" != "143" ]; }; then
