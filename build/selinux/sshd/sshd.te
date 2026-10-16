@@ -1,0 +1,11 @@
+module sshd 1.0;
+
+# Context-only module: no new types, just file contexts for the /var/lib/sshd
+# host-key directory reusing the standard targeted-policy types (etc_t for the
+# directory, sshd_key_t for the generated keys).  Mirrors the upstream
+# /etc/ssh host-key labelling.
+
+require {
+  type etc_t;
+  type sshd_key_t;
+}
