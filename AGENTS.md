@@ -107,7 +107,7 @@ Summary of all 12 Containerfiles in this repository:
 | :--- | :--- | :--- | :--- | :--- |
 | [Containerfile](Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | Core bootc server image | Alma | `container.yml` |
 | [dockerhost.Containerfile](dockerhost.Containerfile) | `ghcr.io/braccae/alma:latest` | Docker engine host with Cockpit UI | Alma | `container-dockerhost.yml` |
-| [dx.Containerfile](dx.Containerfile) | `ghcr.io/braccae/alma:latest` | Developer workstation (Nix, Podman) | Alma | None |
+| [dx.Containerfile](dx.Containerfile) | `ghcr.io/braccae/alma:latest` | Developer workstation (Nix, Podman) | Alma | `container-dx.yml` |
 | [hci.Containerfile](hci.Containerfile) | `ghcr.io/braccae/alma:latest` | Hyperconverged virt host (KVM, Cockpit) | Alma | `container-hci.yml` |
 | [installer.Containerfile](installer.Containerfile) | `ghcr.io/braccae/coreos:workstation` | Anaconda installer builder environment | Alma | `container-installer.yml` |
 | [k3s.Containerfile](k3s.Containerfile) | `ghcr.io/braccae/alma:latest` | Lightweight Kubernetes node | Alma | `container-k3s.yml` |
