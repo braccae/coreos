@@ -414,8 +414,10 @@ test-rootless-app image='localhost/alma:latest' command='echo ok':
     fi
 
     # rootless-app.2 & rootless-app.4: Smoke command clean exit + log streaming
+    # Clear entrypoint (--entrypoint "") because bootc images ship ENTRYPOINT ["/sbin/init"],
+    # so the passed command runs directly as PID 1 without starting systemd/init.
     set +e
-    podman run --rm "$IMAGE" $CMD > "$EVID_DIR/logs.txt" 2>&1
+    podman run --rm --entrypoint "" "$IMAGE" $CMD > "$EVID_DIR/logs.txt" 2>&1
     SMOKE_RC=$?
     set -e
     echo "exit=${SMOKE_RC}" > "$EVID_DIR/smoke-exit.txt"
@@ -431,7 +433,7 @@ test-rootless-app image='localhost/alma:latest' command='echo ok':
 
     # rootless-app.1 & rootless-app.3: Long-running command, PID 1 check, and SIGTERM handling
     podman rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-    podman run --rm --name "$CONTAINER_NAME" -d "$IMAGE" sleep 300 >/dev/null
+    podman run --rm --name "$CONTAINER_NAME" -d --entrypoint "" "$IMAGE" sleep 300 >/dev/null
 
     PID1_COMM="$(podman exec "$CONTAINER_NAME" ps -o comm= -p 1 2>/dev/null | tr -d '[:space:]' || true)"
     echo "$PID1_COMM" > "$EVID_DIR/pid1.txt"
