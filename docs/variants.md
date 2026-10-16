@@ -1,6 +1,6 @@
 # Image Variants Reference
 
-This repository maintains 12 Containerfiles across two primary OS families: **AlmaLinux** (bootc enterprise server and infrastructure variants) and **Bazzite** (gaming, desktop, and workstation variants).
+This repository maintains 13 Containerfiles across two primary OS families: **AlmaLinux** (bootc enterprise server and infrastructure variants) and **Bazzite** (gaming, desktop, and workstation variants).
 
 ---
 
@@ -20,12 +20,13 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
 | [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | Mobile developer workstation with GNOME desktop environment | Bazzite | `.github/workflows/container-laptop.yml` | Installs developer tooling, Ansible, Java, and Bazzite overlays. |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | Containerized remote KDE Wayland desktop accessible over HTTP via Selkies | Bazzite | `.github/workflows/container-webtop.yml` | Experimental rootless desktop streaming container. |
 | [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Primary desktop workstation image with KDE, ZFS, and virtualization tools | Bazzite | `.github/workflows/container-workstation.yml` | **FROZEN PRODUCTION IMAGE**. Must not be modified. |
+| [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | Local KDE Plasma 6 desktop workstation (SDDM, virtualization, dev tooling) | AlmaLinux | `.github/workflows/container-workstation-alma.yml` | AlmaLinux equivalent of the Bazzite workstation image. |
 
 ---
 
 ## Detailed Variant Specifications
 
-### AlmaLinux Family (9 Containerfiles)
+### AlmaLinux Family (10 Containerfiles)
 
 1. **[Containerfile](Containerfile) (Base)**
    - **Build Source**: `FROM quay.io/almalinuxorg/almalinux-bootc:10 AS base` (Line 2).
@@ -68,22 +69,28 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
    - **Build Source**: User-configurable.
    - **Role**: Local developer scratchpad. Git-ignored in `.gitignore` to prevent accidental commits of local experimentation.
 
+10. **[workstation-alma.Containerfile](workstation-alma.Containerfile)**
+    - **Build Source**: `FROM ghcr.io/braccae/alma:latest`.
+    - **Role**: Local KDE Plasma 6 desktop workstation. Installs the KDE Plasma stack from EPEL, SDDM display manager (Wayland), virtualization tooling (virt-manager, QEMU/KVM), Java 21, and dev tooling (VS Code, GitHub CLI, pnpm).
+    - **Overlay**: Copies `rootfs/workstation-alma/`.
+    - **CI Note**: Automated CI workflow `.github/workflows/container-workstation-alma.yml`.
+
 ---
 
 ### Bazzite Family (3 Containerfiles)
 
-10. **[laptop.Containerfile](laptop.Containerfile)**
+11. **[laptop.Containerfile](laptop.Containerfile)**
     - **Build Source**: `FROM ghcr.io/ublue-os/bazzite-dx-gnome`.
     - **Role**: Developer laptop image. Based on Universal Blue Bazzite with GNOME, adding development environments (VS Code, Java 21, Ansible) via [build/justfile](build/justfile).
     - **Overlay**: Copies `rootfs/workstation/`.
 
-11. **[webtop.Containerfile](webtop.Containerfile)**
+12. **[webtop.Containerfile](webtop.Containerfile)**
     - **Build Source**: `FROM ghcr.io/ublue-os/bazzite:stable-43 as base`.
     - **Role**: Browser-accessible KDE Wayland desktop streaming environment running inside an unprivileged rootless container. Uses Selkies/Pixelflux WebRTC streaming on port 3000.
     - **Overlay**: Copies `rootfs/common/` and `rootfs/webtop/`.
     - **CI Note**: Automated CI workflow `.github/workflows/container-webtop.yml`.
 
-12. **[workstation.Containerfile](workstation.Containerfile)**
+13. **[workstation.Containerfile](workstation.Containerfile)**
     - **Build Source**: `FROM ghcr.io/ublue-os/bazzite:stable-44 AS base`.
     - **Role**: Primary desktop workstation operating system with KDE Plasma, ZFS filesystem support via kmods, virtualization tools, and development tooling.
     - **Overlay**: Copies `rootfs/btrfs_config/` and `rootfs/workstation/`.
@@ -103,5 +110,6 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
 | `.github/workflows/container-kmods.yml` | [kmods.Containerfile](kmods.Containerfile)<br>[kmods-bundle.Containerfile](kmods-bundle.Containerfile) | Push to `main`, `kmods*.Containerfile`, `build-zfs.sh` | Dispatches `container.yml` and `container-workstation.yml` |
 | `.github/workflows/container-laptop.yml` | [laptop.Containerfile](laptop.Containerfile) | Push to `main`, `laptop.Containerfile` | None |
 | `.github/workflows/container-workstation.yml` | [workstation.Containerfile](workstation.Containerfile) | Push to `main`, `workstation.Containerfile`, `rootfs/workstation/**` | None |
+| `.github/workflows/container-workstation-alma.yml` | [workstation-alma.Containerfile](workstation-alma.Containerfile) | Push to `main`, `workstation-alma.Containerfile`, `rootfs/workstation-alma/**` | None |
 | *(None)* | [dx.Containerfile](dx.Containerfile) | N/A (Manual / Local builds only) | None |
 | `.github/workflows/container-webtop.yml` | [webtop.Containerfile](webtop.Containerfile) | Push to `main`, `webtop.Containerfile`, `rootfs/webtop/**` | None |
