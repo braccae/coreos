@@ -209,7 +209,9 @@ decision for the operator, not a trivial substitution.
    ```bash
    podman run --entrypoint rpm localhost/workstation-alma:test -q \
        plasma-workspace sddm kwin virt-manager qemu-kvm java-21-openjdk code gh chromium
-   podman run --entrypoint id localhost/workstation-alma:test core   # uid=1000, wheel/video/render
+   # NOTE: `core` is NOT baked into the container image (only webtop bakes a user).
+   # It is created at VM image build time via build/config-img.toml, so `id core`
+   # inside the container is expected to fail. Verify it on the booted VM instead.
    ```
 4. **Current production state captured** (for rollback):
    ```bash
@@ -263,7 +265,7 @@ Log in on the console (SDDM Wayland session) and confirm each subsystem:
 | Network/Tailscale | `tailscale status` | node online |
 | Dev tooling | `code --version`, `gh --version`, `pnpm --version` | present |
 | Chromium | launch `chromium` | launches (added this task) |
-| User identity | `id core` | uid=1000, groups wheel/video/render |
+| User identity | `id core` (on the booted VM) | uid=1000, groups wheel/video/render — `core` exists only **after** the VM image is built (config-img.toml), not in the container image itself |
 
 ### 3.4 Rollback path
 
@@ -304,6 +306,13 @@ kernel from the bootloader's ostree menu entry and rolling back from there.
 | `docs/workstation-alma-merge.md` | **new** — this document |
 | `workstation-alma.Containerfile` | added `chromium`, `chromium-headless`, `chromedriver`, `chromium-qt6-ui`, `sqlite-devel`; corrected the omission note |
 
+Follow-up `t_0c8501b9` (drop the baked-in `core` user — only webtop bakes a user):
+
+| File | Change |
+| :--- | :--- |
+| `workstation-alma.Containerfile` | removed the `# --- core user ---` block (`useradd`/`chpasswd`/`sudoers.d/core`/`/home/core`); replaced with a comment noting the user is provisioned at VM image build time via `build/config-img.toml` |
+| `docs/workstation-alma-merge.md` | corrected the "User identity" verification row and the §5.4 "Core user" evidence; dropped `core` from the sysusers lint warning |
+
 No frozen file was modified: `workstation.Containerfile` and `rootfs/workstation/`
 are untouched. Nothing was pushed and no PR was opened.
 
@@ -311,33 +320,37 @@ are untouched. Nothing was pushed and no PR was opened.
 
 ## 5. Build & verification evidence
 
-Raw evidence is in [`build.log`](../build.log) (3579 lines) in the worktree root.
+Raw evidence is in [`build.log`](../build.log) in the worktree root. This build
+reflects the follow-up `t_0c8501b9` change that dropped the baked-in `core` user.
 
 ### 5.1 Build
 
 ```bash
 $ podman build -f workstation-alma.Containerfile -t localhost/workstation-alma:test .
 ...
-STEP 11/11: ENTRYPOINT ["/usr/lib/systemd/systemd"]
+STEP 9/9: ENTRYPOINT ["/usr/lib/systemd/systemd"]
 COMMIT localhost/workstation-alma:test
---> 2f4df2ff75e3
+--> 90f6feab80c2
 Successfully tagged localhost/workstation-alma:test
 ```
 
 Resulting image:
 ```
-Id:     2f4df2ff75e314b97f79daaf1ff5d7b43c57539af4aeb04c1329eafb25e27cb4
-Digest: sha256:797e184289bca8f35b2b17ee9c7c92c9ebf16603f4edd3738898f30bed423f02
-Size:   8516159954 (8.5 GB)
-Created: 2026-10-16 23:08:02 UTC
+Id:     90f6feab80c2c70cdb5f9e016634ea9a66f04ee8c5d866285a8d04b276e815fa
+Digest: sha256:de1d0ed0a994106bb1258aa891f30ea7b5a9e2ec44c73822c37ccb629201c0f1
+Size:   8516116099 (8.5 GB)
+Created: 2026-10-16 23:35:41 UTC
 ```
+
+(The build is now 9 steps rather than 11: removing the baked-in `core` user dropped
+two `RUN` layers.)
 
 ### 5.2 Lint
 
 ```bash
 $ podman run --entrypoint bootc localhost/workstation-alma:test container lint
 Lint warning: nonempty-run-tmp: Found content in runtime-only directories (/run, /tmp)
-Lint warning: sysusers: /etc/passwd|group entries without systemd sysusers.d (avahi, core, usbmuxd)
+Lint warning: sysusers: /etc/passwd|group entries without systemd sysusers.d (avahi, usbmuxd)
 Lint warning: var-log: non-empty logfiles (/var/log/dnf*.log)
 Lint warning: var-tmpfiles: /var content missing tmpfiles.d entries
 Checks passed: 9
@@ -373,10 +386,19 @@ sqlite-devel-3.46.1-6.el10_2.x86_64
 
 ### 5.4 Core user
 
+The container image bakes NO user — `core` is provisioned at VM image build time
+via `build/config-img.toml` (`[[customizations.user]] name = "core"`, groups
+`wheel`, ssh key), matching how the base image ships no user. The `id core`
+check is therefore expected to FAIL inside the container image:
+
 ```bash
 $ podman run --entrypoint id localhost/workstation-alma:test core
-uid=1000(core) gid=1000(core) groups=1000(core),10(wheel),39(video),105(render)
+id: 'core': no such user
+$ echo $?
+1
 ```
+
+On the booted VM image, `id core` should report uid=1000, groups wheel/video/render.
 
 ### 5.5 Non-RPM toolchains present
 

@@ -94,25 +94,13 @@ RUN dnf install -y \
 RUN HOME=/tmp npm install -g pnpm && rm -rf /tmp/.npm
 
 # --- core user ---------------------------------------------------------------
-# The base image ships NO user: `core` is only provisioned in the disk image,
-# via build/config-img.toml. Create it here so the desktop session, SSH and
-# podman.socket (SocketGroup=core) all line up. The base already enables linger
-# for core (/var/lib/systemd/linger/core) and points sshd's host keys at
-# /var/lib/sshd, so nothing else needs adding for SSH or user services.
-#
-# `video`/`render` (GID 39/105) come from systemd-sysusers: they resolve via NSS
-# but are NOT in /etc/group on disk, and useradd/usermod/gpasswd validate against
-# /etc/group directly — so `useradd -G wheel,video` fails and `usermod -aG video`
-# silently no-ops. Materialize the group lines first, then add membership by GID.
-RUN useradd -m -u 1000 -G wheel core && \
-    grep -q '^video:'  /etc/group || echo 'video:x:39:'   >> /etc/group; \
-    grep -q '^render:' /etc/group || echo 'render:x:105:' >> /etc/group; \
-    usermod -aG 39,105 core && \
-    echo 'core:webtop' | chpasswd && \
-    echo "core ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/core
-
-RUN mkdir -p /home/core/Desktop /home/core/Downloads && \
-    chown -R core:core /home/core
+# Intentionally NOT baked into the container image. Like the base image, this
+# image ships NO user: the `core` user is provisioned at disk/VM image build
+# time via build/config-img.toml (`[[customizations.user]] name = "core"`,
+# groups = ["wheel"], ssh key) and/or created at first boot. The desktop
+# session, SSH and podman.socket (SocketGroup=core) resolve against that
+# build-time user. Only the webtop container bakes a user in — see policy in
+# docs/workstation-alma-merge.md.
 
 # --- filesystem overlay ------------------------------------------------------
 # Overlay provides SDDM Wayland configuration, ZRAM generator settings,
