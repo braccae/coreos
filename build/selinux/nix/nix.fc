@@ -1,0 +1,26 @@
+# Nix store file contexts.
+# Adapted from nix-community/nix-installers/selinux/nix.fc
+# (the policy Fedora adopted in fedora-selinux/selinux-policy PR #3454).
+#
+# Two path sets are listed because the persistent store lives at
+# /var/lib/nix and is bind-mounted onto /nix at boot (see nix.mount).
+# Labelling both keeps contexts correct whether a file is reached via
+# the mount point or via the backing directory.
+
+/nix/store/[^/]+/s?bin(/.*)?	system_u:object_r:bin_t:s0
+/nix/store/[^/]+/lib/systemd/system(/.*)?	system_u:object_r:systemd_unit_file_t:s0
+/nix/store/[^/]+/lib(/.*)?	system_u:object_r:lib_t:s0
+/nix/store/[^/]+/man(/.*)?	system_u:object_r:man_t:s0
+/nix/store/[^/]+/etc(/.*)?	system_u:object_r:etc_t:s0
+/nix/store/[^/]+/share(/.*)?	system_u:object_r:usr_t:s0
+/nix/var/nix/daemon-socket(/.*)?	system_u:object_r:var_run_t:s0
+/nix/var/nix/profiles(/per-user/[^/]+)?/[^/]+	system_u:object_r:usr_t:s0
+
+/var/lib/nix/store/[^/]+/s?bin(/.*)?	system_u:object_r:bin_t:s0
+/var/lib/nix/store/[^/]+/lib/systemd/system(/.*)?	system_u:object_r:systemd_unit_file_t:s0
+/var/lib/nix/store/[^/]+/lib(/.*)?	system_u:object_r:lib_t:s0
+/var/lib/nix/store/[^/]+/man(/.*)?	system_u:object_r:man_t:s0
+/var/lib/nix/store/[^/]+/etc(/.*)?	system_u:object_r:etc_t:s0
+/var/lib/nix/store/[^/]+/share(/.*)?	system_u:object_r:usr_t:s0
+/var/lib/nix/var/nix/daemon-socket(/.*)?	system_u:object_r:var_run_t:s0
+/var/lib/nix/var/nix/profiles(/per-user/[^/]+)?/[^/]+	system_u:object_r:usr_t:s0
