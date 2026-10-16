@@ -45,19 +45,33 @@ RUN uv venv /opt/selkies --python python3 && \
     uv pip install --python /opt/selkies/bin/python --no-cache "selkies==2.0.0" && \
     rm -rf /tmp/uv-cache
 
-# --- webtop user ------------------------------------------------------------
-# The `video` group (GID 39) is provided by systemd-sysusers on this bootc base:
-# it resolves via NSS but is NOT in /etc/group on disk. useradd/usermod/gpasswd
-# all validate against /etc/group directly, so `useradd -G wheel,video` fails
-# and `usermod -aG video` silently no-ops. Materialize the group in /etc/group
-# first, then add membership by GID.
-RUN useradd -m -u 1000 -G wheel webtop && \
-    grep -q '^video:' /etc/group || echo 'video:x:39:' >> /etc/group; \
-    usermod -aG 39 webtop && \
-    usermod -U webtop && \
-    passwd -d webtop && \
-    echo "webtop ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/webtop
+# --- core user ---------------------------------------------------------------
+# The base image ships NO user: `core` is only provisioned in the *disk* image,
+# via build/config-img.toml. Create it here so the desktop session, SSH and
+# podman.socket (SocketGroup=core) all line up. The base already enables linger
+# for core (/var/lib/systemd/linger/core) and points sshd's host keys at
+# /var/lib/sshd, so nothing else needs adding for SSH or user services.
+#
+# `video`/`render` (GID 39/105) come from systemd-sysusers: they resolve via NSS
+# but are NOT in /etc/group on disk, and useradd/usermod/gpasswd validate against
+# /etc/group directly — so `useradd -G wheel,video` fails and `usermod -aG video`
+# silently no-ops. Materialize the group lines first, then add membership by GID.
+RUN useradd -m -u 1000 -G wheel core && \
+    grep -q '^video:'  /etc/group || echo 'video:x:39:'   >> /etc/group; \
+    grep -q '^render:' /etc/group || echo 'render:x:105:' >> /etc/group; \
+    usermod -aG 39,105 core && \
+    echo 'core:webtop' | chpasswd && \
+    echo "core ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/core
 
-# Phase 2 adds rootfs/webtop-alma/ (systemd unit + launcher) and the quadlet.
+# --- session overlay ---------------------------------------------------------
+# webtop.service + the launcher; see rootfs/webtop-alma/.
+COPY rootfs/webtop-alma/ /
+
+# Selkies' dashboard uploads into $HOME/Desktop; create the XDG dirs up front so
+# the first connection does not log "Could not create upload directory".
+RUN mkdir -p /home/core/Desktop /home/core/Downloads /etc/webtop-alma && \
+    chown -R core:core /home/core && \
+    chmod +x /usr/local/bin/start-webtop.sh && \
+    systemctl enable webtop.service
 
 ENTRYPOINT ["/usr/lib/systemd/systemd"]
