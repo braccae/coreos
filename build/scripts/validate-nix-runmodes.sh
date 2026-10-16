@@ -211,7 +211,10 @@ run_vm() {
     rc=$?
 
     if [ "$rc" -eq 0 ]; then
-        write_result "$dir" vm pass "$started"
+        local bd=""
+        [ -f "$dir/base-disk.txt" ] && bd="$(cat "$dir/base-disk.txt")"
+        write_result "$dir" vm pass "$started" ",
+  \"base_disk\": \"${bd}\""
         echo "PASS: nix-vm  (evidence: ${dir})"
         return 0
     elif [ "$rc" -eq 2 ]; then

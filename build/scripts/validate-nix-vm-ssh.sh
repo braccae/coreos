@@ -101,6 +101,7 @@ log ">>> nix-${PKG} in bootc VM (ssh path)"
 log "    base disk : $BASE_DISK"
 log "    pubkey    : ${PUBKEY%% *} ...${PUBKEY: -12}"
 log "    evidence  : $EVID_DIR"
+printf '%s\n' "$BASE_DISK" > "$EVID_DIR/base-disk.txt"
 
 # --- ephemeral overlay + writable vars --------------------------------------
 qemu-img create -q -f qcow2 -F qcow2 -b "$BASE_DISK" "$OVERLAY" 20G >/dev/null 2>&1 \
@@ -206,7 +207,10 @@ if not target:
         if cand in users:
             target = cand; break
 if not target:
-    target = "root"
+    # guest-get-users unavailable or empty; the config-built base disk
+    # (build/config-img.toml) creates the 'core' admin user, whose authorized
+    # key is what we push — so default to 'core', NOT 'root'.
+    target = "core"
 print("TARGET_USER", target)
 
 # add key
