@@ -68,9 +68,12 @@ RUN uv venv /opt/selkies --python python3 && \
 #    `usermod -aG video` silently no-ops. Materialize the group lines first,
 #    then add membership by name.
 #
-# -d /home/core matches the unit's HOME and the quadlet's volume mount point.
+# The home directory is left at the useradd default (/var/home/core): /home is a
+# symlink to var/home in the base image, so that is the same directory the unit's
+# HOME and the quadlet's /home/core volume resolve to, and `useradd -m` creates
+# the missing /var/home for us.
 RUN groupadd -g 1000 core && \
-    useradd -m -u 1000 -g 1000 -G wheel -s /bin/bash -d /home/core core && \
+    useradd -m -u 1000 -g 1000 -G wheel -s /bin/bash core && \
     grep -q '^video:'  /etc/group || echo 'video:x:39:'   >> /etc/group; \
     grep -q '^render:' /etc/group || echo 'render:x:105:' >> /etc/group; \
     usermod -aG video,render core && \
