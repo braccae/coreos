@@ -2,6 +2,9 @@
 
 This document defines the 4 run-mode validation contract, explicit acceptance criteria for each mode, local reproduction constraints, and automated verification procedures.
 
+> [!NOTE]
+> For the **normative** per-mode contract — the exact commands, unambiguous pass/fail conditions (with stable condition IDs), and the evidence artifact each mode must emit — see [mode-spec.md](mode-spec.md). That document is what the local harness (EPIC B) implements against.
+
 ---
 
 ## The 4 Run-Mode Contract
