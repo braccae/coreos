@@ -1,0 +1,22 @@
+# Central Databasus instance for backing up databases (PostgreSQL, MySQL,
+# MariaDB, MongoDB) across the fleet. Shipped opt-in; enable on the designated
+# backup host via: systemctl enable --now databasus.service
+[Unit]
+Description=Databasus central database backup manager
+After=network-online.target databasus-volume.service
+Wants=network-online.target
+Requires=databasus-volume.service
+
+[Container]
+Image=docker.io/databasus/databasus:latest
+ContainerName=databasus
+# Bind web UI to localhost only because it stores database credentials
+PublishPort=127.0.0.1:4005:4005
+Volume=databasus-data:/databasus-data
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

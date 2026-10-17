@@ -27,12 +27,6 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/
 
 # RUN apt update && apt install -y proxmox-backup-client-static
 
-FROM base AS borgmatic-builder
-
-RUN dnf install -y gcc python3-devel && \
-    mkdir /var/roothome && \
-    uv pip install --prefix=/tmp/borgmatic borgmatic
-
 FROM base AS final
 LABEL containers.bootc 1
 
@@ -77,11 +71,6 @@ RUN dnf install -y \
     nodejs-npm \
     && dnf clean all
 
-# RUN mkdir /var/roothome && \
-#     uv pip install --prefix=/usr \
-#     borgmatic && \
-#     rm -rfv /var/roothome
-COPY --from=borgmatic-builder /tmp/borgmatic /usr
 # COPY --from=proxmox-backup-client-getter /usr/bin/proxmox-backup-client /usr/bin
 
 RUN curl https://rclone.org/install.sh | bash

@@ -71,7 +71,6 @@ install-misc-tools:
         input-leap \
         rclone \
         mpv \
-        borgmatic \
         sqlite-devel \
         ghostty \
         chromium \

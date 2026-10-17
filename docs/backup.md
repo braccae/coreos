@@ -1,81 +1,63 @@
 # Backup Architecture: Current and Target State
 
-This document outlines the backup infrastructure for hosts running images built from this repository. A migration is actively in progress to phase out Borgmatic in favor of a modern, decoupled backup strategy utilizing Restic and Databasus.
+This document outlines the backup infrastructure for hosts running images built from this repository. The legacy wrapper units and build stages have been retired in favor of a decoupled backup strategy utilizing Restic and Databasus (`borgbackup` remains installed solely to read and migrate existing Borg repositories).
 
 ---
 
 ## Architectural Comparison
 
-| Dimension | Current State | Target State (Migration in Progress) |
+| Dimension | Legacy State (Retired) | Current State (Restic + Databasus) |
 | :--- | :--- | :--- |
-| **Primary Engine (Files/Appdata)** | Borgmatic (`borgbackup`) | **Restic** |
-| **Primary Engine (Databases)** | Borgmatic internal database dump hooks | **Databasus** |
-| **Package Management** | Compiled Python wheel via `uv` in multi-stage build | Standalone Go/Rust binaries or dedicated quadlet containers |
-| **Systemd Units** | `borgmatic.service`, `borgmatic.timer` in `rootfs/common/` | User/system quadlets & restic systemd timers |
-| **SELinux Integration** | Custom SELinux policy module (`build/selinux/borgmatic/`) | Standard container/system unconfined policies |
+| **Primary Engine (Files/Appdata)** | Legacy Borg wrapper (`borgbackup` retained for migration) | **Restic** |
+| **Primary Engine (Databases)** | Monolithic internal database dump hooks | **Databasus** |
+| **Package Management** | Compiled Python wheel in multi-stage build (retired) | Standalone Go binaries & dedicated quadlet containers |
+| **Systemd Units** | Legacy host timer/service units (removed from `rootfs/common/`) | System/user quadlets (`databasus.container`, `databasus.volume`) & restic systemd timers |
+| **SELinux Integration** | Custom SELinux policy module (removed) | Standard container/system policies |
 | **Repository Backend** | SSH Borg repositories / local drives | S3-compatible object storage, B2, or local storage |
-| **Status** | Active / Legacy | In development / Phasing in |
+| **Status** | Retired (`borgbackup` CLI kept for repo migration) | Active |
 
 ---
 
-## Current State: Borgmatic Architecture
+## Current State: Central Database Backups (Databasus) & Restic
 
-The current backup solution relies on Borgmatic wrapper scripts and systemd orchestration:
+The active backup architecture decouples stateful database dumps from general filesystem and application data snapshots:
 
 ```mermaid
 flowchart TD
-    Timer["rootfs/common/.../borgmatic.timer<br/>(Fires daily at 04:00)"]
-    Service["rootfs/common/.../borgmatic.service<br/>(systemd-inhibit --who=borgmatic)"]
-    Builder["Containerfile: borgmatic-builder stage<br/>(uv pip install --prefix=/tmp/borgmatic borgmatic)"]
-    Binary["/usr/bin/borgmatic<br/>(Installed in final image /usr)"]
+    Volume["rootfs/common/etc/containers/systemd/databasus.volume<br/>(VolumeName=databasus-data)"]
+    Container["rootfs/common/etc/containers/systemd/databasus.container<br/>(docker.io/databasus/databasus:latest on 127.0.0.1:4005)"]
+    Service["databasus.service<br/>(Opt-in via systemctl enable --now databasus)"]
 
-    Timer --> Service
-    Builder --> Binary
-    Service --> Binary
+    Volume --> Container
+    Container --> Service
 ```
 
 ### 1. Build Stage Integration
-In [Containerfile](Containerfile#L30-L35):
-- A dedicated multi-stage build stage `borgmatic-builder` inherits from `base`.
-- Installs `gcc` and `python3-devel`.
-- Uses Astral `uv` to build Borgmatic into `/tmp/borgmatic`:
-  ```dockerfile
-  FROM base AS borgmatic-builder
-  RUN dnf install -y gcc python3-devel && \
-      mkdir /var/roothome && \
-      uv pip install --prefix=/tmp/borgmatic borgmatic
-  ```
-- The `final` stage copies the built prefix into the root filesystem:
-  ```dockerfile
-  COPY --from=borgmatic-builder /tmp/borgmatic /usr
-  ```
-- Backed by system packages: `borgbackup`, `rclone`, and `rsync`.
+In [Containerfile](Containerfile):
+- The legacy Python wrapper builder stage has been removed.
+- System packages retained in the `final` stage include `borgbackup` (for validating and migrating existing Borg archives), `rclone`, and `rsync`.
 
-### 2. Systemd Service and Timer
-Installed in `rootfs/common/usr/lib/systemd/system/`:
-- **`borgmatic.timer`**:
-  - Triggers daily at 04:00 AM with persistence (`Persistent=true`).
-  - Activates `borgmatic.service`.
-- **`borgmatic.service`**:
-  - Type: `oneshot`.
-  - Condition: `ConditionACPower=true` (prevents battery depletion on mobile devices).
-  - Security credentials: `LoadCredentialEncrypted=borgmatic.pw`.
-  - Priority: `Nice=19`, `CPUSchedulingPolicy=batch`, `IOSchedulingClass=best-effort`.
-  - Execution wrapper: Uses `systemd-inhibit --who="borgmatic" --what="sleep:shutdown" --why="Prevent interrupting scheduled backup" /usr/bin/borgmatic --verbosity -2 --syslog-verbosity 1` with an initial `ExecStartPre=sleep 1m` settling delay.
+### 2. System Quadlet Units
+Installed in `rootfs/common/etc/containers/systemd/`:
+- **`databasus.volume`**:
+  - Provisions the persistent `databasus-data` Podman volume (`VolumeName=databasus-data`).
+- **`databasus.container`**:
+  - Runs `docker.io/databasus/databasus:latest` mounted at `/databasus-data`.
+  - Publishes the web UI strictly on `127.0.0.1:4005:4005` because the UI stores database credentials.
+  - Shipped opt-in (`WantedBy=default.target`); operators enable it on the central backup host via `systemctl enable --now databasus`.
 
-### 3. SELinux Policy Module
-- Located in `build/selinux/borgmatic/`.
-- Compiles custom SELinux policy (`borgmatic.te`, `borgmatic.fc`, `borgmatic.if`) to permit borgmatic to inspect files across varying filesystem labels and interact with system credentials.
+### 3. SELinux Policy
+- Custom backup SELinux modules and `.github/workflows/selinux.yml` have been retired; Databasus runs under standard Podman container SELinux confinement.
 
 ---
 
 ## Target State: Restic + Databasus Migration
 
-The target state decouples general filesystem and application data backups from stateful database backups.
+The architecture decouples general filesystem and application data backups from stateful database backups.
 
 ### 1. Restic for Files and Appdata (Implemented in Base Image)
 - **Purpose**: Fast, secure, deduplicated backups of host directories (`/etc`, `/var`, `/home`) and application data (`/home/*/appdata`).
-- **Advantages over Borgmatic**:
+- **Advantages over Legacy Wrapper**:
   - Native Go binary (`/usr/bin/restic`, installed via EPEL in [Containerfile](Containerfile)) with no Python or C-extension runtime dependencies.
   - Native first-class support for cloud object storage (S3, Backblaze B2, MinIO, Azure) and local repositories without relying on SSH bridges or local FUSE mounts.
   - Significantly faster index traversal and snapshot operations.
@@ -91,10 +73,10 @@ The target state decouples general filesystem and application data backups from 
   - **Opt-In Activation**: `restic-backup.timer` is **not enabled by default** in the image. Nothing runs until an operator configures `/etc/restic/env`, provisions the `restic.pw` credential (via `systemd-creds encrypt`), and enables the timer (`systemctl enable --now restic-backup.timer`).
 
 ### 2. Databasus for Databases
-- **Purpose**: Dedicated, isolated database dump management and snapshotting for relational engines (PostgreSQL, MySQL, SQLite, MariaDB).
-- **Advantages over Borgmatic Hooks**:
+- **Purpose**: Dedicated, isolated database dump management and snapshotting for relational and document engines (PostgreSQL, MySQL, MariaDB, MongoDB).
+- **Advantages over Monolithic Hooks**:
   - Avoids running database client dump hooks inside the monolithic host backup process.
-  - Runs as an independent container service with native database connection management, compression, verification, and rotation.
+  - Runs as an independent container service (`rootfs/common/etc/containers/systemd/databasus.container`) with native database connection management, compression, verification, and rotation.
   - Consistent point-in-time recovery without locking the entire host filesystem snapshot.
 
 ---
@@ -103,9 +85,9 @@ The target state decouples general filesystem and application data backups from 
 
 When implementing changes or transitioning systems:
 
-1. **Do Not Prematurely Remove Borgmatic Units**:
-   - Both `borgmatic.service` and `borgmatic.timer` must remain intact in `rootfs/common/` until Restic and Databasus deployments are verified in production.
-2. **Phase Out `borgmatic-builder`**:
-   - Once all host targets switch to Restic, remove the `borgmatic-builder` multi-stage block in [Containerfile](Containerfile) and clean up `build/selinux/borgmatic/`.
+1. **Keep `borgbackup` Package Until Repository Migration Completes**:
+   - The legacy systemd units, SELinux module, and builder stage are retired, but the `borgbackup` RPM must remain installed in `Containerfile` and `build/justfile` so existing Borg repositories can be inspected and migrated.
+2. **Central Databasus Opt-In**:
+   - Keep `databasus.container` opt-in and bound to `127.0.0.1:4005` so only designated backup hosts run the central database backup UI.
 3. **Appdata Consistency**:
    - Ensure that application quadlets and database containers expose standard dump volumes or database ports accessible by Databasus prior to filesystem snapshotting.
