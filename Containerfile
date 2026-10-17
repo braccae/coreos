@@ -187,7 +187,21 @@ RUN dnf install -y checkpolicy make && \
     rm -rf /tmp/nix-selinux && \
     dnf clean all
 
-RUN mkdir -p /usr/share/factory/etc && cp -a /etc/. /usr/share/factory/etc/
+# --- Factory /etc snapshot -------------------------------------------------
+# etc-overlay-sync.service restores this snapshot over /etc on every container
+# boot. Runtime-owned files must NOT be baked into the snapshot: copying a
+# stale copy back over /etc re-clobbers the value the runtime just generated.
+# The most damaging case is machine-id — systemd writes it during early boot,
+# and a re-zeroed id kills user@UID.service and every D-Bus session bus that
+# needs a machine id (code 49 / "Invalid machine ID"). hostname and resolv.conf
+# are likewise owned by the container runtime, and the build-time hostname must
+# not leak into every instance. The sync script skips these paths as well; keep
+# the two lists in sync.
+RUN mkdir -p /usr/share/factory/etc && cp -a /etc/. /usr/share/factory/etc/ && \
+    rm -f /usr/share/factory/etc/machine-id \
+          /usr/share/factory/etc/machine-info \
+          /usr/share/factory/etc/hostname \
+          /usr/share/factory/etc/resolv.conf
 
 RUN bootc container lint
 
