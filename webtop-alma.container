@@ -1,0 +1,27 @@
+# Quadlet for the Alma webtop. Runs the systemd-based container the same way an
+# LXC would: systemd is PID 1, sshd and the session unit are managed by it, and
+# Selkies provides the virtual display on port 3000.
+#
+#   install -m 0644 webtop-alma.container /etc/containers/systemd/
+#   systemctl daemon-reload && systemctl start webtop-alma
+[Unit]
+Description=Alma Webtop Container (KDE Plasma + Selkies)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+ContainerName=webtop-alma
+Image=ghcr.io/braccae/webtop-alma:latest
+# Selkies serves the dashboard itself; no nginx, so publish its port directly.
+PublishPort=3000:3000
+# Streaming needs the host render node. KDE/Selkies run as `core` (uid 1000);
+# the home volume persists the desktop and Selkies state across updates.
+AddDevice=/dev/dri
+Volume=webtop-alma-home:/home/core
+Systemd=always
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target default.target

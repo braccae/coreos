@@ -1,0 +1,26 @@
+[Unit]
+Description=Webtop (Selkies) KDE Plasma session
+Documentation=man:selkies(1) https://docs.selkies.io/
+# Linger is already enabled for core in the base image
+# (/var/lib/systemd/linger/core), so user@1000.service — and therefore
+# /run/user/1000 — is up before this unit starts.
+After=network-online.target user@1000.service
+Wants=network-online.target user@1000.service
+
+[Service]
+Type=simple
+User=core
+Group=core
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=HOME=/home/core
+WorkingDirectory=/home/core
+# Optional overrides (e.g. SELKIES_BASIC_AUTH_PASSWORD, SELKIES_BASIC_AUTH).
+EnvironmentFile=-/etc/webtop-alma/session.env
+ExecStart=/usr/local/bin/start-webtop.sh
+Restart=on-failure
+RestartSec=2
+# The compositor needs a moment to shut down cleanly when the unit stops.
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
