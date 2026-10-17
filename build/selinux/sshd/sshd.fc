@@ -1,0 +1,26 @@
+# SSHD host-key file contexts.
+#
+# The image keeps its host keys at /var/lib/sshd (on the persistent /var)
+# instead of the distro default /etc/ssh. The stock targeted policy only
+# carries contexts for /etc/ssh/ssh_host.*_key, so without these rules the
+# directory is created as var_lib_t and ssh-keygen (ssh_keygen_t) is denied
+# write under enforcing -- which makes sshd.service fail at boot.
+#
+# The layout deliberately mirrors the upstream /etc/ssh host-key scheme:
+#   - the DIRECTORY is labelled etc_t.  That is the only type a host-key
+#     directory can use, because ssh_keygen_t is granted exactly
+#     `allow ssh_keygen_t etc_t:dir { add_name remove_name write }` plus
+#     the generic `base_file_type:dir { getattr open search }`.  Labelling
+#     the dir sshd_key_t (as one might assume) does NOT work: ssh_keygen_t
+#     has no write access to sshd_key_t directories.
+#   - the KEY FILES type-transition to sshd_key_t via the base policy rule
+#     `type_transition ssh_keygen_t etc_t:file sshd_key_t`, and are listed
+#     explicitly so that a recursive `systemd-tmpfiles --create --boot`
+#     (tmpfiles type 'Z') restores sshd_key_t instead of etc_t on relabel.
+#
+# sshd_t is allowed to read sshd_key_t files, so the daemon picks the keys
+# up unchanged.
+
+/var/lib/sshd(/.*)?		system_u:object_r:etc_t:s0
+/var/lib/sshd/ssh_host.*_key		system_u:object_r:sshd_key_t:s0
+/var/lib/sshd/ssh_host.*_key\.pub	system_u:object_r:sshd_key_t:s0

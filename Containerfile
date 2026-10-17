@@ -187,6 +187,23 @@ RUN dnf install -y checkpolicy make && \
     rm -rf /tmp/nix-selinux && \
     dnf clean all
 
+# --- sshd host-key SELinux policy ------------------------------------------
+# The image keeps host keys at /var/lib/sshd (persistent /var), which the stock
+# targeted policy does not label. systemd-tmpfiles 'd' only mkdirs, so the dir
+# inherited var_lib_t and ssh-keygen was denied write under enforcing, failing
+# sshd.service at boot. Build the context-only module in build/selinux/sshd/
+# so the directory is labelled etc_t (the only host-key dir type ssh_keygen_t
+# may write to) and the generated keys type-transition to sshd_key_t, which
+# sshd_t can read. The tmpfiles entry now uses type 'Z' to apply the context.
+COPY build/selinux/sshd /tmp/sshd-selinux
+RUN make -C /tmp/sshd-selinux && \
+    mkdir -p /usr/share/selinux/packages && \
+    cp /tmp/sshd-selinux/sshd.pp /usr/share/selinux/packages/ && \
+    semodule -i /tmp/sshd-selinux/sshd.pp && \
+    (restorecon -RF /var/lib/sshd || true) && \
+    rm -rf /tmp/sshd-selinux && \
+    dnf clean all
+
 # --- Factory /etc snapshot -------------------------------------------------
 # etc-overlay-sync.service restores this snapshot over /etc on every container
 # boot. Runtime-owned files must NOT be baked into the snapshot: copying a
