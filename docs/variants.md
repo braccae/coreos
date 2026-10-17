@@ -10,7 +10,7 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | [Containerfile](Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | Base bootc OS; server baseline with Cockpit, Tailscale, ZFS support | AlmaLinux | `.github/workflows/container.yml` | Base image. Published to `ghcr.io/braccae/alma:latest`. |
 | [dockerhost.Containerfile](dockerhost.Containerfile) | `ghcr.io/braccae/alma:latest` | Dedicated Docker CE runtime node with Cockpit Docker UI | AlmaLinux | `.github/workflows/container-dockerhost.yml` | Multi-stage build compiles `cockpit-docker` RPM from git. |
-| [dx.Containerfile](dx.Containerfile) | `ghcr.io/braccae/alma:latest` | Developer workstation variant with rootless Podman, Nix, and overlay sync | AlmaLinux | **None** | No automated CI workflow. Built manually or locally. Assets live in `rootfs/common/`. |
+| [dx.Containerfile](dx.Containerfile) | `ghcr.io/braccae/alma:latest` | Developer workstation variant with rootless Podman, Nix, and overlay sync | AlmaLinux | `.github/workflows/container-dx.yml` | Published as `ghcr.io/braccae/alma:dx`. Assets live in `rootfs/common/`. |
 | [hci.Containerfile](hci.Containerfile) | `ghcr.io/braccae/alma:latest` | Hyperconverged infrastructure host (QEMU/KVM, Cockpit Machines, Samba sharing) | AlmaLinux | `.github/workflows/container-hci.yml` | Includes full libvirt virtualization stack and 45Drives cockpit plugins. |
 | [installer.Containerfile](installer.Containerfile) | `ghcr.io/braccae/coreos:workstation`<br>*(configurable via `ARG installer_base`)* | Bootable Anaconda installer build environment for ISO production | AlmaLinux | `.github/workflows/container-installer.yml` | Installs anaconda runtime and lorax templates. |
 | [k3s.Containerfile](k3s.Containerfile) | `ghcr.io/braccae/alma:latest` | Lightweight single-node or worker Kubernetes (k3s) appliance | AlmaLinux | `.github/workflows/container-k3s.yml` | Installs k3s SELinux policy and upstream k3s binary. |
@@ -41,7 +41,7 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
    - **Build Source**: `FROM ghcr.io/braccae/alma:latest AS base`.
    - **Role**: Lightweight developer image equipped with Podman, Docker CLI compatibility, Compose, Nix, and transient `/etc` overlay synchronization.
    - **Overlay**: Assets reside in `rootfs/common/` (dx-specific overlay directory was merged into common).
-   - **CI Note**: No automated CI workflow exists; built locally or ad-hoc.
+   - **CI Note**: Built and published by `.github/workflows/container-dx.yml` as `ghcr.io/braccae/alma:dx`.
 
 4. **[hci.Containerfile](hci.Containerfile)**
    - **Build Source**: `FROM ghcr.io/braccae/alma:latest`.
@@ -103,5 +103,5 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
 | `.github/workflows/container-kmods.yml` | [kmods.Containerfile](kmods.Containerfile)<br>[kmods-bundle.Containerfile](kmods-bundle.Containerfile) | Push to `main`, `kmods*.Containerfile`, `build-zfs.sh` | Dispatches `container.yml` and `container-workstation.yml` |
 | `.github/workflows/container-laptop.yml` | [laptop.Containerfile](laptop.Containerfile) | Push to `main`, `laptop.Containerfile` | None |
 | `.github/workflows/container-workstation.yml` | [workstation.Containerfile](workstation.Containerfile) | Push to `main`, `workstation.Containerfile`, `rootfs/workstation/**` | None |
-| *(None)* | [dx.Containerfile](dx.Containerfile) | N/A (Manual / Local builds only) | None |
+| `.github/workflows/container-dx.yml` | [dx.Containerfile](dx.Containerfile) | Push to `main`, `dx.Containerfile`, `rootfs/common/**` | None |
 | `.github/workflows/container-webtop.yml` | [webtop.Containerfile](webtop.Containerfile) | Push to `main`, `webtop.Containerfile`, `rootfs/webtop/**` | None |
