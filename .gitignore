@@ -14,3 +14,6 @@ cosign.key
 test.Containerfile
 .worktrees/
 .hermes
+
+## MOK private key must never be committed; it exists only as the LOCALMOK CI secret
+keys/mok/*.priv

@@ -59,7 +59,7 @@ This repository maintains 13 Containerfiles across two primary OS families: **Al
 
 7. **[kmods.Containerfile](kmods.Containerfile)**
    - **Build Source**: `ARG BASE_IMAGE=quay.io/almalinuxorg/almalinux-bootc:10`, `FROM ${BASE_IMAGE} AS kmods-builder`.
-   - **Role**: Kernel module compiler. Clones OpenZFS source and the `linux-thinkpad/tp_smapi` source, compiles both kmods against target kernel headers, signs binaries with Secure Boot MOK keys (when the `LOCALMOK` secret is provided), writes `kernel-version.txt`, and emits a minimal scratch container with RPM artifacts.
+   - **Role**: Kernel module compiler. Clones OpenZFS source, compiles the ZFS kmods against target kernel headers, signs the binaries with the Secure Boot MOK key (when the `LOCALMOK` secret is provided), writes `kernel-version.txt`, and emits a minimal scratch container with RPM artifacts.
 
 8. **[kmods-bundle.Containerfile](kmods-bundle.Containerfile)**
    - **Build Source**: `FROM scratch`.
