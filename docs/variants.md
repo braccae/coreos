@@ -57,8 +57,8 @@ This repository maintains 12 Containerfiles across two primary OS families: **Al
    - **Role**: Single-binary Kubernetes host. Pre-configures k3s SELinux policy RPM and installs the official k3s binary into `/usr/bin`.
 
 7. **[kmods.Containerfile](kmods.Containerfile)**
-   - **Build Source**: `ARG BASE_IMAGE=quay.io/almalinuxorg/almalinux-bootc:10`, `FROM ${BASE_IMAGE} AS zfs-builder`.
-   - **Role**: Kernel module compiler. Clones OpenZFS source, compiles kmods against target kernel headers, signs binaries with Secure Boot MOK keys, writes `kernel-version.txt`, and emits a minimal scratch container with RPM artifacts.
+   - **Build Source**: `ARG BASE_IMAGE=quay.io/almalinuxorg/almalinux-bootc:10`, `FROM ${BASE_IMAGE} AS kmods-builder`.
+   - **Role**: Kernel module compiler. Clones OpenZFS source and the `linux-thinkpad/tp_smapi` source, compiles both kmods against target kernel headers, signs binaries with Secure Boot MOK keys (when the `LOCALMOK` secret is provided), writes `kernel-version.txt`, and emits a minimal scratch container with RPM artifacts.
 
 8. **[kmods-bundle.Containerfile](kmods-bundle.Containerfile)**
    - **Build Source**: `FROM scratch`.
