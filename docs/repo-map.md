@@ -16,6 +16,7 @@ rootfs/
 │           ├── bootc/kargs.d/10-btrfs-compression.toml
 │           └── ostree/prepare-root.conf
 ├── common/                     # Base overlay shared by all AlmaLinux bootc images
+│   ├── justfile                # System-wide justfile installed at /justfile
 │   ├── etc/
 │   │   ├── containers/         # Nested podman & storage configs
 │   │   ├── nix/                # Nix package manager configuration
@@ -65,6 +66,7 @@ rootfs/
   - Container engine defaults: configures nested container execution (`containers.conf.d/20-nested.conf`) and storage (`storage.conf.d/20-host-containers.conf`).
   - Core services: automates bootc auto-updates (`bootc-fetch-apply-updates.timer`), overlay synchronizations (`etc-overlay-sync.service`), and user provisioning (`/usr/sbin/setup-podman-user`).
   - **Developer Assets (`dx`)**: All developer tooling configurations and assets previously located in `rootfs/dx/` reside directly in `rootfs/common/`.
+  - **System-wide tooling**: installs the base justfile at `/justfile` (`rootfs/common/justfile`), providing the `default` and `be USER` recipes to every user from any directory (see [docs/system-justfile.md](system-justfile.md)).
 
 ### 2. Filesystem Conditionals: `rootfs/btrfs_config/` vs `rootfs/non_btrfs/`
 The bootc ostree sysroot preparation requires filesystem-aware mount and composefs configurations:

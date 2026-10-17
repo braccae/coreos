@@ -166,6 +166,23 @@ sudo systemctl reboot
 2. Update relevant Containerfile to copy files
 3. Enable systemd services as needed
 
+### System-wide just recipes
+
+The base image ships a **system-wide justfile** at `/justfile`
+(source: [`rootfs/common/justfile`](rootfs/common/justfile)) plus the `just`
+command runner. Because `just` walks up to `/`, these recipes work from **any**
+working directory. A closer justfile (`~/justfile`, a project justfile) takes
+precedence.
+
+```bash
+just          # list the base recipes
+just be       # become root in a login shell (run0-backed)
+just be core  # become the `core` user
+```
+
+Full details, precedence rules, and verification evidence:
+[docs/system-justfile.md](docs/system-justfile.md).
+
 ### Testing
 ```bash
 # Lint container before deployment
