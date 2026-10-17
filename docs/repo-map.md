@@ -49,9 +49,14 @@ rootfs/
 │   │   ├── nginx/conf.d/       # WebRTC reverse proxy configuration
 │   │   └── systemd/system/     # webtop.service systemd unit
 │   └── usr/local/bin/          # KWin Wayland startup and Selkies patch scripts
-└── workstation/                # Bazzite desktop workstation overlay
+├── workstation/                # Bazzite desktop workstation overlay
+│   ├── etc/systemd/            # ZRAM generator memory compression configuration
+│   ├── usr/lib/ostree/         # Workstation-specific prepare-root.conf
+│   └── usr/share/polkit-1/     # Desktop polkit rules (Bitwarden)
+└── workstation-alma/           # AlmaLinux KDE Plasma workstation overlay
+    ├── etc/sddm.conf.d/        # SDDM Wayland display-manager configuration
     ├── etc/systemd/            # ZRAM generator memory compression configuration
-    ├── usr/lib/ostree/         # Workstation-specific prepare-root.conf
+    ├── usr/local/bin/          # modinfo fallback helper for container builds
     └── usr/share/polkit-1/     # Desktop polkit rules (Bitwarden)
 ```
 
@@ -95,6 +100,14 @@ The bootc ostree sysroot preparation requires filesystem-aware mount and compose
 - **Target**: [workstation.Containerfile](workstation.Containerfile) and [laptop.Containerfile](laptop.Containerfile).
 - **Purpose**: Configures desktop memory management (`zram-generator.conf` enabling ZRAM swap) and desktop application security policies (`com.bitwarden.Bitwarden.policy`).
 
+### 6. `rootfs/workstation-alma/` (AlmaLinux Workstation Overlay)
+- **Target**: [workstation-alma.Containerfile](workstation-alma.Containerfile).
+- **Purpose**: Configures the local KDE Plasma 6 desktop on AlmaLinux:
+  - `etc/sddm.conf.d/10-wayland.conf`: selects the Wayland display server for SDDM and runs KWin Wayland as the greeter compositor.
+  - `etc/systemd/zram-generator.conf`: enables ZRAM swap memory compression.
+  - `usr/local/bin/modinfo`: fallback helper that resolves the in-image kernel version when the host kernel is not present under `/lib/modules` (build-time tooling).
+  - `usr/share/polkit-1/actions/com.bitwarden.Bitwarden.policy`: Bitwarden vault-unlock polkit rule.
+
 ---
 
 ## Containerfile `COPY` Mapping Reference
@@ -115,3 +128,4 @@ The table below documents which Containerfile copies which `rootfs` subdirectory
 | [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | `rootfs/workstation/` | `/` | Copies workstation overlay on top of Bazzite DX GNOME. |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | `rootfs/common/`<br>`rootfs/webtop/` | `/`<br>`/` | Reuses core system utilities from `common/` alongside desktop streaming files from `webtop/`. |
 | [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/btrfs_config/`<br>`rootfs/workstation/` | `/`<br>`/` | **FROZEN PRODUCTION IMAGE**. Lines 63-64 (`non_btrfs/`, `common/`) are commented out. |
+| [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/workstation-alma/` | `/` | Inherits `rootfs/common/` and `rootfs/non_btrfs/` from the Alma base; adds SDDM + ZRAM + polkit workstation files. |

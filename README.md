@@ -39,12 +39,25 @@ This project builds upon bootc-compatible base images to create customized, immu
 > [!WARNING]
 > **EXPERIMENTAL**: The Webtop container is highly experimental. Many full desktop systems and applications do not currently function as expected. Specifically, launching **Steam**, deep desktop-container **networking**, and the **Software Center / Bazaar (Discover/flatpaks)** are currently unsupported and do not work.
 
+### 6. Workstation (Alma) (`workstation-alma.Containerfile`)
+- **Base**: AlmaLinux bootc 10 (`ghcr.io/braccae/alma:latest`)
+- **Purpose**: Local KDE Plasma 6 desktop workstation — the AlmaLinux equivalent of the Bazzite `workstation.Containerfile`
+- **Key Features**:
+  - KDE Plasma 6 desktop from EPEL (plasma-workspace, plasma-desktop, kwin, plasma-breeze) with SDDM display manager and Wayland/Xwayland
+  - PipeWire/WirePlumber audio stack
+  - Workstation apps: KMail, Merkuro, Konsole, Yakuake, KDE Partition Manager
+  - Virtualization: virt-manager, QEMU/KVM, and virtio-gpu/SPICE display modules
+  - Dev mode: VS Code (`code`), GitHub CLI (`gh`), Node.js and pnpm
+  - ZFS kernel modules and Nix inherited from the AlmaLinux base image
+- **Notes**: Package substitutions relative to the Bazzite image — `qemu-tools` → `qemu-kvm-tools`; `input-leap`, `ghostty`, and the Fedora-specific chromium/plasma-discover configs are omitted (not packaged for EL10).
+
 ## Project Structure
 
 ```
 ├── Containerfile              # Main AlmaLinux bootc image
 ├── hci.Containerfile         # HCI image (AlmaLinux-based)
 ├── workstation.Containerfile # Workstation image (Bazzite-based)
+├── workstation-alma.Containerfile # Workstation image (AlmaLinux-based)
 ├── laptop.Containerfile      # Laptop image (Bazzite-based)
 ├── dockerhost.Containerfile  # Docker Host image
 ├── webtop.Containerfile      # Desktop environment in container
@@ -53,6 +66,7 @@ This project builds upon bootc-compatible base images to create customized, immu
 │   ├── common/              # Shared configurations
 │   ├── hci/                 # HCI-specific files
 │   ├── workstation/         # Workstation-specific files
+│   ├── workstation-alma/    # AlmaLinux workstation overlay (SDDM, ZRAM, polkit)
 │   └── webtop/              # Desktop environment files
 ├── build/                    # Build artifacts
 ├── scripts/                  # Build and deployment scripts
@@ -104,6 +118,9 @@ podman build -f hci.Containerfile -t my-hci:latest .
 
 # Build Webtop image
 podman build -f webtop.Containerfile -t fedora-webtop:latest .
+
+# Build Workstation (Alma) image
+podman build -f workstation-alma.Containerfile -t localhost/workstation-alma:latest .
 ```
 
 ### Running the Webtop Container
