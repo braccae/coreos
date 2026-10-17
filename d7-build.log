@@ -1,0 +1,721 @@
+[1/5] STEP 1/5: FROM quay.io/almalinuxorg/almalinux-bootc:10 AS base
+[1/5] STEP 2/5: RUN export EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm" &&     export RPMFUSION_FREE_URL="https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm" &&     export RPMFUSION_NONFREE_URL="https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm" &&     export OPENZFS_REPO_URL="https://zfsonlinux.org/epel/zfs-release-3-0$(rpm --eval "%{dist}").noarch.rpm" &&     dnf install -y --nogpgcheck     $EPEL_URL $RPMFUSION_FREE_URL $RPMFUSION_NONFREE_URL 
+--> Using cache 184a6539237d3b0ec60fa2e7eafb8e953eadcc815bd126588a9c1a1782d90694
+--> 184a6539237d
+[1/5] STEP 3/5: ADD https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo /etc/yum.repos.d/
+--> Using cache b73b1e29817cf00af889c60d9c97d0d315e7fbfecd27408e30043faa58ec6e1a
+--> b73b1e29817c
+[1/5] STEP 4/5: COPY repos/*.repo /etc/yum.repos.d/
+--> Using cache f644476a40785e4d9f965862e80b141d63a2d51546cc225eb009333eb38bf00d
+--> f644476a4078
+[1/5] STEP 5/5: RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
+--> Using cache 47bd38289a3afc071072a3ebf45f3ecdf6a6cc2e371d1e5b38a4d82275b82e8e
+--> 47bd38289a3a
+[2/5] STEP 1/2: FROM 47bd38289a3afc071072a3ebf45f3ecdf6a6cc2e371d1e5b38a4d82275b82e8e AS borgmatic-builder
+[2/5] STEP 2/2: RUN dnf install -y gcc python3-devel &&     mkdir /var/roothome &&     uv pip install --prefix=/tmp/borgmatic borgmatic
+--> Using cache f8e66b776e39f013b942879f61df0eab75995846fa4f54db145f2b9d737f863a
+--> f8e66b776e39
+[3/5] STEP 1/10: FROM 47bd38289a3afc071072a3ebf45f3ecdf6a6cc2e371d1e5b38a4d82275b82e8e AS final
+[3/5] STEP 2/10: LABEL containers.bootc 1
+--> Using cache 4488fae4e568f749574eaf51e1dd97c770fcb23e92dec972a559a6fa36fe4ee7
+--> 4488fae4e568
+[3/5] STEP 3/10: RUN dnf install -y     qemu-guest-agent     container-selinux     just     zsh     tuned     realmd     sssd     tailscale     borgbackup     firewalld     sqlite     fuse     rsync     cockpit-system     cockpit-bridge     cockpit-networkmanager     cockpit-podman     cockpit-ostree     cockpit-selinux     cockpit-storaged     cockpit-files     python3-psycopg2     python3-pcp     xdg-user-dirs     python3-pip     git     tmux     unzip     samba     samba-common-tools     samba-usershares     samba-client     samba-common-tools     cifs-utils     nodejs     nodejs-full-i18n     nodejs-npm     && dnf clean all
+--> Using cache 6ef2ba6f9a8f4d4d40195042125581e86bfc3758108a4eb5aecadd9087416adf
+--> 6ef2ba6f9a8f
+[3/5] STEP 4/10: COPY --from=borgmatic-builder /tmp/borgmatic /usr
+--> Using cache ecd0954c6f95b2ca3c54c45488b6fc229ddef9f6b26361899daa6b7bfd5bfcbb
+--> ecd0954c6f95
+[3/5] STEP 5/10: RUN curl https://rclone.org/install.sh | bash
+--> Using cache b9f67647d0e80f881c0cef75aeb873873581f314fed65bde2d2138b2b023f595
+--> b9f67647d0e8
+[3/5] STEP 6/10: RUN dnf install -y     btrfs-progs    && dnf clean all
+--> Using cache 2bbfa9b539360326e9655027c3aaf274776da13f47776ab128ede29873461576
+--> 2bbfa9b53936
+[3/5] STEP 7/10: RUN dnf install -y     setroubleshoot-server     policycoreutils     policycoreutils-python-utils     policycoreutils-restorecond     libselinux-utils     && dnf clean all
+--> Using cache b07ace0ad4b9ed342f58f9245d40d815909ec54ff62fe25bd4958e8570a1a027
+--> b07ace0ad4b9
+[3/5] STEP 8/10: RUN dnf -y reinstall selinux-policy-targeted policycoreutils policycoreutils-python-utils     && dnf clean all
+--> Using cache 3d93ede0dece92e42ac13e76af388330e84a824fa223699181c750ddafd2c4cb
+--> 3d93ede0dece
+[3/5] STEP 9/10: COPY build/scripts /tmp/build_scripts
+--> e7eab2dd080e
+[3/5] STEP 10/10: RUN bash /tmp/build_scripts/wazuh-agent.sh &&     dnf install -y         crowdsec         crowdsec-firewall-bouncer-nftables    && dnf clean all
+EL-10 - Wazuh                                   1.1 MB/s | 185 kB     00:00    
+Adoptium                                         55 kB/s |  15 kB     00:00    
+AlmaLinux 10 - AppStream                        8.2 MB/s | 2.8 MB     00:00    
+AlmaLinux 10 - BaseOS                            31 MB/s |  47 MB     00:01    
+AlmaLinux 10 - CRB                              2.9 MB/s | 646 kB     00:00    
+AlmaLinux 10 - Extras                            73 kB/s |  13 kB     00:00    
+Visual Studio Code                              1.2 MB/s | 209 kB     00:00    
+crowdsec_crowdsec                               8.0 kB/s |  12 kB     00:01    
+Extra Packages for Enterprise Linux 10 - x86_64 5.9 MB/s | 6.7 MB     00:01    
+RPM Fusion for EL 10 - Free - Updates            57 kB/s |  55 kB     00:00    
+RPM Fusion for EL 10 - Nonfree - Updates         37 kB/s |  22 kB     00:00    
+Tailscale stable                                 63 kB/s |  14 kB     00:00    
+Dependencies resolved.
+================================================================================
+ Package              Architecture    Version              Repository      Size
+================================================================================
+Installing:
+ wazuh-agent          x86_64          4.14.9-1             wazuh           11 M
+
+Transaction Summary
+================================================================================
+Install  1 Package
+
+Total download size: 11 M
+Installed size: 33 M
+Downloading Packages:
+wazuh-agent-4.14.9-1.x86_64.rpm                  28 MB/s |  11 MB     00:00    
+--------------------------------------------------------------------------------
+Total                                            28 MB/s |  11 MB     00:00     
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                        1/1 
+  Running scriptlet: wazuh-agent-4.14.9-1.x86_64                            1/1 
+  Installing       : wazuh-agent-4.14.9-1.x86_64                            1/1 
+  Running scriptlet: wazuh-agent-4.14.9-1.x86_64                            1/1 
+
+Installed:
+  wazuh-agent-4.14.9-1.x86_64                                                   
+
+Complete!
+61 files removed
+EL-10 - Wazuh                                   1.2 MB/s | 185 kB     00:00    
+Adoptium                                         57 kB/s |  15 kB     00:00    
+AlmaLinux 10 - AppStream                        9.5 MB/s | 2.8 MB     00:00    
+AlmaLinux 10 - BaseOS                            32 MB/s |  47 MB     00:01    
+AlmaLinux 10 - CRB                              2.9 MB/s | 646 kB     00:00    
+AlmaLinux 10 - Extras                            71 kB/s |  13 kB     00:00    
+Visual Studio Code                              1.0 MB/s | 209 kB     00:00    
+crowdsec_crowdsec                               8.8 kB/s |  12 kB     00:01    
+Extra Packages for Enterprise Linux 10 - x86_64 5.9 MB/s | 6.7 MB     00:01    
+RPM Fusion for EL 10 - Free - Updates           148 kB/s |  55 kB     00:00    
+RPM Fusion for EL 10 - Nonfree - Updates         34 kB/s |  22 kB     00:00    
+Tailscale stable                                 65 kB/s |  14 kB     00:00    
+Dependencies resolved.
+================================================================================
+ Package                           Arch   Version       Repository         Size
+================================================================================
+Installing:
+ crowdsec                          x86_64 1.8.1-1.el9   crowdsec_crowdsec  86 M
+ crowdsec-firewall-bouncer-nftables
+                                   x86_64 0.0.36-1.el9  crowdsec_crowdsec 4.8 M
+Installing dependencies:
+ gettext                           x86_64 0.22.5-6.el10 baseos            1.1 M
+
+Transaction Summary
+================================================================================
+Install  3 Packages
+
+Total download size: 92 M
+Installed size: 335 M
+Downloading Packages:
+(1/3): gettext-0.22.5-6.el10.x86_64.rpm          11 MB/s | 1.1 MB     00:00    
+(2/3): crowdsec-firewall-bouncer-nftables-0.0.3 6.5 MB/s | 4.8 MB     00:00    
+(3/3): crowdsec-1.8.1-1.el9.x86_64.rpm           31 MB/s |  86 MB     00:02    
+--------------------------------------------------------------------------------
+Total                                            32 MB/s |  92 MB     00:02     
+crowdsec_crowdsec                                14 kB/s | 3.9 kB     00:00    
+Importing GPG key 0x6E93CD0C:
+ Userid     : "https://packagecloud.io/crowdsec/crowdsec (https://packagecloud.io/docs#gpg_signing) <support@packagecloud.io>"
+ Fingerprint: 6A89 E3C2 303A 901A 8899 71D3 376E D532 6E93 CD0C
+ From       : https://packagecloud.io/crowdsec/crowdsec/gpgkey
+Key imported successfully
+crowdsec_crowdsec                               7.7 kB/s | 2.4 kB     00:00    
+Importing GPG key 0x145CE2F2:
+ Userid     : "Crowdsec Team <debian@crowdsec.net>"
+ Fingerprint: 79B8 CC3F 9447 2AC8 62A8 AD8D B06F 1981 145C E2F2
+ From       : https://packagecloud.io/crowdsec/crowdsec/gpgkey/crowdsec-crowdsec-C822EDD6B39954A1.pub.gpg
+warning: Certificate B06F1981145CE2F2:
+  The certificate is expired: The primary key is not live, because Expired on 2025-05-10T12:47:24Z
+  Subkey B06F1981145CE2F2 is expired: The primary key is not live, because Expired on 2025-05-10T12:47:24Z
+  Certificate does not have any usable signing keys
+Key imported successfully
+crowdsec_crowdsec                               8.2 kB/s | 2.4 kB     00:00    
+Importing GPG key 0x3CDF0DB4:
+ Userid     : "Crowdsec Rpm Archive <support@crowdsec.net>"
+ Fingerprint: 9082 D8CA CBBE B0DA B218 BAB0 4C3D 386C 3CDF 0DB4
+ From       : https://packagecloud.io/crowdsec/crowdsec/gpgkey/crowdsec-crowdsec-FED78314A2468CCF.pub.gpg
+Key imported successfully
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                        1/1 
+  Installing       : gettext-0.22.5-6.el10.x86_64                           1/3 
+  Installing       : crowdsec-firewall-bouncer-nftables-0.0.36-1.el9.x86_   2/3 
+  Running scriptlet: crowdsec-firewall-bouncer-nftables-0.0.36-1.el9.x86_   2/3 
+System has not been booted with systemd as init system (PID 1). Can't operate.
+Failed to connect to system scope bus via local transport: Host is down
+cscli/crowdsec is not present, please set the API key manually
+Created symlink '/etc/systemd/system/multi-user.target.wants/crowdsec-firewall-bouncer.service' → '/usr/lib/systemd/system/crowdsec-firewall-bouncer.service'.
+no api key was generated, you can generate one on your LAPI Server by running 'cscli bouncers add <bouncer_name>' and add it to '/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml'
+crowdsec-firewall-bouncer has been successfully installed
+
+  Running scriptlet: crowdsec-1.8.1-1.el9.x86_64                            3/3 
+  Installing       : crowdsec-1.8.1-1.el9.x86_64                            3/3 
+  Running scriptlet: crowdsec-1.8.1-1.el9.x86_64                            3/3 
+Machine '4b228a6a72df48bdab0ce097c157ddebjUyoAGShAPpwuPjm' successfully added to the local API.
+API credentials written to '/etc/crowdsec/local_api_credentials.yaml'.
+Downloading /etc/crowdsec/hub/.index.json
+Action plan:
+🔄 check & update data files
+
+Creating acquisition configuration
+
+Error: cscli setup unattended: "systemctl show clevis-luks-askpass.service --all --no-pager": exit status 1
+[1mGet started with CrowdSec:[0m
+ * Go further by following our [1mpost installation steps[0m : [0;32m[1mhttps://docs.crowdsec.net/u/getting_started/next_steps[0m
+====================================================================================================================
+ * Install a [1mremediation component[0m to block attackers: [0;32m[1mhttps://docs.crowdsec.net/u/bouncers/intro[0m
+====================================================================================================================
+ * Find more [1mcollections[0m, [1mparsers[0m and [1mscenarios[0m created by the community with the Hub: [0;32m[1mhttps://hub.crowdsec.net[0m
+====================================================================================================================
+ * Subscribe to [1madditional blocklists[0m, [1mvisualize[0m your alerts and more with the console: [0;32m[1mhttps://app.crowdsec.net[0m
+You can always run the configuration again interactively by using 'cscli setup'
+Created symlink '/etc/systemd/system/multi-user.target.wants/crowdsec.service' → '/usr/lib/systemd/system/crowdsec.service'.
+System has not been booted with systemd as init system (PID 1). Can't operate.
+Failed to connect to system scope bus via local transport: Host is down
+crowdsec is not started
+Created symlink '/etc/systemd/system/timers.target.wants/crowdsec-hubupdate.timer' → '/usr/lib/systemd/system/crowdsec-hubupdate.timer'.
+--now cannot be used when systemd is not running or in conjunction with --root=/--global, refusing.
+warning: %post(crowdsec-1.8.1-1.el9.x86_64) scriptlet failed, exit status 1
+
+Error in POSTIN scriptlet in rpm package crowdsec
+
+Installed:
+  crowdsec-1.8.1-1.el9.x86_64                                                   
+  crowdsec-firewall-bouncer-nftables-0.0.36-1.el9.x86_64                        
+  gettext-0.22.5-6.el10.x86_64                                                  
+
+Complete!
+61 files removed
+--> 3774e58c84b6
+[4/5] STEP 1/1: FROM localhost/kmods:latest AS kmods
+--> 973028d1bac9
+[5/5] STEP 1/21: FROM 3774e58c84b6acf8ef26205d0434300b0f2e93ff21c54c5ea74ed04b41491b34
+[5/5] STEP 2/21: ARG TARGETARCH
+--> ef415e21f0e0
+[5/5] STEP 3/21: COPY --from=kmods /zfs/alma/${TARGETARCH}/ /tmp/rpms/
+--> 1b394a19e783
+[5/5] STEP 4/21: RUN if [ -f /tmp/rpms/kernel-version.txt ]; then         KMOD_KERNEL=$(cat /tmp/rpms/kernel-version.txt) &&         echo "kmods built for kernel: ${KMOD_KERNEL}" &&         CURRENT_KERNEL=$(basename /lib/modules/*) &&         echo "Current base kernel: ${CURRENT_KERNEL}" &&         if [ "$CURRENT_KERNEL" = "$KMOD_KERNEL" ]; then             dnf remove -y zfs-fuse &&             dnf install -y /tmp/rpms/*.rpm &&             echo "Correcting ZFS kernel module dependencies..." &&             depmod -a             --filesyms /usr/lib/modules/${CURRENT_KERNEL}/System.map             ${CURRENT_KERNEL} &&             echo "✓ ZFS modules installed and depmod completed successfully for kernel ${CURRENT_KERNEL}";         else             echo "WARNING: Kernel version mismatch! (Current: ${CURRENT_KERNEL}, Kmods: ${KMOD_KERNEL}). Skipping ZFS installation.";         fi;     else         echo "WARNING: No ZFS kernel modules found in the kmods image for Alma ${TARGETARCH}. Skipping ZFS installation.";     fi &&     dnf clean all
+WARNING: No ZFS kernel modules found in the kmods image for Alma amd64. Skipping ZFS installation.
+0 files removed
+--> ba935fc3a1c2
+[5/5] STEP 5/21: WORKDIR /tmp/zfs
+--> 130a2398ba87
+[5/5] STEP 6/21: RUN git clone https://github.com/45drives/cockpit-zfs-manager.git && cp -r cockpit-zfs-manager/zfs /usr/share/cockpit     && curl https://raw.githubusercontent.com/45Drives/scripts/main/cockpit_font_fix/fix-cockpit.sh | bash
+Cloning into 'cockpit-zfs-manager'...
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0Fixing cockpit fonts
+100   688  100   688    0     0   4140      0 --:--:-- --:--:-- --:--:--  4144
+Done
+--> 4cdab7131d0a
+[5/5] STEP 7/21: RUN export BOOTC_KERNEL_VERSION=$(find /usr/lib/modules/ -maxdepth 1 -type d ! -path "/usr/lib/modules/" -printf "%f\n" | head -1) &&     cd /usr/lib/modules/$BOOTC_KERNEL_VERSION &&     mkdir /var/roothome &&     dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION &&     rm -rfv /var/roothome
+dracut[E]: No '/dev/log' or 'logger' included for syslog logging
+removed directory '/var/roothome'
+--> 198ca8fa14b0
+[5/5] STEP 8/21: COPY rootfs/non_btrfs/ /
+--> 522d298f99a8
+[5/5] STEP 9/21: COPY rootfs/common/ /
+--> 325eedc4cf68
+[5/5] STEP 10/21: RUN chmod +x /usr/sbin/setup-podman-user
+--> 662a62e32058
+[5/5] STEP 11/21: RUN systemctl enable tailscaled podman.socket nix.mount etc-overlay-sync.service
+Created symlink '/etc/systemd/system/multi-user.target.wants/tailscaled.service' → '/usr/lib/systemd/system/tailscaled.service'.
+Created symlink '/etc/systemd/system/sockets.target.wants/podman.socket' → '/usr/lib/systemd/system/podman.socket'.
+Created symlink '/etc/systemd/system/multi-user.target.wants/nix.mount' → '/usr/lib/systemd/system/nix.mount'.
+Created symlink '/etc/systemd/system/multi-user.target.wants/etc-overlay-sync.service' → '/usr/lib/systemd/system/etc-overlay-sync.service'.
+--> f0926ab282b0
+[5/5] STEP 12/21: RUN dnf install -y     podman     podman-docker     podman-compose     fuse-overlayfs     nix     && dnf clean all
+EL-10 - Wazuh                                   1.1 MB/s | 185 kB     00:00    
+Adoptium                                         58 kB/s |  15 kB     00:00    
+AlmaLinux 10 - AppStream                        9.1 MB/s | 2.8 MB     00:00    
+AlmaLinux 10 - BaseOS                            30 MB/s |  47 MB     00:01    
+AlmaLinux 10 - CRB                              3.0 MB/s | 646 kB     00:00    
+AlmaLinux 10 - Extras                            75 kB/s |  13 kB     00:00    
+Visual Studio Code                              949 kB/s | 209 kB     00:00    
+crowdsec_crowdsec                               8.8 kB/s |  12 kB     00:01    
+Extra Packages for Enterprise Linux 10 - x86_64 5.0 MB/s | 6.7 MB     00:01    
+RPM Fusion for EL 10 - Free - Updates           111 kB/s |  55 kB     00:00    
+RPM Fusion for EL 10 - Nonfree - Updates         82 kB/s |  22 kB     00:00    
+Tailscale stable                                 61 kB/s |  14 kB     00:00    
+Package podman-7:5.8.2-9.el10_2.alma.1.x86_64 is already installed.
+Dependencies resolved.
+================================================================================
+ Package               Arch      Version                     Repository    Size
+================================================================================
+Installing:
+ fuse-overlayfs        x86_64    1.16-1.el10_1               appstream     67 k
+ nix                   x86_64    2.31.5-3.el10_2             epel         7.5 k
+ podman-compose        noarch    1.5.0-1.el10_1              epel         148 k
+ podman-docker         noarch    7:5.8.2-9.el10_2.alma.1     appstream    106 k
+Installing dependencies:
+ blake3                x86_64    1.8.2-1.el10_1              epel          37 k
+ boost-context         x86_64    1.83.0-7.el10               appstream     13 k
+ boost-iostreams       x86_64    1.83.0-7.el10               appstream     37 k
+ boost-url             x86_64    1.83.0-7.el10               appstream    118 k
+ gc                    x86_64    8.2.6-4.el10_1              epel         111 k
+ libcpuid              x86_64    0.7.0-2.el10                baseos        63 k
+ libgit2_1.9           x86_64    1.9.7-1.el10_2              epel         580 k
+ libsodium             x86_64    1.0.22-1.el10_2             epel         214 k
+ libssh2               x86_64    1.11.1-9.el10_2             epel         144 k
+ llhttp                x86_64    9.1.3-10.el10               appstream     31 k
+ lowdown-libs          x86_64    1.0.2-5.el10_0              epel         161 k
+ nix-core              x86_64    2.31.5-3.el10_2             epel         1.0 M
+ nix-filesystem        noarch    2.31.5-3.el10_2             epel         7.8 k
+ nix-libs              x86_64    2.31.5-3.el10_2             epel         3.2 M
+ nix-system            noarch    2.31.5-3.el10_2             epel         9.9 k
+ python3-click         noarch    8.1.7-7.el10_2              epel         226 k
+ python3-dotenv        noarch    1.0.1-3.el10_0              epel          46 k
+ tbb                   x86_64    2021.11.0-7.el10            appstream    163 k
+Installing weak dependencies:
+ busybox               x86_64    1:1.37.0-4.el10_2           epel         1.2 M
+ nix-daemon            noarch    2.31.5-3.el10_2             epel          12 k
+ nix-legacy            noarch    2.31.5-3.el10_2             epel          58 k
+ python3-dotenv+cli    noarch    1.0.1-3.el10_0              epel         9.5 k
+
+Transaction Summary
+================================================================================
+Install  26 Packages
+
+Total download size: 7.6 M
+Installed size: 21 M
+Downloading Packages:
+(1/26): boost-context-1.83.0-7.el10.x86_64.rpm  320 kB/s |  13 kB     00:00    
+(2/26): boost-iostreams-1.83.0-7.el10.x86_64.rp 804 kB/s |  37 kB     00:00    
+(3/26): llhttp-9.1.3-10.el10.x86_64.rpm         1.4 MB/s |  31 kB     00:00    
+(4/26): boost-url-1.83.0-7.el10.x86_64.rpm      1.6 MB/s | 118 kB     00:00    
+(5/26): fuse-overlayfs-1.16-1.el10_1.x86_64.rpm 1.6 MB/s |  67 kB     00:00    
+(6/26): libcpuid-0.7.0-2.el10.x86_64.rpm        3.0 MB/s |  63 kB     00:00    
+(7/26): podman-docker-5.8.2-9.el10_2.alma.1.noa 2.9 MB/s | 106 kB     00:00    
+(8/26): tbb-2021.11.0-7.el10.x86_64.rpm         4.5 MB/s | 163 kB     00:00    
+(9/26): blake3-1.8.2-1.el10_1.x86_64.rpm        297 kB/s |  37 kB     00:00    
+(10/26): gc-8.2.6-4.el10_1.x86_64.rpm           600 kB/s | 111 kB     00:00    
+(11/26): libsodium-1.0.22-1.el10_2.x86_64.rpm   1.5 MB/s | 214 kB     00:00    
+(12/26): libssh2-1.11.1-9.el10_2.x86_64.rpm     1.4 MB/s | 144 kB     00:00    
+(13/26): libgit2_1.9-1.9.7-1.el10_2.x86_64.rpm  1.7 MB/s | 580 kB     00:00    
+(14/26): nix-2.31.5-3.el10_2.x86_64.rpm         179 kB/s | 7.5 kB     00:00    
+(15/26): lowdown-libs-1.0.2-5.el10_0.x86_64.rpm 1.6 MB/s | 161 kB     00:00    
+(16/26): nix-daemon-2.31.5-3.el10_2.noarch.rpm  350 kB/s |  12 kB     00:00    
+(17/26): nix-filesystem-2.31.5-3.el10_2.noarch.  94 kB/s | 7.8 kB     00:00    
+(18/26): nix-legacy-2.31.5-3.el10_2.noarch.rpm  808 kB/s |  58 kB     00:00    
+(19/26): busybox-1.37.0-4.el10_2.x86_64.rpm     1.7 MB/s | 1.2 MB     00:00    
+(20/26): nix-system-2.31.5-3.el10_2.noarch.rpm  183 kB/s | 9.9 kB     00:00    
+(21/26): podman-compose-1.5.0-1.el10_1.noarch.r 1.8 MB/s | 148 kB     00:00    
+(22/26): python3-click-8.1.7-7.el10_2.noarch.rp 2.0 MB/s | 226 kB     00:00    
+(23/26): nix-core-2.31.5-3.el10_2.x86_64.rpm    2.2 MB/s | 1.0 MB     00:00    
+(24/26): python3-dotenv+cli-1.0.1-3.el10_0.noar 221 kB/s | 9.5 kB     00:00    
+(25/26): python3-dotenv-1.0.1-3.el10_0.noarch.r 878 kB/s |  46 kB     00:00    
+(26/26): nix-libs-2.31.5-3.el10_2.x86_64.rpm    3.5 MB/s | 3.2 MB     00:00    
+--------------------------------------------------------------------------------
+Total                                           3.3 MB/s | 7.6 MB     00:02     
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                        1/1 
+  Installing       : gc-8.2.6-4.el10_1.x86_64                              1/26 
+  Installing       : python3-click-8.1.7-7.el10_2.noarch                   2/26 
+  Installing       : python3-dotenv-1.0.1-3.el10_0.noarch                  3/26 
+  Installing       : python3-dotenv+cli-1.0.1-3.el10_0.noarch              4/26 
+  Installing       : nix-filesystem-2.31.5-3.el10_2.noarch                 5/26 
+  Installing       : nix-system-2.31.5-3.el10_2.noarch                     6/26 
+warning: group nixbld does not exist - using root
+warning: group nixbld does not exist - using root
+warning: group nixbld does not exist - using root
+
+  Installing       : lowdown-libs-1.0.2-5.el10_0.x86_64                    7/26 
+  Installing       : libssh2-1.11.1-9.el10_2.x86_64                        8/26 
+  Installing       : libsodium-1.0.22-1.el10_2.x86_64                      9/26 
+  Installing       : busybox-1:1.37.0-4.el10_2.x86_64                     10/26 
+  Installing       : libcpuid-0.7.0-2.el10.x86_64                         11/26 
+  Installing       : tbb-2021.11.0-7.el10.x86_64                          12/26 
+  Installing       : blake3-1.8.2-1.el10_1.x86_64                         13/26 
+  Installing       : llhttp-9.1.3-10.el10.x86_64                          14/26 
+  Installing       : libgit2_1.9-1.9.7-1.el10_2.x86_64                    15/26 
+  Installing       : boost-url-1.83.0-7.el10.x86_64                       16/26 
+  Installing       : boost-iostreams-1.83.0-7.el10.x86_64                 17/26 
+  Installing       : boost-context-1.83.0-7.el10.x86_64                   18/26 
+  Installing       : nix-libs-2.31.5-3.el10_2.x86_64                      19/26 
+  Installing       : nix-core-2.31.5-3.el10_2.x86_64                      20/26 
+warning: /etc/nix/nix.conf created as /etc/nix/nix.conf.rpmnew
+
+  Installing       : nix-daemon-2.31.5-3.el10_2.noarch                    21/26 
+  Running scriptlet: nix-daemon-2.31.5-3.el10_2.noarch                    21/26 
+  Installing       : nix-legacy-2.31.5-3.el10_2.noarch                    22/26 
+  Installing       : nix-2.31.5-3.el10_2.x86_64                           23/26 
+  Installing       : podman-compose-1.5.0-1.el10_1.noarch                 24/26 
+  Installing       : podman-docker-7:5.8.2-9.el10_2.alma.1.noarch         25/26 
+  Installing       : fuse-overlayfs-1.16-1.el10_1.x86_64                  26/26 
+  Running scriptlet: fuse-overlayfs-1.16-1.el10_1.x86_64                  26/26 
+Creating group 'nixbld' with GID 976.
+Creating group 'nixbld-1' with GID 975.
+Creating user 'nixbld-1' (Nix build user 1) with UID 975 and GID 975.
+Creating group 'nixbld-2' with GID 974.
+Creating user 'nixbld-2' (Nix build user 2) with UID 974 and GID 974.
+Creating group 'nixbld-3' with GID 973.
+Creating user 'nixbld-3' (Nix build user 3) with UID 973 and GID 973.
+Creating group 'nixbld-4' with GID 972.
+Creating user 'nixbld-4' (Nix build user 4) with UID 972 and GID 972.
+Creating group 'nixbld-5' with GID 971.
+Creating user 'nixbld-5' (Nix build user 5) with UID 971 and GID 971.
+Creating group 'nixbld-6' with GID 970.
+Creating user 'nixbld-6' (Nix build user 6) with UID 970 and GID 970.
+Creating group 'nixbld-7' with GID 969.
+Creating user 'nixbld-7' (Nix build user 7) with UID 969 and GID 969.
+Creating group 'nixbld-8' with GID 968.
+Creating user 'nixbld-8' (Nix build user 8) with UID 968 and GID 968.
+Creating group 'nixbld-9' with GID 967.
+Creating user 'nixbld-9' (Nix build user 9) with UID 967 and GID 967.
+Creating group 'nixbld-10' with GID 966.
+Creating user 'nixbld-10' (Nix build user 10) with UID 966 and GID 966.
+
+
+Installed:
+  blake3-1.8.2-1.el10_1.x86_64                                                  
+  boost-context-1.83.0-7.el10.x86_64                                            
+  boost-iostreams-1.83.0-7.el10.x86_64                                          
+  boost-url-1.83.0-7.el10.x86_64                                                
+  busybox-1:1.37.0-4.el10_2.x86_64                                              
+  fuse-overlayfs-1.16-1.el10_1.x86_64                                           
+  gc-8.2.6-4.el10_1.x86_64                                                      
+  libcpuid-0.7.0-2.el10.x86_64                                                  
+  libgit2_1.9-1.9.7-1.el10_2.x86_64                                             
+  libsodium-1.0.22-1.el10_2.x86_64                                              
+  libssh2-1.11.1-9.el10_2.x86_64                                                
+  llhttp-9.1.3-10.el10.x86_64                                                   
+  lowdown-libs-1.0.2-5.el10_0.x86_64                                            
+  nix-2.31.5-3.el10_2.x86_64                                                    
+  nix-core-2.31.5-3.el10_2.x86_64                                               
+  nix-daemon-2.31.5-3.el10_2.noarch                                             
+  nix-filesystem-2.31.5-3.el10_2.noarch                                         
+  nix-legacy-2.31.5-3.el10_2.noarch                                             
+  nix-libs-2.31.5-3.el10_2.x86_64                                               
+  nix-system-2.31.5-3.el10_2.noarch                                             
+  podman-compose-1.5.0-1.el10_1.noarch                                          
+  podman-docker-7:5.8.2-9.el10_2.alma.1.noarch                                  
+  python3-click-8.1.7-7.el10_2.noarch                                           
+  python3-dotenv-1.0.1-3.el10_0.noarch                                          
+  python3-dotenv+cli-1.0.1-3.el10_0.noarch                                      
+  tbb-2021.11.0-7.el10.x86_64                                                   
+
+Complete!
+61 files removed
+--> c4bebbd35ce0
+[5/5] STEP 13/21: RUN systemctl enable nix-daemon.socket
+Created symlink '/etc/systemd/system/sockets.target.wants/nix-daemon.socket' → '/usr/lib/systemd/system/nix-daemon.socket'.
+--> d106b584aec5
+[5/5] STEP 14/21: RUN mkdir -p /var/lib/nix && cp -a /nix/. /var/lib/nix/
+--> 5cef4d4ade3a
+[5/5] STEP 15/21: COPY build/selinux/nix /tmp/nix-selinux
+--> b394ed174d59
+[5/5] STEP 16/21: RUN dnf install -y checkpolicy make &&     make -C /tmp/nix-selinux &&     mkdir -p /usr/share/selinux/packages &&     cp /tmp/nix-selinux/nix.pp /usr/share/selinux/packages/ &&     semodule -i /tmp/nix-selinux/nix.pp &&     (restorecon -RF /nix /var/lib/nix || true) &&     rm -rf /tmp/nix-selinux &&     dnf clean all
+EL-10 - Wazuh                                   1.2 MB/s | 185 kB     00:00    
+Adoptium                                         59 kB/s |  15 kB     00:00    
+AlmaLinux 10 - AppStream                        9.8 MB/s | 2.8 MB     00:00    
+AlmaLinux 10 - BaseOS                            32 MB/s |  47 MB     00:01    
+AlmaLinux 10 - CRB                              2.9 MB/s | 646 kB     00:00    
+AlmaLinux 10 - Extras                            73 kB/s |  13 kB     00:00    
+Visual Studio Code                              1.1 MB/s | 209 kB     00:00    
+crowdsec_crowdsec                               8.8 kB/s |  12 kB     00:01    
+Extra Packages for Enterprise Linux 10 - x86_64 6.1 MB/s | 6.7 MB     00:01    
+RPM Fusion for EL 10 - Free - Updates            80 kB/s |  55 kB     00:00    
+RPM Fusion for EL 10 - Nonfree - Updates         81 kB/s |  22 kB     00:00    
+Tailscale stable                                 64 kB/s |  14 kB     00:00    
+Package checkpolicy-3.10-1.el10.x86_64 is already installed.
+Dependencies resolved.
+================================================================================
+ Package       Architecture    Version                    Repository       Size
+================================================================================
+Installing:
+ make          x86_64          1:4.4.1-9.el10             baseos          589 k
+
+Transaction Summary
+================================================================================
+Install  1 Package
+
+Total download size: 589 k
+Installed size: 1.8 M
+Downloading Packages:
+make-4.4.1-9.el10.x86_64.rpm                    640 kB/s | 589 kB     00:00    
+--------------------------------------------------------------------------------
+Total                                           579 kB/s | 589 kB     00:01     
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                        1/1 
+  Installing       : make-1:4.4.1-9.el10.x86_64                             1/1 
+  Running scriptlet: make-1:4.4.1-9.el10.x86_64                             1/1 
+
+Installed:
+  make-1:4.4.1-9.el10.x86_64                                                    
+
+Complete!
+make: Entering directory '/tmp/nix-selinux'
+Compiling SELinux policy module...
+checkmodule -M -m -o nix.mod nix.te
+Packaging SELinux policy module...
+semodule_package -o nix.pp -m nix.mod -f nix.fc
+make: Leaving directory '/tmp/nix-selinux'
+libsemanage.semanage_rename: WARNING: rename(/etc/selinux/targeted/active, /etc/selinux/targeted/previous) failed: Invalid cross-device link, fall back to non-atomic semanage_copy_dir_flags()
+61 files removed
+--> 354a141775c5
+[5/5] STEP 17/21: RUN bash /tmp/build_scripts/install-hermes.sh
+==> Installing Hermes Agent CLI into /usr/local/lib/hermes-agent
+
+┌─────────────────────────────────────────────────────────┐
+│             ☤ Hermes Agent Installer                    │
+├─────────────────────────────────────────────────────────┤
+│  An open source AI agent by Nous Research.              │
+└─────────────────────────────────────────────────────────┘
+
+✓ prerequisites ok (git, curl)
+→ Installing the latest stable release (v0.22.2); --channel main follows every commit
+→ Cloning https://github.com/NousResearch/hermes-agent.git (main) into /usr/local/lib/hermes-agent
+Cloning into '/usr/local/lib/.hermes-clone-xDfb6d/tree'...
+→ Fetching v0.22.2
+→ Checking out v0.22.2 (attempt 1 of 2)
+HEAD is now at d923a5eb48 Release 0.22.2 from release/0.22.1 with the published v0.22.1 as a parent
+✓ Hermes Agent cloned
+→ Downloading uv 0.12.3 (linux-x64)
+✓ uv ready (uv 0.12.3 (x86_64-unknown-linux-gnu))
+→ Downloading Python 3.14
+Downloading cpython-3.14.7-linux-x86_64-gnu (download) (34.3MiB)
+ Downloaded cpython-3.14.7-linux-x86_64-gnu (download)
+Installed Python 3.14.7 in 3.98s
+ + cpython-3.14.7-linux-x86_64-gnu
+✓ bootstrap Python ready; PM prepares the dependency environment
+✓ uv ready (uv 0.12.3 (x86_64-unknown-linux-gnu))
+→ Installing dependencies (hash-verified via uv.lock)
+Preparing the isolated Hermes runtime…
+  → Installing Python dependencies…
+  ✓ Installing Python dependencies
+  ffmpeg:   3.3%  4.0 MiB / 120.7 MiB
+  ffmpeg:   6.6%  8.0 MiB / 120.7 MiB
+  ffmpeg:   9.9%  12.0 MiB / 120.7 MiB
+  ffmpeg:  13.3%  16.0 MiB / 120.7 MiB
+  ffmpeg:  16.6%  20.0 MiB / 120.7 MiB
+  ffmpeg:  19.9%  24.0 MiB / 120.7 MiB
+  ffmpeg:  23.2%  28.0 MiB / 120.7 MiB
+  ffmpeg:  26.5%  32.0 MiB / 120.7 MiB
+  ffmpeg:  29.8%  36.0 MiB / 120.7 MiB
+  ffmpeg:  33.1%  40.0 MiB / 120.7 MiB
+  ffmpeg:  36.4%  44.0 MiB / 120.7 MiB
+  ffmpeg:  39.8%  48.0 MiB / 120.7 MiB
+  ffmpeg:  43.1%  52.0 MiB / 120.7 MiB
+  ffmpeg:  46.4%  56.0 MiB / 120.7 MiB
+  ffmpeg:  49.7%  60.0 MiB / 120.7 MiB
+  ffmpeg:  53.0%  64.0 MiB / 120.7 MiB
+  ffmpeg:  56.3%  68.0 MiB / 120.7 MiB
+  ffmpeg:  59.6%  72.0 MiB / 120.7 MiB
+  ffmpeg:  62.9%  76.0 MiB / 120.7 MiB
+  ffmpeg:  66.3%  80.0 MiB / 120.7 MiB
+  ffmpeg:  69.6%  84.0 MiB / 120.7 MiB
+  ffmpeg:  72.9%  88.0 MiB / 120.7 MiB
+  ffmpeg:  76.4%  92.2 MiB / 120.7 MiB
+  ffmpeg:  79.7%  96.3 MiB / 120.7 MiB
+  ffmpeg:  83.1%  100.3 MiB / 120.7 MiB
+  ffmpeg:  86.4%  104.3 MiB / 120.7 MiB
+  ffmpeg:  89.8%  108.4 MiB / 120.7 MiB
+  ffmpeg:  93.2%  112.6 MiB / 120.7 MiB
+  ffmpeg:  96.5%  116.6 MiB / 120.7 MiB
+  ffmpeg:  99.9%  120.6 MiB / 120.7 MiB
+  ffmpeg: 100.0%  120.7 MiB / 120.7 MiB
+  ffmpeg: 100.0%  120.7 MiB / 120.7 MiB
+  ffmpeg: unpacking
+✓ ffmpeg
+  node:  12.5%  4.0 MiB / 32.0 MiB
+  node:  25.0%  8.0 MiB / 32.0 MiB
+  node:  37.5%  12.0 MiB / 32.0 MiB
+  node:  53.1%  17.0 MiB / 32.0 MiB
+  node:  68.8%  22.0 MiB / 32.0 MiB
+  node:  81.3%  26.0 MiB / 32.0 MiB
+  node:  96.9%  31.0 MiB / 32.0 MiB
+  node: 100.0%  32.0 MiB / 32.0 MiB
+  node: 100.0%  32.0 MiB / 32.0 MiB
+  node: unpacking
+→ Node needs libatomic.so.1; trying non-interactive dnf install -y libatomic
+EL-10 - Wazuh                                   1.1 MB/s | 185 kB     00:00    
+Adoptium                                         58 kB/s |  15 kB     00:00    
+AlmaLinux 10 - AppStream                        9.2 MB/s | 2.8 MB     00:00    
+AlmaLinux 10 - BaseOS                            32 MB/s |  47 MB     00:01    
+AlmaLinux 10 - CRB                              2.7 MB/s | 646 kB     00:00    
+AlmaLinux 10 - Extras                            66 kB/s |  13 kB     00:00    
+Visual Studio Code                              1.0 MB/s | 209 kB     00:00    
+crowdsec_crowdsec                               8.6 kB/s |  12 kB     00:01    
+Extra Packages for Enterprise Linux 10 - x86_64 6.6 MB/s | 6.7 MB     00:01    
+RPM Fusion for EL 10 - Free - Updates           101 kB/s |  55 kB     00:00    
+RPM Fusion for EL 10 - Nonfree - Updates         45 kB/s |  22 kB     00:00    
+Tailscale stable                                 61 kB/s |  14 kB     00:00    
+Dependencies resolved.
+================================================================================
+ Package         Architecture Version                        Repository    Size
+================================================================================
+Installing:
+ libatomic       x86_64       14.3.1-4.4.el10.alma.2         baseos        50 k
+
+Transaction Summary
+================================================================================
+Install  1 Package
+
+Total download size: 50 k
+Installed size: 37 k
+Downloading Packages:
+libatomic-14.3.1-4.4.el10.alma.2.x86_64.rpm     877 kB/s |  50 kB     00:00    
+--------------------------------------------------------------------------------
+Total                                           318 kB/s |  50 kB     00:00     
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                        1/1 
+  Installing       : libatomic-14.3.1-4.4.el10.alma.2.x86_64                1/1 
+  Running scriptlet: libatomic-14.3.1-4.4.el10.alma.2.x86_64                1/1 
+
+Installed:
+  libatomic-14.3.1-4.4.el10.alma.2.x86_64                                       
+
+Complete!
+✓ node
+  npm: 100.0%  2.9 MiB / 2.9 MiB
+  npm: 100.0%  2.9 MiB / 2.9 MiB
+  npm: unpacking
+✓ npm
+  python:   3.3%  4.0 MiB / 119.7 MiB
+  python:   6.7%  8.0 MiB / 119.7 MiB
+  python:  10.0%  12.0 MiB / 119.7 MiB
+  python:  13.4%  16.0 MiB / 119.7 MiB
+  python:  16.7%  20.0 MiB / 119.7 MiB
+  python:  20.0%  24.0 MiB / 119.7 MiB
+  python:  23.4%  28.0 MiB / 119.7 MiB
+  python:  26.7%  32.0 MiB / 119.7 MiB
+  python:  30.1%  36.0 MiB / 119.7 MiB
+  python:  33.4%  40.0 MiB / 119.7 MiB
+  python:  36.8%  44.0 MiB / 119.7 MiB
+  python:  40.9%  49.0 MiB / 119.7 MiB
+  python:  44.2%  53.0 MiB / 119.7 MiB
+  python:  48.4%  57.9 MiB / 119.7 MiB
+  python:  51.7%  61.9 MiB / 119.7 MiB
+  python:  55.1%  65.9 MiB / 119.7 MiB
+  python:  58.4%  69.9 MiB / 119.7 MiB
+  python:  61.8%  73.9 MiB / 119.7 MiB
+  python:  65.9%  78.9 MiB / 119.7 MiB
+  python:  69.2%  82.9 MiB / 119.7 MiB
+  python:  72.6%  86.9 MiB / 119.7 MiB
+  python:  76.7%  91.9 MiB / 119.7 MiB
+  python:  80.1%  95.9 MiB / 119.7 MiB
+  python:  84.2%  100.8 MiB / 119.7 MiB
+  python:  87.6%  104.8 MiB / 119.7 MiB
+  python:  91.7%  109.8 MiB / 119.7 MiB
+  python:  95.0%  113.8 MiB / 119.7 MiB
+  python:  98.4%  117.8 MiB / 119.7 MiB
+  python: 100.0%  119.7 MiB / 119.7 MiB
+  python: 100.0%  119.7 MiB / 119.7 MiB
+  python: unpacking
+✓ python
+  ripgrep: 100.0%  2.2 MiB / 2.2 MiB
+  ripgrep: 100.0%  2.2 MiB / 2.2 MiB
+  ripgrep: unpacking
+✓ ripgrep
+  → Installing Python dependencies…
+  ✓ Installing Python dependencies
+✓ venv
+✓ dependencies installed
+✓ config prepared in /usr/local/lib/hermes-agent
+✓ uv ready (uv 0.12.3 (x86_64-unknown-linux-gnu))
+→ Building the hermes command and apps
+Preparing the isolated Hermes runtime…
+  → Installing Python dependencies…
+  ✓ Installing Python dependencies
+  → Preparing Node dependencies…
+  ✓ Preparing Node dependencies
+  → Building the TUI…
+  ✓ Building the TUI
+  → Building the web UI…
+  ✓ Building the web UI
+  ✓ Model catalog cache refreshed from checkout
+
+→ Syncing bundled skills...
+  ✓ Skills are up to date
+
+→ Syncing bundled skills to all profiles...
+  default: up to date
+
+→ Checking configuration for new options...
+  ✓ Configuration is up to date
+
+✓ Install complete! [detached @ d923a5eb48]
+
+ℹ Skill curator
+  Background skill maintenance is enabled. First pass is deferred ~7d after installation; only agent-created skills are in scope and nothing is ever auto-deleted (archive is recoverable).
+  Preview now:  hermes curator run --dry-run
+  Pause it:     hermes curator pause
+  Docs:         https://hermes-agent.nousresearch.com/docs/user-guide/features/curator
+✓ added ~/.local/bin to PATH in /var/roothome/.bashrc
+✓ added ~/.local/bin to PATH in /var/roothome/.profile
+✓ app products and hermes command ready
+✓ Hermes Agent install complete. Run: hermes
+→ Reload your shell to use hermes: open a new terminal, or run: source ~/.bashrc
+Hermes Agent v0.22.2 (2026.9.24) · stable · local d923a5eb487a
+Install directory: /usr/local/lib/hermes-agent
+Install method: git
+Python: 3.14.7
+OpenAI SDK: 2.24.0
+Up to date
+==> Hermes Agent CLI installed and published at /usr/local/bin/hermes
+--> 9cb9cca2620f
+[5/5] STEP 18/21: ENV HERMES_HOME=/usr/local/lib/hermes-agent
+--> 056517ba0aac
+[5/5] STEP 19/21: RUN mkdir -p /usr/share/factory/etc && cp -a /etc/. /usr/share/factory/etc/
+--> 8db09021d5a1
+[5/5] STEP 20/21: RUN bootc container lint
+Lint warning: nonempty-run-tmp: Found content in runtime-only directories (/run, /tmp):
+  /run/selinux-policy
+  /run/selinux-policy/extra_binsbin.cil
+  /run/selinux-policy/extra_binsbin_entries.txt
+  /run/selinux-policy/extra_binsbin_entries_dup.txt
+  /run/selinux-policy/extra_varrun.cil
+  ...and 1226 more
+
+Lint warning: var-log: Found non-empty logfiles:
+  /var/log/dnf.librepo.log
+  /var/log/dnf.log
+  /var/log/dnf.rpm.log
+  /var/log/hawkey.log
+
+Lint warning: var-tmpfiles: Found content in /var missing systemd tmpfiles.d entries:
+  d /var/cache/dnf/Adoptium-033cfe84a856c2a0 0755 root root - -
+  d /var/cache/dnf/Adoptium-033cfe84a856c2a0/repodata 0755 root root - -
+  d /var/cache/dnf/appstream-0221375ef9ab2490 0755 root root - -
+  d /var/cache/dnf/appstream-0221375ef9ab2490/packages 0755 root root - -
+  d /var/cache/dnf/appstream-0221375ef9ab2490/repodata 0755 root root - -
+  ...and 706 more
+Found non-directory/non-symlink files in /var:
+  var/lib/dnf/history.sqlite
+  var/lib/dnf/history.sqlite-shm
+  var/lib/dnf/history.sqlite-wal
+  var/lib/dnf/repos/appstream-0221375ef9ab2490/countme
+  var/lib/dnf/repos/baseos-dd34f9106e98b1fa/countme
+  ...and 1382 more
+
+Checks passed: 10
+Checks skipped: 1
+Warnings: 3
+--> dd3322bf9cfe
+[5/5] STEP 21/21: ENTRYPOINT [ "/sbin/init" ]
+[5/5] COMMIT localhost/alma:d7-hermes
+--> e483cdcd9ff8
+Successfully tagged localhost/alma:d7-hermes
+e483cdcd9ff80cece01975e4b8da43deafd20b57ecc1a7c585998f81110f469f
+BUILD_EXIT=0

@@ -103,6 +103,24 @@ build-iso image='alma' image_tag='latest':
 #         . \
 #         -f {{image_tag}}.Containerfile
 # ==============================================================================
+# Hermes Agent CLI
+# ==============================================================================
+
+# Run the Hermes CLI from a built base image, e.g. `just hermes alma d7-hermes --version`.
+hermes image='alma' tag='latest' *ARGS:
+    #!/bin/bash
+    set -euo pipefail
+    LOCAL="localhost/{{image}}:{{tag}}"
+    if podman image exists "$LOCAL"; then
+        IMG="$LOCAL"
+    else
+        IMG="ghcr.io/braccae/{{image}}:{{tag}}"
+    fi
+    # bootc images set ENTRYPOINT ["/sbin/init"]; clear it so `hermes` runs
+    # directly instead of being handed to systemd as a unit argument.
+    exec podman run --rm --entrypoint "" "$IMG" hermes {{ARGS}}
+
+# ==============================================================================
 # Recipes from dev-tools/scripts/install/write-disk-image-to-disk.sh
 # ==============================================================================
 
