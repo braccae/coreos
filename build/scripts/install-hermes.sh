@@ -7,7 +7,7 @@
 #   RUN bash /tmp/build_scripts/install-hermes.sh
 #
 # Why this shape (all verified empirically against the real base image, see
-# d7-evidence.log):
+# commit 800f622):
 #
 #   * The upstream installer (https://hermes-agent.nousresearch.com/install.sh)
 #     is interactive and per-user by default. We run it non-interactively as
