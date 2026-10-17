@@ -1,0 +1,25 @@
+[Unit]
+Description=restic backup
+Wants=network-online.target
+After=network-online.target
+ConditionACPower=true
+Documentation=https://restic.readthedocs.io/
+
+[Service]
+Type=oneshot
+RuntimeDirectory=restic
+StateDirectory=restic
+LoadCredentialEncrypted=restic.pw
+EnvironmentFile=-/etc/restic/env
+
+Nice=19
+CPUSchedulingPolicy=batch
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+IOWeight=100
+
+Restart=no
+LogRateLimitIntervalSec=0
+
+ExecStartPre=sleep 1m
+ExecStart=/usr/libexec/coreos/restic-backup.sh

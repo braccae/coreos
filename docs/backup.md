@@ -73,15 +73,22 @@ Installed in `rootfs/common/usr/lib/systemd/system/`:
 
 The target state decouples general filesystem and application data backups from stateful database backups.
 
-### 1. Restic for Files and Appdata
+### 1. Restic for Files and Appdata (Implemented in Base Image)
 - **Purpose**: Fast, secure, deduplicated backups of host directories (`/etc`, `/var`, `/home`) and application data (`/home/*/appdata`).
 - **Advantages over Borgmatic**:
-  - Native Go binary with no Python or C-extension runtime dependencies.
-  - Native first-class support for cloud object storage (S3, Backblaze B2, MinIO, Azure) without relying on SSH bridges or local FUSE mounts.
+  - Native Go binary (`/usr/bin/restic`, installed via EPEL in [Containerfile](Containerfile)) with no Python or C-extension runtime dependencies.
+  - Native first-class support for cloud object storage (S3, Backblaze B2, MinIO, Azure) and local repositories without relying on SSH bridges or local FUSE mounts.
   - Significantly faster index traversal and snapshot operations.
-- **Implementation**:
-  - Standalone binary packaged directly or pulled via container.
-  - Scheduled via user-level or system-level systemd timers running rootless where appropriate.
+- **Implementation (Shipped in Base Image)**:
+  - **Package**: `restic` installed directly in the `final` stage of [Containerfile](Containerfile).
+  - **Backup Wrapper**: [`rootfs/common/usr/libexec/coreos/restic-backup.sh`](../rootfs/common/usr/libexec/coreos/restic-backup.sh) (mode `0755`) loads `/etc/restic/env`, fails closed if `RESTIC_REPOSITORY` is unset, reads the encrypted systemd credential `${CREDENTIALS_DIRECTORY}/restic.pw` (or falls back to `RESTIC_PASSWORD_FILE`), auto-initializes uninitialized repositories via `restic init`, backs up `$BACKUP_PATHS` (default `/etc /var /home` plus any existing `/home/*/appdata` directories) with `--exclude-file=/etc/restic/excludes.txt` and `--host "$(hostname)"`, and applies retention pruning (`restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune`).
+  - **Configuration & Excludes**:
+    - [`rootfs/common/etc/restic/env`](../rootfs/common/etc/restic/env) (installed to `/etc/restic/env`, mode `0600`): Secret-free configuration template defining `RESTIC_REPOSITORY=`, optional `RESTIC_PASSWORD_FILE`, `RESTIC_OPTIONS`, and `BACKUP_PATHS`.
+    - [`rootfs/common/etc/restic/excludes.txt`](../rootfs/common/etc/restic/excludes.txt) (installed to `/etc/restic/excludes.txt`): Default exclusion rules for caches and ephemeral/reproducible paths (`/var/cache`, `/var/tmp`, `/var/lib/containers/storage`, `/var/lib/nix`, `/var/lib/systemd/random-seed`, `/var/lib/machine-id`, `**/.cache`, `**/lost+found`, `/nix`).
+  - **Systemd Units**:
+    - [`rootfs/common/usr/lib/systemd/system/restic-backup.service`](../rootfs/common/usr/lib/systemd/system/restic-backup.service) (`restic-backup.service`): `Type=oneshot` service with `ConditionACPower=true`, `LoadCredentialEncrypted=restic.pw`, `EnvironmentFile=-/etc/restic/env`, batch CPU/IO scheduling priority, `ExecStartPre=sleep 1m`, and `ExecStart=/usr/libexec/coreos/restic-backup.sh`.
+    - [`rootfs/common/usr/lib/systemd/system/restic-backup.timer`](../rootfs/common/usr/lib/systemd/system/restic-backup.timer) (`restic-backup.timer`): Fires daily at `04:30:00` (`Persistent=true`), offset from Borgmatic's `04:00:00` schedule.
+  - **Opt-In Activation**: `restic-backup.timer` is **not enabled by default** in the image. Nothing runs until an operator configures `/etc/restic/env`, provisions the `restic.pw` credential (via `systemd-creds encrypt`), and enables the timer (`systemctl enable --now restic-backup.timer`).
 
 ### 2. Databasus for Databases
 - **Purpose**: Dedicated, isolated database dump management and snapshotting for relational engines (PostgreSQL, MySQL, SQLite, MariaDB).

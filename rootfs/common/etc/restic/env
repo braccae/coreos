@@ -1,0 +1,13 @@
+# /etc/restic/env — restic backup configuration (read by restic-backup.service)
+# Set RESTIC_REPOSITORY to an S3/B2/MinIO/local repo. Leave empty until configured;
+# the timer is NOT enabled by default so nothing runs until an operator opts in.
+#
+# Password management:
+# Supply the repository password via systemd encrypted credentials (matching borgmatic):
+#   systemd-creds encrypt - /etc/credstore.encrypted/restic.pw
+# which is loaded by restic-backup.service via `LoadCredentialEncrypted=restic.pw`.
+# Alternatively, set RESTIC_PASSWORD_FILE below to point to a mode-0600 password file.
+RESTIC_REPOSITORY=
+# RESTIC_PASSWORD_FILE=/etc/restic/password
+# RESTIC_OPTIONS=
+# BACKUP_PATHS="/etc /var /home"
