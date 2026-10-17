@@ -62,6 +62,11 @@ RUN uv venv /opt/selkies --python python3 && \
 #    immutable snapshot /usr/share/factory/etc over /etc on every boot, so a
 #    plain `useradd` is discarded and systemd fails with "User=core" 217/USER.
 #    Create the account in /etc, then refresh the factory snapshot from it.
+#  * The factory snapshot also carries an *empty* machine-id. Copying it back
+#    over /etc on every boot re-zeroes the id systemd generated, which kills
+#    user@1000.service (and anything that autolaunches a bus) — Plasma then has
+#    no session bus to reach. machine-id is runtime-owned, so drop it from the
+#    snapshot: the sync leaves the running system's id alone.
 #  * `video`/`render` (GID 39/105) come from systemd-sysusers: they resolve via
 #    NSS but are NOT in /etc/group on disk, and useradd/usermod/gpasswd validate
 #    against /etc/group directly — so `useradd -G wheel,video` fails and
@@ -80,11 +85,21 @@ RUN groupadd -g 1000 core && \
     echo 'core:webtop' | chpasswd && \
     echo "core ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/core && \
     cp -a /etc/passwd /etc/group /etc/shadow /etc/gshadow /usr/share/factory/etc/ && \
-    cp -a /etc/sudoers.d/core /usr/share/factory/etc/sudoers.d/core
+    cp -a /etc/sudoers.d/core /usr/share/factory/etc/sudoers.d/core && \
+    rm -f /usr/share/factory/etc/machine-id
 
 # --- session overlay ---------------------------------------------------------
 # webtop.service + the launcher; see rootfs/webtop-alma/.
 COPY rootfs/webtop-alma/ /
+
+# --- selkies session.py patch ------------------------------------------------
+# selkies 2.0.0 strips DBUS_SESSION_BUS_ADDRESS from the desktop environment and
+# then wraps the session in `dbus-run-session`, so Plasma lands on a private bus
+# with no user manager behind it and KDE's systemd-activated portal never starts.
+# The patch keeps the advertised address and only spawns a private bus when none
+# is present — see patch-selkies-session.py.
+RUN python3 /usr/local/bin/patch-selkies-session.py && \
+    rm -f /usr/local/bin/patch-selkies-session.py
 
 # Selkies' dashboard uploads into $HOME/Desktop; create the XDG dirs up front so
 # the first connection does not log "Could not create upload directory".
