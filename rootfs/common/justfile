@@ -37,4 +37,4 @@ default:
 be USER="root":
     #!/usr/bin/env bash
     set -euo pipefail
-    exec run0 --user="{{ USER }}" -i
+    exec run0 --user="{{ USER }}"
