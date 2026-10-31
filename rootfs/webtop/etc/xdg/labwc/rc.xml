@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- EXPERIMENT (exp/labwc-phase0): minimal nested-session config.
+     labwc only hosts KWin's toplevel window here: no panel, no autostart and
+     no Xwayland (labwc is built with -Dxwayland=disabled; KWin owns it). -->
+<labwc_config>
+  <core>
+    <gap>0</gap>
+    <adaptiveSync>no</adaptiveSync>
+    <allowTearing>yes</allowTearing>
+    <autoEnableOutputs>yes</autoEnableOutputs>
+    <reuseOutputMode>no</reuseOutputMode>
+  </core>
+  <theme>
+    <name>Default</name>
+    <fallbackAppIcon>labwc</fallbackAppIcon>
+  </theme>
+  <!-- KWin's host toplevel has an empty app_id, so match on the title. Without
+       this rule KWin keeps its startup size (e.g. 1024x768) and every browser
+       resize leaves black margins around the captured desktop. The decoration
+       must go too: labwc would otherwise draw a 27px titlebar into the
+       stream. -->
+  <windowRules>
+    <windowRule title="KDE Wayland Compositor*" serverDecoration="no">
+      <action name="Maximize"/>
+    </windowRule>
+  </windowRules>
+</labwc_config>

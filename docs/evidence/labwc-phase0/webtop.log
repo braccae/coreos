@@ -1,0 +1,342 @@
+[E][08:03:00.416690] mod.rt       | [     module-rt.c:  295 pw_rtkit_bus_get()] Failed to connect to system bus: Failed to connect to socket /run/dbus/system_bus_socket: Connection refused
+[W][08:03:00.416736] mod.rt       | [     module-rt.c:  975 rtkit_get_bus()] Realtime scheduling disabled: insufficient realtime privileges, Portal not found on session bus, and no system bus for RTKit: Connection refused
+[E][08:03:00.522728] mod.rt       | [     module-rt.c:  295 pw_rtkit_bus_get()] Failed to connect to system bus: Failed to connect to socket /run/dbus/system_bus_socket: Connection refused
+[W][08:03:00.522781] mod.rt       | [     module-rt.c:  975 rtkit_get_bus()] Realtime scheduling disabled: insufficient realtime privileges, Portal not found on session bus, and no system bus for RTKit: Connection refused
+E 08:03:00.529355             mod.rt ../src/modules/module-rt.c:295:pw_rtkit_bus_get: Failed to connect to system bus: Failed to connect to socket /run/dbus/system_bus_socket: Connection refused
+W 08:03:00.529366             mod.rt ../src/modules/module-rt.c:975:rtkit_get_bus: Realtime scheduling disabled: insufficient realtime privileges, Portal not found on session bus, and no system bus for RTKit: Connection refused
+N 08:03:00.818270 wp-internal-comp-l ../lib/wp/private/internal-comp-loader.c:589:on_component_loaded: <WpCore:0x5566c0f426b0> optional component 'support.system-dbus [module: libwireplumber-module-dbus-connection]' failed to load: Failed to connect to bus: Could not connect: Connection refused
+N 08:03:00.818280 wp-internal-comp-l ../lib/wp/private/internal-comp-loader.c:641:wp_component_array_load_task_execute_step: <WpCore:0x5566c0f426b0> skipping component 'support.modem-manager [module: libwireplumber-module-modem-manager]' because some of its dependencies were not loaded
+N 08:03:00.818284 wp-internal-comp-l ../lib/wp/private/internal-comp-loader.c:641:wp_component_array_load_task_execute_step: <WpCore:0x5566c0f426b0> skipping component 'hooks.device.profile.find-voice-call [script/lua: device/find-voice-call-profile.lua]' because some of its dependencies were not loaded
+E 08:03:00.844441             mod.rt ../src/modules/module-rt.c:295:pw_rtkit_bus_get: Failed to connect to system bus: Failed to connect to socket /run/dbus/system_bus_socket: Connection refused
+W 08:03:00.844449             mod.rt ../src/modules/module-rt.c:975:rtkit_get_bus: Realtime scheduling disabled: insufficient realtime privileges, Portal not found on session bus, and no system bus for RTKit: Connection refused
+[13:32:30.995620518] [649]  INFO Camera camera_manager.cpp:340 libcamera v0.7.2
+[13:32:30.999034393] [696] ERROR DmaBufAllocator dma_buf_allocator.cpp:119 Could not open any dma-buf provider
+[pixelflux] No hardware encoder on render node 0 (nvenc): Could not load CUDA library (libcuda.so.1): dlopen failed
+[pixelflux] Thread priority -15 refused and rtkit does not grant it; capture threads run at normal priority.
+[Wayland] Renderer: software (Pixman), no render node.
+[Wayland] View 1 created over output 0: 1024x768 @ (0, 0).
+[Wayland] Socket listening on: "wayland-1"
+INFO:server:Wayland compositor socket: wayland-1
+INFO:main:Selkies 2.1.0 starting: websockets transport, Wayland capture, encoder h264enc at 8-240 fps, sized by the client, audio on, gamepads on, access open.
+INFO:server:Starting service: websockets
+INFO:gamepad:/dev/uinput is missing or not writable, so gamepads reach applications only through the Input Interposer. Load the uinput module and grant this user write access to enable kernel gamepads.
+INFO:gamepad:4 virtual gamepads ready ('Microsoft X-Box 360 pad', sockets under /tmp/xdg-webtop); kernel uinput off.
+INFO:input:Wayland app compositor 'wayland-2' (configured); routing input + clipboard there, capture stays on 'wayland-1'.
+[FakeInput] /tmp/xdg-webtop/wayland-2: connect /tmp/xdg-webtop/wayland-2: No such file or directory (os error 2); the seat carries relative motion until it is reachable
+WARNING:input:Wayland clipboard: no selection watch on app compositor 'wayland-2' (connect /tmp/xdg-webtop/wayland-2: No such file or directory (os error 2)); polling it instead.
+INFO:input:Wayland app compositor 'wayland-2' no longer answers; re-detecting.
+INFO:input:Wayland app compositor 'wayland-2' (configured); routing input + clipboard there, capture stays on 'wayland-1'.
+[FakeInput] /tmp/xdg-webtop/wayland-2: connect /tmp/xdg-webtop/wayland-2: No such file or directory (os error 2); the seat carries relative motion until it is reachable
+INFO:input:Wayland app compositor 'wayland-2' no longer answers; re-detecting.
+INFO:input:Wayland app compositor 'wayland-2' (configured); routing input + clipboard there, capture stays on 'wayland-1'.
+[FakeInput] /tmp/xdg-webtop/wayland-2: connect /tmp/xdg-webtop/wayland-2: No such file or directory (os error 2); the seat carries relative motion until it is reachable
+Waiting for labwc IPC socket and Wayland socket...
+labwc session compositor on wayland-0 (IPC labwc.sock)
+INFO:server:Selkies server running on http://127.0.0.1:8082
+INFO:printing:Print queue Selkies listening on /tmp/xdg-webtop/selkies-cups/cups.sock, spooling to /var/home/webtop/.local/state/selkies/print, on A4 paper
+fusermount3: mount failed: Operation not permitted
+error: fuse init failed: Can't mount path /tmp/xdg-webtop/doc
+
+(/usr/libexec/xdg-desktop-portal:1046): xdg-desktop-portal-WARNING **: 08:03:03.066: Document portal fuse mount point unknown: GDBus.Error:org.freedesktop.DBus.Error.ServiceUnknown: The name :1.16 was not provided by any .service files
+
+(/usr/libexec/xdg-desktop-portal:1046): xdg-desktop-portal-WARNING **: 08:03:03.250: Failed to create RealtimeKit proxy: Could not connect: Connection refused
+bash: line 139:  1030 Aborted                    (core dumped) xembedsniproxy
+bash: line 139:  1031 Aborted                    (core dumped) gmenudbusmenuproxy
+Xwayland glamor: GBM Wayland interfaces not available
+Failed to initialize glamor, falling back to sw
+The XKEYBOARD keymap compiler (xkbcomp) reports:
+> Warning:          Multiple symbols for level 1/group 1 on key <FK23>
+>                   Using F23, ignoring XF86TouchpadOff
+> Warning:          Symbol map for key <FK23> redefined
+>                   Using last definition for conflicting fields
+> Warning:          Symbol map for key <FK24> redefined
+>                   Using last definition for conflicting fields
+Errors from xkbcomp are not fatal to the X server
+The XKEYBOARD keymap compiler (xkbcomp) reports:
+> Warning:          Unsupported maximum keycode 709, clipping.
+>                   X11 cannot support keycodes above 255.
+> Warning:          Virtual modifier Hyper multiply defined
+>                   Using 0, ignoring 0
+> Warning:          Virtual modifier ScrollLock multiply defined
+>                   Using 0, ignoring 0
+Errors from xkbcomp are not fatal to the X server
+MESA-EGL: warning: failed to get driver name for fd -1
+MESA-EGL: warning: MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: failed to get driver name for fd -1
+
+(xdg-desktop-portal-gtk:1125): xdg-desktop-portal-gtk-WARNING **: 08:03:03.568: error: Could not connect: Connection refused
+
+SpiRegistry daemon is running with well-known name - org.a11y.atspi.Registry
+MESA: error: ZINK: failed to choose pdev
+MESA-EGL: warning: egl: failed to create dri2 screen
+xsettingsd: Loaded 16 settings from /home/webtop/.config/xsettingsd/xsettingsd.conf
+xsettingsd: Created window 0x600001 on screen 0 with timestamp 48753789
+xsettingsd: Selection _XSETTINGS_S0 is owned by 0x0
+xsettingsd: Took ownership of selection _XSETTINGS_S0
+
+(io.github.ublue_os.yafti_gtk:1232): Gdk-WARNING **: 08:03:04.240: Vulkan: ../src/imagination/vulkan/pvr_instance.c:75: Failed to enumerate drm devices (errno 2: No such file or directory) (VK_ERROR_INITIALIZATION_FAILED)
+
+(io.github.ublue_os.yafti_gtk:1232): Gdk-WARNING **: 08:03:04.240: Vulkan: Loader Message: setup_loader_term_phys_devs: Call to 'vkEnumeratePhysicalDevices' in ICD /usr/lib64/libvulkan_powervr_mesa.so failed with error code -3
+INFO:input:Wayland clipboard: app-compositor data-control watch active (no forks).
+
+(io.github.ublue_os.yafti_gtk:1232): Gdk-WARNING **: 08:03:04.772: Vulkan: ../src/imagination/vulkan/pvr_instance.c:75: Failed to enumerate drm devices (errno 2: No such file or directory) (VK_ERROR_INITIALIZATION_FAILED)
+
+(io.github.ublue_os.yafti_gtk:1232): Gdk-WARNING **: 08:03:04.772: Vulkan: Loader Message: setup_loader_term_phys_devs: Call to 'vkEnumeratePhysicalDevices' in ICD /usr/lib64/libvulkan_powervr_mesa.so failed with error code -3
+
+(io.github.ublue_os.yafti_gtk:1232): Gdk-WARNING **: 08:03:04.774: Vulkan: ../src/imagination/vulkan/pvr_instance.c:75: Failed to enumerate drm devices (errno 2: No such file or directory) (VK_ERROR_INITIALIZATION_FAILED)
+
+(io.github.ublue_os.yafti_gtk:1232): Gdk-WARNING **: 08:03:04.774: Vulkan: Loader Message: setup_loader_term_phys_devs: Call to 'vkEnumeratePhysicalDevices' in ICD /usr/lib64/libvulkan_powervr_mesa.so failed with error code -3
+
+(io.github.ublue_os.yafti_gtk:1232): Gdk-WARNING **: 08:03:04.775: Vulkan: ../src/imagination/vulkan/pvr_instance.c:75: Failed to enumerate drm devices (errno 2: No such file or directory) (VK_ERROR_INITIALIZATION_FAILED)
+
+(io.github.ublue_os.yafti_gtk:1232): Gdk-WARNING **: 08:03:04.775: Vulkan: Loader Message: setup_loader_term_phys_devs: Call to 'vkEnumeratePhysicalDevices' in ICD /usr/lib64/libvulkan_powervr_mesa.so failed with error code -3
+MESA-EGL: warning: failed to get driver name for fd -1
+MESA-EGL: warning: MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: failed to get driver name for fd -1
+MESA: error: ZINK: failed to choose pdev
+MESA-EGL: warning: egl: failed to create dri2 screen
+INFO:ws:Client ('127.0.0.1', 47710) connected (legacy, role controller, slot None).
+INFO:ws:Sound server control ready for the microphone (pulsectl).
+INFO:input:Client keyboard layout hint 'us' noted (the session compositor owns the keymap; not applied).
+INFO:ws:Layout calculated: Total Size=1280x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1280, 'h': 800}}
+[Wayland] Output 0 resized to 1280x800 scale 1.00.
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+[Wayland] Readback capture: output 1 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:ws:Capture started for 'primary': 1280x800 at +0+0.
+INFO:ws:Wayland realized geometry for 'primary': 1280x800 @ scale 1.0
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+INFO:ws:Client ('127.0.0.1', 47710) settings applied for 'primary': 1280x800, h264enc crf 25, 60 fps, software encoding.
+INFO:audio:Sink 'output' not found. Creating it...
+INFO:audio:Created sink 'output'.
+INFO:ws:Starting pcmflux audio pipeline: device 'output.monitor', 128000 bps, 2 ch, RED distance 2.
+[pcmflux] SUCCESS: Opus encoder created (2 ch).
+[pcmflux] Capture loop started. Device: output.monitor, Rate: 48000, Channels: 2, Bitrate: 128 kbps, VBR: On, Silence Gate: On
+INFO:ws:Client ('127.0.0.1', 60096) connected (legacy, role controller, slot None).
+INFO:ws:Sound server control ready for the microphone (pulsectl).
+INFO:ws:Applied audio bitrate live: 128000 bps
+INFO:ws:Layout calculated: Total Size=2560x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1280, 'h': 800}, 'display2': {'x': 1280, 'y': 0, 'w': 1280, 'h': 800}}
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+INFO:ws:Capture 'primary' followed the new layout live (no restart).
+[Wayland] Readback capture: output 1 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+INFO:input:Session compositor added screen 'WL-2' for 'display2'.
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+[Wayland] Output 2 created: 1280x800 @ (1280, 0) scale 1.00.
+INFO:display:Display 'display2' encodes H.264 in software (x264).
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+[Wayland] Readback capture: output 2 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:ws:Capture started for 'display2': 1280x800 at +1280+0.
+INFO:ws:Wayland realized geometry for 'primary': 1280x800 @ scale 1.0
+INFO:ws:Wayland realized geometry for 'display2': 1280x800 @ scale 1.0
+INFO:ws:Client ('127.0.0.1', 60096) settings applied for 'display2': 1280x800, h264enc crf 25, 60 fps, software encoding.
+INFO:ws:Applied audio bitrate live: 128000 bps
+[W][08:04:28.826939] mod.protocol-pulse | [  pulse-server.c: 1379 do_process_done()] 0x55ed2955f6d0: [pcmflux] underrun read:4239360 avail:0
+INFO:display:Resize requested for display 'primary' with resolution: 1024x700
+INFO:ws:Layout calculated: Total Size=2304x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1024, 'h': 700}, 'display2': {'x': 1024, 'y': 0, 'w': 1280, 'h': 800}}
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+INFO:display:Display 'display2' encodes H.264 in software (x264).
+INFO:ws:Wayland output 2 moves to +1024+0; recreating it.
+[Wayland] Output 2 destroyed; 1 window(s) relocated to primary.
+INFO:ws:Stopping all streams for display 'display2'...
+[Wayland] Readback capture: output 1 1024x700 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+INFO:ws:Capture 'primary' followed the new layout live (no restart).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1024x700 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+[Wayland] Output 0 resized to 1024x700 scale 1.00.
+INFO:input:Session compositor added screen 'WL-3' for 'display2'.
+[Wayland] Output 2 created: 1280x800 @ (1024, 0) scale 1.00.
+INFO:display:Display 'display2' encodes H.264 in software (x264).
+[Wayland] Readback capture: output 2 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:ws:Capture started for 'display2': 1280x800 at +1024+0.
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+INFO:ws:Wayland realized geometry for 'primary': 1024x700 @ scale 1.0
+INFO:ws:Wayland realized geometry for 'display2': 1280x800 @ scale 1.0
+INFO:display:Resize requested for display 'primary' with resolution: 1280x800
+INFO:ws:Layout calculated: Total Size=2560x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1280, 'h': 800}, 'display2': {'x': 1280, 'y': 0, 'w': 1280, 'h': 800}}
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+INFO:display:Display 'display2' encodes H.264 in software (x264).
+INFO:ws:Wayland output 2 moves to +1280+0; recreating it.
+[Wayland] Output 2 destroyed; 1 window(s) relocated to primary.
+INFO:ws:Stopping all streams for display 'display2'...
+[Wayland] Output 0 resized to 1280x800 scale 1.00.
+[Wayland] Readback capture: output 1 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+INFO:ws:Capture 'primary' followed the new layout live (no restart).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:input:Session compositor added screen 'WL-4' for 'display2'.
+[Wayland] Output 2 created: 1280x800 @ (1280, 0) scale 1.00.
+INFO:display:Display 'display2' encodes H.264 in software (x264).
+[Wayland] Readback capture: output 2 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:ws:Capture started for 'display2': 1280x800 at +1280+0.
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+INFO:ws:Wayland realized geometry for 'primary': 1280x800 @ scale 1.0
+INFO:ws:Wayland realized geometry for 'display2': 1280x800 @ scale 1.0
+INFO:ws:Client for 'display2' disconnected (code 1001). Deferring display teardown by 3s for a possible reconnect.
+INFO:ws:Client for 'primary' disconnected (code 1001). Deferring display teardown by 3s for a possible reconnect.
+ERROR:asyncio:Task exception was never retrieved
+future: <Task finished name='Task-255' coro=<ping_behind() done, defined at /opt/selkies/lib64/python3.14/site-packages/selkies/stream_server.py:252> exception=ClientConnectionResetError('Cannot write to closing transport')>
+Traceback (most recent call last):
+  File "/opt/selkies/lib64/python3.14/site-packages/selkies/stream_server.py", line 262, in ping_behind
+    await ws.ping(payload)
+  File "/opt/selkies/lib64/python3.14/site-packages/aiohttp/web_ws.py", line 467, in ping
+    await self._writer.send_frame(message, WSMsgType.PING)
+  File "/opt/selkies/lib64/python3.14/site-packages/aiohttp/_websocket/writer.py", line 83, in send_frame
+    self._write_websocket_frame(message, opcode, 0)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/opt/selkies/lib64/python3.14/site-packages/aiohttp/_websocket/writer.py", line 158, in _write_websocket_frame
+    raise ClientConnectionResetError("Cannot write to closing transport")
+aiohttp.client_exceptions.ClientConnectionResetError: Cannot write to closing transport
+WARNING:ws:Backpressure TRIGGERED for 'display2'. S:324, C:213 (EffDesync:56.0f > Allowed:10.6f; path holding, page heard 0.0 s ago).
+INFO:ws:Client for 'display2' did not return within the grace period. Removing and triggering full display reconfiguration.
+INFO:ws:Layout calculated: Total Size=1280x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1280, 'h': 800}}
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+INFO:ws:Stopping all streams for display 'display2'...
+INFO:ws:Destroying stale Wayland output 2.
+[Wayland] Output 2 destroyed; 1 window(s) relocated to primary.
+WARNING:ws:Cannot broadcast cursor data: no clients connected or server not ready.
+WARNING:ws:Cannot broadcast cursor data: no clients connected or server not ready.
+WARNING:ws:Cannot broadcast cursor data: no clients connected or server not ready.
+[Wayland] Readback capture: output 1 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+INFO:ws:Capture 'primary' followed the new layout live (no restart).
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:ws:Wayland realized geometry for 'primary': 1280x800 @ scale 1.0
+INFO:ws:Last client gone after the grace period. Tearing down singleton collectors and pipelines.
+INFO:ws:Layout calculated: Total Size=1280x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1280, 'h': 800}}
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+[Wayland] Readback capture: output 1 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+INFO:ws:Capture 'primary' followed the new layout live (no restart).
+INFO:ws:Wayland realized geometry for 'primary': 1280x800 @ scale 1.0
+INFO:ws:Stopping pcmflux audio pipeline...
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:ws:Client for 'primary' did not return within the grace period. Removing and triggering full display reconfiguration.
+INFO:ws:No unpaused consumer of 'primary' left after the grace period. Stopping the 'primary' capture.
+INFO:ws:Stopping all streams for display 'primary'...
+INFO:ws:Last client gone after the grace period. Tearing down singleton collectors and pipelines.
+[pcmflux] Stop requested. Cleaning up capture loop...
+[pcmflux] Audio capture loop finished. Resources released.
+WARNING:ws:No display clients connected. Video pipelines remain stopped.
+WARNING:ws:No display clients connected. Video pipelines remain stopped.
+WARNING:ws:Backpressure task for 'display2' exiting: display no longer exists.
+WARNING:ws:Backpressure task for 'primary' exiting: display no longer exists.
+INFO:ws:Client ('127.0.0.1', 60268) connected (legacy, role controller, slot None).
+INFO:ws:Sound server control ready for the microphone (pulsectl).
+INFO:ws:Layout calculated: Total Size=1280x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1280, 'h': 800}}
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+[Wayland] Readback capture: output 1 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+INFO:ws:Capture started for 'primary': 1280x800 at +0+0.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:ws:Wayland realized geometry for 'primary': 1280x800 @ scale 1.0
+INFO:ws:Client ('127.0.0.1', 60268) settings applied for 'primary': 1280x800, h264enc crf 25, 60 fps, software encoding.
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+INFO:ws:Starting pcmflux audio pipeline: device 'output.monitor', 128000 bps, 2 ch, RED distance 2.
+[pcmflux] SUCCESS: Opus encoder created (2 ch).
+[pcmflux] Capture loop started. Device: output.monitor, Rate: 48000, Channels: 2, Bitrate: 128 kbps, VBR: On, Silence Gate: On
+INFO:ws:Applied audio bitrate live: 128000 bps
+INFO:ws:Client ('127.0.0.1', 52862) connected (legacy, role controller, slot None).
+INFO:ws:Sound server control ready for the microphone (pulsectl).
+INFO:ws:Applied audio bitrate live: 128000 bps
+INFO:ws:Layout calculated: Total Size=2560x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1280, 'h': 800}, 'display2': {'x': 1280, 'y': 0, 'w': 1280, 'h': 800}}
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+INFO:ws:Capture 'primary' followed the new layout live (no restart).
+[Wayland] Readback capture: output 1 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+INFO:input:Session compositor added screen 'WL-5' for 'display2'.
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+[Wayland] Output 2 created: 1280x800 @ (1280, 0) scale 1.00.
+INFO:display:Display 'display2' encodes H.264 in software (x264).
+[Wayland] Readback capture: output 2 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+INFO:ws:Capture started for 'display2': 1280x800 at +1280+0.
+INFO:ws:Wayland realized geometry for 'primary': 1280x800 @ scale 1.0
+INFO:ws:Wayland realized geometry for 'display2': 1280x800 @ scale 1.0
+INFO:ws:Client ('127.0.0.1', 52862) settings applied for 'display2': 1280x800, h264enc crf 25, 60 fps, software encoding.
+INFO:ws:Applied audio bitrate live: 128000 bps
+INFO:ws:Client for 'primary' disconnected (code 1001). Deferring display teardown by 3s for a possible reconnect.
+INFO:ws:Client for 'display2' disconnected (code 1001). Deferring display teardown by 3s for a possible reconnect.
+ERROR:asyncio:Task exception was never retrieved
+future: <Task finished name='Task-409' coro=<ping_behind() done, defined at /opt/selkies/lib64/python3.14/site-packages/selkies/stream_server.py:252> exception=ClientConnectionResetError('Cannot write to closing transport')>
+Traceback (most recent call last):
+  File "/opt/selkies/lib64/python3.14/site-packages/selkies/stream_server.py", line 262, in ping_behind
+    await ws.ping(payload)
+  File "/opt/selkies/lib64/python3.14/site-packages/aiohttp/web_ws.py", line 467, in ping
+    await self._writer.send_frame(message, WSMsgType.PING)
+  File "/opt/selkies/lib64/python3.14/site-packages/aiohttp/_websocket/writer.py", line 83, in send_frame
+    self._write_websocket_frame(message, opcode, 0)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/opt/selkies/lib64/python3.14/site-packages/aiohttp/_websocket/writer.py", line 158, in _write_websocket_frame
+    raise ClientConnectionResetError("Cannot write to closing transport")
+aiohttp.client_exceptions.ClientConnectionResetError: Cannot write to closing transport
+WARNING:ws:Backpressure TRIGGERED for 'display2'. S:5952, C:5832 (EffDesync:61.0f > Allowed:15.0f; path holding, page heard 0.0 s ago).
+INFO:ws:Client for 'primary' did not return within the grace period. Removing and triggering full display reconfiguration.
+ERROR:ws:Calculated total display size is zero. Aborting reconfiguration.
+INFO:ws:No unpaused consumer of 'primary' left after the grace period. Stopping the 'primary' capture.
+INFO:ws:Stopping all streams for display 'primary'...
+INFO:ws:Client for 'display2' did not return within the grace period. Removing and triggering full display reconfiguration.
+INFO:ws:Last client gone after the grace period. Tearing down singleton collectors and pipelines.
+INFO:ws:Stopping all streams for display 'display2'...
+WARNING:ws:No display clients connected. Video pipelines remain stopped.
+INFO:ws:Destroying stale Wayland output 2.
+[Wayland] Output 2 destroyed; 1 window(s) relocated to primary.
+INFO:ws:Stopping pcmflux audio pipeline...
+WARNING:ws:Cannot broadcast cursor data: no clients connected or server not ready.
+WARNING:ws:Cannot broadcast cursor data: no clients connected or server not ready.
+WARNING:ws:Cannot broadcast cursor data: no clients connected or server not ready.
+WARNING:ws:Cannot broadcast cursor data: no clients connected or server not ready.
+[pcmflux] Stop requested. Cleaning up capture loop...
+[pcmflux] Audio capture loop finished. Resources released.
+WARNING:ws:No display clients connected. Video pipelines remain stopped.
+INFO:ws:Last client gone after the grace period. Tearing down singleton collectors and pipelines.
+ label="unconfined_u:unconfined_r:spc_t:s0")
+WARNING:ws:No display clients connected. Video pipelines remain stopped.
+WARNING:ws:Backpressure task for 'primary' exiting: display no longer exists.
+WARNING:ws:Backpressure task for 'display2' exiting: display no longer exists.
+INFO:ws:Client ('127.0.0.1', 35848) connected (legacy, role controller, slot None).
+INFO:ws:Sound server control ready for the microphone (pulsectl).
+INFO:ws:Layout calculated: Total Size=1280x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1280, 'h': 800}}
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+[Wayland] Readback capture: output 1 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:ws:Capture started for 'primary': 1280x800 at +0+0.
+INFO:ws:Wayland realized geometry for 'primary': 1280x800 @ scale 1.0
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+INFO:ws:Client ('127.0.0.1', 35848) settings applied for 'primary': 1280x800, h264enc crf 25, 60 fps, software encoding.
+INFO:ws:Starting pcmflux audio pipeline: device 'output.monitor', 128000 bps, 2 ch, RED distance 2.
+[pcmflux] SUCCESS: Opus encoder created (2 ch).
+[pcmflux] Capture loop started. Device: output.monitor, Rate: 48000, Channels: 2, Bitrate: 128 kbps, VBR: On, Silence Gate: On
+INFO:ws:Client ('127.0.0.1', 41452) connected (legacy, role controller, slot None).
+INFO:ws:Sound server control ready for the microphone (pulsectl).
+INFO:ws:Applied audio bitrate live: 128000 bps
+INFO:ws:Layout calculated: Total Size=2560x800. Layouts: {'primary': {'x': 0, 'y': 0, 'w': 1280, 'h': 800}, 'display2': {'x': 1280, 'y': 0, 'w': 1280, 'h': 800}}
+INFO:display:Display 'primary' encodes H.264 in software (x264).
+INFO:ws:Capture 'primary' followed the new layout live (no restart).
+[Wayland] Readback capture: output 1 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:input:Session compositor added screen 'WL-6' for 'display2'.
+[Wayland] Output 2 created: 1280x800 @ (1280, 0) scale 1.00.
+INFO:display:Display 'display2' encodes H.264 in software (x264).
+[Wayland] Readback capture: output 2 1280x800 rendered in software (Pixman), read back for the encode thread (software encoding selected).
+INFO:input:Session compositor manages no outputs for clients; its screen arrangement is its own.
+[Wayland] Encoder: software H264 (x264) 4:2:0 8-bit, 4 threads.
+[Wayland] Stream settings active -> Res: 1280x800 | FPS: 60.0 | Stripes: 1 | Mode: H264 (x264) FullFrame Streaming | CRF: 25 | Colorspace: I420 (Limited Range) | Damage Thresh: 10f | Damage Dur: 20f
+INFO:ws:Capture started for 'display2': 1280x800 at +1280+0.
+INFO:ws:Wayland realized geometry for 'primary': 1280x800 @ scale 1.0
+INFO:ws:Wayland realized geometry for 'display2': 1280x800 @ scale 1.0
+INFO:ws:Client ('127.0.0.1', 41452) settings applied for 'display2': 1280x800, h264enc crf 25, 60 fps, software encoding.
+INFO:ws:Applied audio bitrate live: 128000 bps

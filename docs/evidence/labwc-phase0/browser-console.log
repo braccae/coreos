@@ -1,0 +1,169 @@
+[primary:log] Universal Touch Gamepad library loaded. Send 'TOUCH_GAMEPAD_SETUP' message to initialize.
+[primary:log] Received initial streaming mode: websockets
+[primary:log] Streaming mode determined to be: websockets
+[primary:log] Canvas internal buffer reset to: 1024x768
+[primary:log] Reset canvas CSS to 1024px x 768px, Pos -512,-384, object-fit: fill. Buffer: 1024x768
+[primary:log] Setting canvas rendering to 'pixelated' for 1:1 display.
+[primary:log] Initialized UI in Auto Resolution Mode (defaulting to 1024x768 logical for now)
+[primary:log] Dynamically added #keyboard-input-assist element.
+[primary:log] Pre-flight checks passed: Secure context and VideoDecoder API are available.
+[primary:info] [Selkies] video sink: MediaStreamTrackGenerator on the page — this browser exposes no VideoTrackGenerator to a worker.
+[primary:info] [Selkies] video sink: MediaStreamTrackGenerator on the page.
+[primary:log] [websockets] Connection opened!
+[primary:log] [websockets] Sent initial settings (resolutions are physical) to server: {manual_resolution: false, initialClientWidth: 1280, initialClientHeight: 800, scaling_dpi: 96, keyboardLayout: us}
+[primary:log] [websockets] Sent initial clipboard request (cr) to server (cache-only).
+[primary:log] [websockets] Started client metrics every 500ms.
+[primary:log] [websockets] Started sending backpressure ACKs every 50ms.
+[primary:log] [websockets] Switched to websockets mode.
+[primary:log] Legacy mode detected. Role from hash: controller, Slot: 1
+[primary:log] Input Initialization: Applying server-provided slot 1. Gamepad will target index 0.
+[primary:log] Initializing Input system...
+[primary:log] Applying effective cursor setting. Multi-monitor: false, User Pref: true, Final: true
+[primary:log] Input: Use browser cursors enabled.
+[primary:log] initializeInput: Auto-resolution mode. Attaching 'resize' event listener for subsequent changes.
+[primary:log] Canvas internal buffer reset to: 1280x800
+[primary:log] Reset canvas CSS to 1280px x 800px, Pos 0,0, object-fit: fill. Buffer: 1280x800
+[primary:log] Setting canvas rendering to 'pixelated' for 1:1 display.
+[primary:log] initializeInput: Canvas style reset to reflect current auto-dimensions: 1280x800 (logical). Initial resolution was already sent by onopen.
+[primary:log] Input system initialized.
+[primary:log] Clearing all VNC stripe decoders.
+[primary:log] All VNC stripe decoders and metadata cleared.
+[primary:log] Input already initialized. Skipping.
+[primary:log] Playback AudioContext initialized. Actual sampleRate: 48000 Initial state: suspended
+[primary:log] Sanitizing and storing settings based on server payload.
+[primary:log] Client settings were sanitized by server rules. Sending updates back to server: {ui_sidebar_show_screen_settings: true, enable_basic_auth: false, use_cpu: true, wayland: true}
+[primary:log] Applying settings: {ui_sidebar_show_screen_settings: true, enable_basic_auth: false, use_cpu: true, wayland: true}
+[primary:log] Clearing all VNC stripe decoders.
+[primary:log] All VNC stripe decoders and metadata cleared.
+[primary:log] [websockets] Sent full settings update. Reason: handleSettingsMessage
+[primary:log] Server settings payload confirms auto mode. Switching to auto resize handlers.
+[primary:log] Switching to Auto Mode: Removing direct manual local scaling listener.
+[primary:log] Switching to Auto Mode: Adding original (auto) debounced resize listener.
+[primary:log] Triggering immediate auto-resize calculation for auto mode.
+[primary:log] handleResizeUI: Auto-resize triggered (e.g., by window resize event).
+[primary:log] Clearing all VNC stripe decoders.
+[primary:log] All VNC stripe decoders and metadata cleared.
+[primary:log] Sending resolution to server: 1280x800, DisplayID: primary, Manual Mode: false, Pixel Ratio Used: 1, useCssScaling: false
+[primary:log] Reset canvas CSS to 1280px x 800px, Pos 0,0, object-fit: fill. Buffer: 1280x800
+[primary:log] Setting canvas rendering to 'pixelated' for 1:1 display.
+[primary:log] Received pipelineStatusUpdate message: {type: pipelineStatusUpdate, video: true, audio: true}
+[primary:log] Dashboard received server settings: {audio_enabled: Object, microphone_enabled: Object, gamepad_enabled: Object, webcam_enabled: Object, video_on_start: Object}
+[primary:log] Playback AudioWorkletProcessor initialized and connected through a GainNode for volume control.
+[primary:log] No preferred output device set, using default.
+[primary:log] [Main] Audio Decoder Worker created and init message sent.
+[primary:log] [Main] Requesting Audio Decoder Worker to reinitialize its decoder.
+[primary:log] [Main] Audio Decoder Worker confirmed its decoder is initialized.
+[primary:log] [Main] Audio Decoder Worker confirmed its decoder is initialized.
+[primary:log] [websockets] Received PIPELINE_RESETTING for display 'primary'.
+[primary:log] Performing server-initiated video reset. Reason: PIPELINE_RESETTING from server for display 'primary'. Current lastReceivedVideoFrameId before reset: -1
+[primary:log]   Reset lastReceivedVideoFrameId to -1.
+[primary:log] Clearing all VNC stripe decoders.
+[primary:log] All VNC stripe decoders and metadata cleared.
+[primary:log] Display 'primary': Video reset complete.
+[primary:log] Clipboard Web Worker initialized.
+[primary:log] Processing 1 pending chunks for stripe Y=0
+[primary:log] Stream started (UI elements hidden).
+[primary:log] Received pipelineStatusUpdate message: {type: pipelineStatusUpdate, audio: true}
+[primary:log] Playback AudioContext state changed to: running
+[primary:log] No preferred output device set, using default.
+[primary:warning] Window Management permission refused; asking which side.
+[second] opened http://127.0.0.1:3012/#display2-right
+[second:log] Universal Touch Gamepad library loaded. Send 'TOUCH_GAMEPAD_SETUP' message to initialize.
+[second:log] Received initial streaming mode: websockets
+[second:log] Streaming mode determined to be: websockets
+[second:log] Client is running in Secondary Display mode.
+[second:log] Canvas internal buffer reset to: 1024x768
+[second:log] Reset canvas CSS to 1024px x 768px, Pos -512,-384, object-fit: fill. Buffer: 1024x768
+[second:log] Setting canvas rendering to 'pixelated' for 1:1 display.
+[second:log] Initialized UI in Auto Resolution Mode (defaulting to 1024x768 logical for now)
+[second:log] Dynamically added #keyboard-input-assist element.
+[second:log] Pre-flight checks passed: Secure context and VideoDecoder API are available.
+[second:info] [Selkies] video sink: MediaStreamTrackGenerator on the page — this browser exposes no VideoTrackGenerator to a worker.
+[second:info] [Selkies] video sink: MediaStreamTrackGenerator on the page.
+[second:log] [websockets] Connection opened!
+[second:log] [websockets] Sent initial settings (resolutions are physical) to server: {manual_resolution: false, initialClientWidth: 1280, initialClientHeight: 800, scaling_dpi: 96, keyboardLayout: us}
+[second:log] [websockets] Sent initial clipboard request (cr) to server (cache-only).
+[second:log] [websockets] Started client metrics every 500ms.
+[second:log] [websockets] Started sending backpressure ACKs every 50ms.
+[second:log] [websockets] Switched to websockets mode.
+[second:log] Legacy mode detected. Role from hash: controller, Slot: 1
+[second:log] Input Initialization: Applying server-provided slot 1. Gamepad will target index 0.
+[second:log] Initializing Input system...
+[second:log] Applying effective cursor setting. Multi-monitor: true, User Pref: true, Final: true
+[second:log] Input: Use browser cursors enabled.
+[second:log] initializeInput: Auto-resolution mode. Attaching 'resize' event listener for subsequent changes.
+[second:log] Canvas internal buffer reset to: 1280x800
+[second:log] Reset canvas CSS to 1280px x 800px, Pos 0,0, object-fit: fill. Buffer: 1280x800
+[second:log] Setting canvas rendering to 'pixelated' for 1:1 display.
+[second:log] initializeInput: Canvas style reset to reflect current auto-dimensions: 1280x800 (logical). Initial resolution was already sent by onopen.
+[second:log] Input system initialized.
+[second:log] Clearing all VNC stripe decoders.
+[second:log] All VNC stripe decoders and metadata cleared.
+[second:log] Input already initialized. Skipping.
+[second:log] Secondary display: Audio pipeline initialization skipped.
+[second:warning] [Main] Cannot initialize decoder audio: Audio Decoder Worker not available. Call initializeAudio() first.
+[second:log] [Main] Audio context missing, attempting to initialize full audio pipeline for websockets.
+[second:log] Secondary display: Audio pipeline initialization skipped.
+[second:log] Received pipelineStatusUpdate message: {type: pipelineStatusUpdate, video: true, audio: false}
+[second:log] Sanitizing and storing settings based on server payload.
+[second:log] Client settings were sanitized by server rules. Sending updates back to server: {ui_sidebar_show_screen_settings: true, enable_basic_auth: false, use_cpu: true, wayland: true}
+[second:log] Applying settings: {ui_sidebar_show_screen_settings: true, enable_basic_auth: false, use_cpu: true, wayland: true}
+[second:log] Clearing all VNC stripe decoders.
+[second:log] All VNC stripe decoders and metadata cleared.
+[second:log] [websockets] Sent full settings update. Reason: handleSettingsMessage
+[second:log] Server settings payload confirms auto mode. Switching to auto resize handlers.
+[second:log] Switching to Auto Mode: Removing direct manual local scaling listener.
+[second:log] Switching to Auto Mode: Adding original (auto) debounced resize listener.
+[second:log] Triggering immediate auto-resize calculation for auto mode.
+[second:log] handleResizeUI: Auto-resize triggered (e.g., by window resize event).
+[second:log] Clearing all VNC stripe decoders.
+[second:log] All VNC stripe decoders and metadata cleared.
+[second:log] Sending resolution to server: 1280x800, DisplayID: display2, Manual Mode: false, Pixel Ratio Used: 1, useCssScaling: false
+[second:log] Reset canvas CSS to 1280px x 800px, Pos 0,0, object-fit: fill. Buffer: 1280x800
+[second:log] Setting canvas rendering to 'pixelated' for 1:1 display.
+[second:log] Dashboard received server settings: {audio_enabled: Object, microphone_enabled: Object, gamepad_enabled: Object, webcam_enabled: Object, video_on_start: Object}
+[primary:log] Secondary display connection status changed to: true
+[primary:log] Applying effective cursor setting. Multi-monitor: true, User Pref: true, Final: true
+[second:log] [websockets] Received PIPELINE_RESETTING for display 'display2'.
+[second:log] Performing server-initiated video reset. Reason: PIPELINE_RESETTING from server for display 'display2'. Current lastReceivedVideoFrameId before reset: -1
+[second:log]   Reset lastReceivedVideoFrameId to -1.
+[second:log] Clearing all VNC stripe decoders.
+[second:log] All VNC stripe decoders and metadata cleared.
+[second:log] Display 'display2': Video reset complete.
+[second:log] Clipboard Web Worker initialized.
+[second:log] Processing 1 pending chunks for stripe Y=0
+[second:log] Stream started (UI elements hidden).
+[primary:log] handleResizeUI: Auto-resize triggered (e.g., by window resize event).
+[primary:log] Clearing all VNC stripe decoders.
+[primary:log] Closed VNC stripe decoder for Y=0
+[primary:log] All VNC stripe decoders and metadata cleared.
+[primary:log] Sending resolution to server: 1024x700, DisplayID: primary, Manual Mode: false, Pixel Ratio Used: 1, useCssScaling: false
+[primary:log] Canvas internal buffer reset to: 1024x700
+[primary:log] Reset canvas CSS to 1024px x 700px, Pos 0,0, object-fit: fill. Buffer: 1024x700
+[primary:log] Setting canvas rendering to 'pixelated' for 1:1 display.
+[second:log] [websockets] Received PIPELINE_RESETTING for display 'display2'.
+[second:log] Performing server-initiated video reset. Reason: PIPELINE_RESETTING from server for display 'display2'. Current lastReceivedVideoFrameId before reset: 1108
+[second:log]   Reset lastReceivedVideoFrameId to -1.
+[second:log] Clearing all VNC stripe decoders.
+[second:log] Closed VNC stripe decoder for Y=0
+[second:log] All VNC stripe decoders and metadata cleared.
+[second:log] Display 'display2': Video reset complete.
+[primary:log] Processing 1 pending chunks for stripe Y=0
+[second:log] Processing 1 pending chunks for stripe Y=0
+[primary:log] handleResizeUI: Auto-resize triggered (e.g., by window resize event).
+[primary:log] Clearing all VNC stripe decoders.
+[primary:log] Closed VNC stripe decoder for Y=0
+[primary:log] All VNC stripe decoders and metadata cleared.
+[primary:log] Sending resolution to server: 1280x800, DisplayID: primary, Manual Mode: false, Pixel Ratio Used: 1, useCssScaling: false
+[primary:log] Canvas internal buffer reset to: 1280x800
+[primary:log] Reset canvas CSS to 1280px x 800px, Pos 0,0, object-fit: fill. Buffer: 1280x800
+[primary:log] Setting canvas rendering to 'pixelated' for 1:1 display.
+[second:log] [websockets] Received PIPELINE_RESETTING for display 'display2'.
+[second:log] Performing server-initiated video reset. Reason: PIPELINE_RESETTING from server for display 'display2'. Current lastReceivedVideoFrameId before reset: 272
+[second:log]   Reset lastReceivedVideoFrameId to -1.
+[second:log] Clearing all VNC stripe decoders.
+[second:log] Closed VNC stripe decoder for Y=0
+[second:log] All VNC stripe decoders and metadata cleared.
+[second:log] Display 'display2': Video reset complete.
+[primary:log] Processing 1 pending chunks for stripe Y=0
+[second:log] Processing 1 pending chunks for stripe Y=0

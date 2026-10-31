@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# Webtop session launcher — KDE Plasma nested in Selkies' built-in compositor.
+# Webtop session launcher — KDE Plasma nested in Selkies' built-in compositor,
+# with the Selkies-patched labwc as the nested session compositor.
 #
-# Model (aligned with linuxserver/webtop:fedora-kde on selkies 2.1):
+# EXPERIMENT (exp/labwc-phase0) session model:
 #   * selkies/pixelflux provides the outer compositor on WAYLAND_DISPLAY=wayland-1
-#   * kwin_wayland runs nested on it and provides wayland-0 plus Xwayland (:0)
-#   * plasmashell, kded6, kcminit and the portal helpers run inside that session
+#   * labwc (patched, IPC socket $XDG_RUNTIME_DIR/labwc.sock) runs nested on it
+#     and owns the session compositor socket the patch adds screens to
+#   * kwin_wayland runs nested on labwc's socket and provides wayland-2 plus
+#     Xwayland (:0)
+#   * plasmashell, kded6, kcminit and the portal helpers run inside that KWin
 # nginx stays in front: it serves the dashboard on :3000 and proxies /websocket
 # to selkies on :8082.
 set -euo pipefail
@@ -58,11 +62,12 @@ export SELKIES_PORT=8082
 export SELKIES_ENABLE_BASIC_AUTH="${SELKIES_ENABLE_BASIC_AUTH:-false}"
 export SELKIES_ENCODER="${SELKIES_ENCODER:-h264enc,h265enc,vp8enc,vp9enc,av1enc,jpeg}"
 export SELKIES_RATE_CONTROL_MODE="${SELKIES_RATE_CONTROL_MODE:-crf,cbr}"
-# The nested-KWin session cannot grow a screen (KWin refuses the
-# zkde_screencast virtual output), so advertising "add screen" only produces
-# "The session compositor cannot add a screen". Hide the section until the
-# session model changes; see docs/webtop.md.
-export SELKIES_UI_SIDEBAR_SHOW_SCREEN_SETTINGS="${SELKIES_UI_SIDEBAR_SHOW_SCREEN_SETTINGS:-false}"
+# EXPERIMENT: expose the screen settings section; the patched labwc IPC is what
+# backs a second display now.
+export SELKIES_UI_SIDEBAR_SHOW_SCREEN_SETTINGS="${SELKIES_UI_SIDEBAR_SHOW_SCREEN_SETTINGS:-true}"
+# Input and clipboard target the compositor the apps run under (KWin), while
+# capture stays on selkies' own wayland-1. KWin's socket is pinned below.
+export SELKIES_APP_WAYLAND_DISPLAY=wayland-2
 # Software encoding when no GPU render node is available.
 if [ ! -e /dev/dri/renderD128 ]; then
     export SELKIES_USE_CPU=true
@@ -74,6 +79,7 @@ mkdir -p /tmp/.X11-unix
 chmod 1777 /tmp/.X11-unix
 mkdir -p "$XDG_RUNTIME_DIR"
 rm -f "$XDG_RUNTIME_DIR"/wayland-*
+rm -f "$XDG_RUNTIME_DIR"/labwc.sock
 chown webtop:webtop "$XDG_RUNTIME_DIR"
 chmod 0700 "$XDG_RUNTIME_DIR"
 
@@ -158,16 +164,42 @@ if [ ! -S "$XDG_RUNTIME_DIR/wayland-1" ]; then
     exit 1
 fi
 
-# --- KWin nested on wayland-1, providing wayland-0 and Xwayland :0 ---------
-WAYLAND_DISPLAY=wayland-1 kwin_wayland --no-lockscreen --xwayland &
-KWIN_PID=$!
+# --- labwc nested on wayland-1, providing the screen-control IPC ----------
+# labwc names its own socket through wl_display_add_socket_auto(), which tries
+# $WAYLAND_DISPLAY first; wayland-1 belongs to selkies, so it lands on the next free
+# name (wayland-0). Detect it instead of assuming, and require labwc.sock: the
+# patched IPC socket is what backs ADD_SCREEN.
+WAYLAND_DISPLAY=wayland-1 labwc &
+LABWC_PID=$!
 
-for _ in $(seq 1 600); do [ -S "$XDG_RUNTIME_DIR/wayland-0" ] && break; sleep 0.1; done
-if [ ! -S "$XDG_RUNTIME_DIR/wayland-0" ]; then
-    echo "KWin wayland socket wayland-0 never appeared" >&2
+echo "Waiting for labwc IPC socket and Wayland socket..."
+for _ in $(seq 1 600); do
+    if [ -S "$XDG_RUNTIME_DIR/labwc.sock" ]; then
+        LABWC_DISPLAY="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name "wayland-*" \
+            ! -name "wayland-1" ! -name "*.lock" -printf "%f\n" 2>/dev/null | sort | head -n1)"
+        [ -n "$LABWC_DISPLAY" ] && break
+    fi
+    sleep 0.1
+done
+if [ ! -S "$XDG_RUNTIME_DIR/labwc.sock" ] || [ -z "${LABWC_DISPLAY:-}" ]; then
+    echo "labwc came up without labwc.sock or a Wayland socket" >&2
     exit 1
 fi
-export WAYLAND_DISPLAY=wayland-0
+echo "labwc session compositor on $LABWC_DISPLAY (IPC labwc.sock)"
+
+# --- KWin nested on labwc, providing wayland-2 and Xwayland :0 ------------
+# --socket pins the name the apps use (SELKIES_APP_WAYLAND_DISPLAY=wayland-2);
+# --wayland-display connects it to labwc, whose window it renders into.
+kwin_wayland --wayland-display "$LABWC_DISPLAY" --socket wayland-2 \
+    --no-lockscreen --xwayland &
+KWIN_PID=$!
+
+for _ in $(seq 1 600); do [ -S "$XDG_RUNTIME_DIR/wayland-2" ] && break; sleep 0.1; done
+if [ ! -S "$XDG_RUNTIME_DIR/wayland-2" ]; then
+    echo "KWin wayland socket wayland-2 never appeared" >&2
+    exit 1
+fi
+export WAYLAND_DISPLAY=wayland-2
 dbus-update-activation-environment --all 2>/dev/null || true
 
 # --- polkit agent ----------------------------------------------------------
@@ -204,5 +236,5 @@ for ENTRY in "$HOME"/.config/autostart/*.desktop; do
 done
 
 wait "$PLASMA_PID"
-kill "$KWIN_PID" "$SELKIES_PID" 2>/dev/null || true
+kill "$KWIN_PID" "$LABWC_PID" "$SELKIES_PID" 2>/dev/null || true
 ' > /tmp/webtop.log 2>&1
