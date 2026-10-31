@@ -58,6 +58,11 @@ export SELKIES_PORT=8082
 export SELKIES_ENABLE_BASIC_AUTH="${SELKIES_ENABLE_BASIC_AUTH:-false}"
 export SELKIES_ENCODER="${SELKIES_ENCODER:-h264enc,h265enc,vp8enc,vp9enc,av1enc,jpeg}"
 export SELKIES_RATE_CONTROL_MODE="${SELKIES_RATE_CONTROL_MODE:-crf,cbr}"
+# The nested-KWin session cannot grow a screen (KWin refuses the
+# zkde_screencast virtual output), so advertising "add screen" only produces
+# "The session compositor cannot add a screen". Hide the section until the
+# session model changes; see docs/webtop.md.
+export SELKIES_UI_SIDEBAR_SHOW_SCREEN_SETTINGS="${SELKIES_UI_SIDEBAR_SHOW_SCREEN_SETTINGS:-false}"
 # Software encoding when no GPU render node is available.
 if [ ! -e /dev/dri/renderD128 ]; then
     export SELKIES_USE_CPU=true
