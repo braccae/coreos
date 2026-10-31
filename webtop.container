@@ -12,6 +12,9 @@ AddDevice=/dev/dri
 # FUSE for AppImages (fusermount is setuid, the container's root needs SYS_ADMIN).
 AddDevice=/dev/fuse
 AddCapability=SYS_ADMIN
+# NetworkManager needs NET_ADMIN to take ownership of the pasta tap instead of
+# only assuming it; without it the desktop network indicator shows "unavailable".
+AddCapability=NET_ADMIN
 # Flatpak needs to create namespaces; without these bwrap cannot mount /proc
 # ("Can't mount proc on /proc: Operation not permitted").
 SecurityLabelDisable=true

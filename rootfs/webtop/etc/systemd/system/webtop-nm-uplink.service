@@ -1,0 +1,14 @@
+[Unit]
+Description=Give NetworkManager ownership of the container uplink
+Documentation=https://github.com/braccae/coreos/blob/main/docs/webtop.md
+After=NetworkManager.service
+Wants=NetworkManager.service
+Before=graphical.target webtop.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/webtop-nm-uplink
+
+[Install]
+WantedBy=multi-user.target
