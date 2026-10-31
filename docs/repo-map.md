@@ -19,7 +19,6 @@ rootfs/
 │   ├── justfile                # System-wide justfile installed at /justfile
 │   ├── etc/
 │   │   ├── containers/         # Nested podman & storage configs
-│   │   ├── nix/                # Nix package manager configuration
 │   │   ├── pam.d/              # PAM authentication overrides for sshd
 │   │   ├── polkit-1/           # Passwordless systemd execution rules
 │   │   ├── profile.d/          # Shell login environment scripts
@@ -36,6 +35,11 @@ rootfs/
 │   │   ├── libexec/coreos/     # Operational helper scripts
 │   │   └── sbin/               # setup-podman-user provisioning script
 │   └── var/lib/systemd/linger/ # Systemd user linger settings (core)
+├── dx/                         # dx-only overlay (Nix package manager)
+│   ├── etc/
+│   │   ├── nix/                # Nix configuration (flakes, sandbox)
+│   │   └── tmpfiles.d/         # /nix and /var/lib/nix directory rules
+│   └── usr/lib/systemd/system/ # nix.mount (persistent store bind mount)
 ├── hci/                        # Hyperconverged infrastructure overlay
 │   └── etc/
 │       ├── cockpit/            # Cockpit web console configuration
@@ -70,10 +74,18 @@ rootfs/
   - SSH configuration: enforces Ed25519 authentication, disables root password logins, sets up persistent host keys (`/etc/ssh/sshd_config.d/90-persistent-hostkeys.conf`).
   - Container engine defaults: configures nested container execution (`containers.conf.d/20-nested.conf`) and storage (`storage.conf.d/20-host-containers.conf`).
   - Core services: automates bootc auto-updates (`bootc-fetch-apply-updates.timer`), overlay synchronizations (`etc-overlay-sync.service`), and user provisioning (`/usr/sbin/setup-podman-user`).
-  - **Developer Assets (`dx`)**: All developer tooling configurations and assets previously located in `rootfs/dx/` reside directly in `rootfs/common/`.
-  - **System-wide tooling**: installs the base justfile at `/justfile` (`rootfs/common/justfile`), providing the `default` and `be USER` recipes to every user from any directory (see [docs/system-justfile.md](system-justfile.md)).
+  - **Developer Assets (`dx`)**: Most developer tooling configurations live in `rootfs/common/`; the Nix package manager is the exception and now lives in the dx-only `rootfs/dx/` overlay (see below).
+  - **System-wide tooling**: installs the base justfile at `/justfile` (`rootfs/common/justfile`), providing the `default`, `be USER` and `setup-nix` recipes to every user from any directory (see [docs/system-justfile.md](system-justfile.md)).
 
-### 2. Filesystem Conditionals: `rootfs/btrfs_config/` vs `rootfs/non_btrfs/`
+### 2. `rootfs/dx/` (dx-only Overlay)
+- **Target**: `dx.Containerfile` only.
+- **Purpose**: Ships the Nix package manager assets that no other image needs:
+  - `usr/lib/systemd/system/nix.mount`: binds the persistent `/var/lib/nix` over the read-only `/nix`.
+  - `etc/nix/nix.conf`: enables flakes/`nix-command` and disables the sandbox.
+  - `etc/tmpfiles.d/nix-dirs.conf`: creates `/nix` and `/var/lib/nix`.
+- **Opt-in**: no Nix unit is enabled at build time. An operator runs `just setup-nix` to seed `/var/lib/nix`, enable the mount and start `nix-daemon.socket`.
+
+### 3. Filesystem Conditionals: `rootfs/btrfs_config/` vs `rootfs/non_btrfs/`
 The bootc ostree sysroot preparation requires filesystem-aware mount and composefs configurations:
 - **`rootfs/btrfs_config/`**:
   - Used when the target root filesystem is Btrfs.
@@ -85,22 +97,22 @@ The bootc ostree sysroot preparation requires filesystem-aware mount and compose
   - Configures `prepare-root.conf` with `[composefs] enabled = true`, `[sysroot] readonly = false`, `[root] transient = true`, `[etc] transient = false`.
   - Active in the standard AlmaLinux [Containerfile](Containerfile).
 
-### 3. `rootfs/hci/` (Hyperconverged Infrastructure Overlay)
+### 4. `rootfs/hci/` (Hyperconverged Infrastructure Overlay)
 - **Target**: [hci.Containerfile](hci.Containerfile).
 - **Purpose**: Provides Cockpit web administration integration, Cockpit Web Service quadlet container (`cockpit-ws.container.builtin`), and Samba daemon sharing configurations (`smb.conf`, `smb.conf.d/10-global.conf`, `smb.conf.d/20-zfs-global.conf`).
 
-### 4. `rootfs/webtop/` (Webtop Container Overlay)
+### 5. `rootfs/webtop/` (Webtop Container Overlay)
 - **Target**: [webtop.Containerfile](webtop.Containerfile).
 - **Purpose**: Configures headless KDE Wayland desktop streaming inside a rootless container:
   - `etc/nginx/conf.d/webtop.conf`: Reverse proxy serving the Selkies web interface over HTTP port 3000.
   - `etc/systemd/system/webtop.service`: Systemd service orchestrating the desktop startup sequence.
   - Helper scripts: `start-webtop.sh`, `kwin-xwayland.py`, and `patch-selkies.py`.
 
-### 5. `rootfs/workstation/` (Bazzite Workstation Overlay)
+### 6. `rootfs/workstation/` (Bazzite Workstation Overlay)
 - **Target**: [workstation.Containerfile](workstation.Containerfile) and [laptop.Containerfile](laptop.Containerfile).
 - **Purpose**: Configures desktop memory management (`zram-generator.conf` enabling ZRAM swap) and desktop application security policies (`com.bitwarden.Bitwarden.policy`).
 
-### 6. `rootfs/workstation-alma/` (AlmaLinux Workstation Overlay)
+### 7. `rootfs/workstation-alma/` (AlmaLinux Workstation Overlay)
 - **Target**: [workstation-alma.Containerfile](workstation-alma.Containerfile).
 - **Purpose**: Configures the local KDE Plasma 6 desktop on AlmaLinux:
   - `etc/sddm.conf.d/10-wayland.conf`: selects the Wayland display server for SDDM and runs KWin Wayland as the greeter compositor.
@@ -117,7 +129,7 @@ The table below documents which Containerfile copies which `rootfs` subdirectory
 | Containerfile | Base Image (FROM) | `rootfs` Path Copied | Destination | Notes |
 | :--- | :--- | :--- | :--- | :--- |
 | [Containerfile](Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | `rootfs/non_btrfs/`<br>`rootfs/common/` | `/`<br>`/` | Line 149 (`rootfs/btrfs_config/`) is commented out; non-btrfs is active. |
-| [dx.Containerfile](dx.Containerfile) | `ghcr.io/braccae/alma:latest` | Inherited from base | N/A | Inherits `rootfs/common/` and `rootfs/non_btrfs/`. Note: dx assets live in `rootfs/common/`. |
+| [dx.Containerfile](dx.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/dx/`<br>`rootfs/common/`<br>`rootfs/non_btrfs/` | `/`<br>inherited<br>inherited | `rootfs/dx/` is dx-only (Nix). Nix ships installed with every unit disabled; `just setup-nix` opts in. |
 | [dockerhost.Containerfile](dockerhost.Containerfile) | `ghcr.io/braccae/alma:latest` | Inherited from base | N/A | Inherits `rootfs/common/` and `rootfs/non_btrfs/` via `base`. |
 | [hci.Containerfile](hci.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/hci/` | `/` | Inherits `common` from base; adds HCI-specific Cockpit and Samba files. |
 | [installer.Containerfile](installer.Containerfile) | `ghcr.io/braccae/coreos:workstation` | None | N/A | Inherits from `$installer_base`. |

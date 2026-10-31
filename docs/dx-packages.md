@@ -8,17 +8,17 @@ Authoritative inventory of every RPM installed in the DX variant image (`localho
 
 ## How this image is composed
 
-The DX image is a thin delta on top of the shared AlmaLinux base. It does **not** define its own package set from scratch — it inherits the entire base OS and adds only the container-runtime and Nix stack on top.
+The DX image is a thin delta on top of the shared AlmaLinux base: it inherits the entire base OS and adds the container-runtime packages plus the **Nix** stack, which ships **only** in this image.
 
 ```
-ghcr.io/braccae/alma:latest   (base image — 701 RPMs)
+ghcr.io/braccae/alma:latest   (base image)
         │
-        └── dx.Containerfile   (adds podman stack + nix; enables podman.socket)
+        └── dx.Containerfile   (adds the nix stack + rootfs/dx/; enables podman.socket)
 ```
 
-Because `dnf` resolves and pulls in dependencies, the five packages named in `dx.Containerfile` expand to a much larger transitive set. The verified result: the DX image's RPM set is **identical to the base image's RPM set** — every container-runtime and Nix RPM the DX layer requests is already present in `ghcr.io/braccae/alma:latest`.
+> **Nix is dx-only.** The base image no longer ships Nix. `dx.Containerfile` installs it, seeds `/var/lib/nix`, bakes the `build/selinux/nix` policy and copies the `rootfs/dx/` overlay. Every Nix unit ships **disabled**: an operator opts in with `just setup-nix`, which seeds the store, enables `nix.mount` and starts `nix-daemon.socket`.
 
-> **Key finding:** `dx.Containerfile` currently adds **zero new RPMs** over the base. Its `dnf install podman podman-docker podman-compose fuse-overlayfs nix` step is a no-op against the already-provisioned base, which is why the two `rpm -qa` listings are byte-for-byte identical.
+> **Manifest status:** the RPM listing below was captured while the Nix stack still lived in the base image (701 RPMs, then identical to the base). It predates the dx-only move — re-capture `rpm -qa` from a freshly built `localhost/alma:dx` before quoting the counts.
 
 ---
 
@@ -32,15 +32,15 @@ These are the packages named directly in the `dnf install` line. The DX image's 
 | `podman-docker` | `docker` CLI shim so Docker-oriented tooling targets Podman |
 | `podman-compose` | Compose-file orchestration on top of Podman |
 | `fuse-overlayfs` | Rootless overlay storage driver for nested/rootless containers |
-| `nix` | Nix package manager (multi-user, store persisted at `/var/lib/nix`) |
+| `nix` | Nix package manager (dx-only; store persisted at `/var/lib/nix`; units opt-in via `just setup-nix`) |
 
-`dx.Containerfile` additionally runs `systemctl enable podman.socket nix-init.service` so the Podman API socket and Nix init are active at first boot.
+`dx.Containerfile` additionally runs `systemctl enable podman.socket` so the Podman API socket is active at first boot. Nix units are deliberately left disabled until `just setup-nix` runs.
 
 ---
 
 ## Full manifest — notable categories
 
-The 701 installed RPMs fall into the groups below. Sizes are the count of distinct package names in each group; a name may appear in more than one group only where genuinely ambiguous. Packages shown here are **inherited from the base image** unless noted in the section above.
+The 701 installed RPMs fall into the groups below (pre-move capture). Sizes are the count of distinct package names in each group; a name may appear in more than one group only where genuinely ambiguous. Packages shown here are **inherited from the base image** unless noted in the section above — the `nix*` packages are now provided by `dx.Containerfile` itself.
 
 ### Container runtime & Docker-CLI compatibility (26)
 

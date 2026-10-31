@@ -141,41 +141,18 @@ COPY rootfs/non_btrfs/ /
 COPY rootfs/common/ /
 RUN chmod +x /usr/sbin/setup-podman-user
 
-RUN systemctl enable tailscaled podman.socket nix.mount etc-overlay-sync.service
+RUN systemctl enable tailscaled podman.socket etc-overlay-sync.service
 
 RUN dnf install -y \
     podman \
     podman-docker \
     podman-compose \
     fuse-overlayfs \
-    nix \
     && dnf clean all
 
-# nix-daemon.socket is shipped by the nix RPM above, so it can only be enabled
-# after that install (the old nix-init.service was a static file from
-# rootfs/common/, which is why the original ordering worked).
-RUN systemctl enable nix-daemon.socket
-
-# --- Nix persistence -------------------------------------------------------
-# /nix sits on the read-only composefs deployment root, so the store would be
-# lost on every image update. Seed the persistent backing directory
-# /var/lib/nix from the freshly installed /nix, then bind-mount it over /nix
-# at boot via nix.mount (shipped in rootfs/common/).
-RUN mkdir -p /var/lib/nix && cp -a /nix/. /var/lib/nix/
-
-# --- Nix SELinux policy ----------------------------------------------------
-# The EPEL nix RPM ships no SELinux policy; without it nix-daemon trips AVCs
-# under enforcing. Build the context-only module in build/selinux/nix/ and bake
-# it into the image policy store. ostree relabels on deploy using these contexts.
-COPY build/selinux/nix /tmp/nix-selinux
-RUN dnf install -y checkpolicy make && \
-    make -C /tmp/nix-selinux && \
-    mkdir -p /usr/share/selinux/packages && \
-    cp /tmp/nix-selinux/nix.pp /usr/share/selinux/packages/ && \
-    semodule -i /tmp/nix-selinux/nix.pp && \
-    (restorecon -RF /nix /var/lib/nix || true) && \
-    rm -rf /tmp/nix-selinux && \
-    dnf clean all
+# Nix is deliberately NOT part of the base image: it ships only in the dx
+# variant (dx.Containerfile), installed with every unit disabled. See
+# `just setup-nix` in rootfs/common/justfile.
 
 # --- sshd host-key SELinux policy ------------------------------------------
 # The image keeps host keys at /var/lib/sshd (persistent /var), which the stock
@@ -186,7 +163,8 @@ RUN dnf install -y checkpolicy make && \
 # may write to) and the generated keys type-transition to sshd_key_t, which
 # sshd_t can read. The tmpfiles entry now uses type 'Z' to apply the context.
 COPY build/selinux/sshd /tmp/sshd-selinux
-RUN make -C /tmp/sshd-selinux && \
+RUN dnf install -y checkpolicy make && \
+    make -C /tmp/sshd-selinux && \
     mkdir -p /usr/share/selinux/packages && \
     cp /tmp/sshd-selinux/sshd.pp /usr/share/selinux/packages/ && \
     semodule -i /tmp/sshd-selinux/sshd.pp && \

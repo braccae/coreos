@@ -25,6 +25,7 @@
 # Recipes:
 #   default        List the recipes in this justfile.
 #   be USER        Become another user in a login shell (default: root).
+#   setup-nix      Enable Nix (dx image only) and verify it.
 #
 # See docs/system-justfile.md for details and verification steps.
 # ==============================================================================
@@ -38,3 +39,53 @@ be USER="root":
     #!/usr/bin/env bash
     set -euo pipefail
     exec run0 --user="{{ USER }}"
+
+# Enable Nix on this host. The dx image ships Nix installed but with every unit
+# disabled; this recipe is the supported way to turn it on. It seeds the
+# persistent store from the deployment's /nix, enables nix.mount, relabels the
+# store and starts nix-daemon.socket. Safe to re-run.
+
+# Enable Nix (dx image only): seed the store, mount /nix, start nix-daemon.
+setup-nix:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if ! command -v nix >/dev/null 2>&1; then
+        echo "Nix is only shipped in the dx image (ghcr.io/braccae/alma:dx)." >&2
+        exit 1
+    fi
+
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "setup-nix needs root; re-executing via run0..." >&2
+        exec run0 --user=root just --justfile /justfile setup-nix
+    fi
+
+    echo "==> seeding the persistent store (/var/lib/nix) from this deployment"
+    if mountpoint -q /nix; then
+        echo "    /nix is already a mount point - skipping seed"
+    else
+        mkdir -p /var/lib/nix
+        cp -a /nix/. /var/lib/nix/
+    fi
+
+    echo "==> enabling nix.mount"
+    if ! systemctl enable --now nix.mount; then
+        echo "nix.mount failed; rootless containers may need --cap-add SYS_ADMIN" >&2
+        echo "and --security-opt label=disable on an SELinux-enforcing host." >&2
+        exit 1
+    fi
+
+    echo "==> relabelling the store (nix SELinux module is baked into the image)"
+    if command -v selinuxenabled >/dev/null && selinuxenabled; then
+        restorecon -RF /nix /var/lib/nix
+    fi
+
+    echo "==> enabling nix-daemon.socket"
+    systemctl enable --now nix-daemon.socket
+
+    echo "==> verifying"
+    systemctl is-active --quiet nix.mount
+    systemctl is-active --quiet nix-daemon.socket
+    test -S /nix/var/nix/daemon-socket/socket
+    nix --version
+    echo "Nix is ready - open a new login shell to pick up /etc/profile.d/nix-daemon.sh."

@@ -3,7 +3,8 @@ Description=Bind mount /var/lib/nix onto /nix
 Documentation=man:mount(8) https://nix.dev/manual/nix/stable/installation/nix-security.html
 # /var/lib/nix is the persistent backing directory; /nix lives on the
 # read-only composefs deployment root and would not survive updates.
-# Seed /var/lib/nix from /nix at image build time, then bind it over /nix.
+# `just setup-nix` seeds /var/lib/nix from /nix, then enables this unit, which
+# bind-mounts the persistent store over /nix. Nothing enables it at build time.
 RequiresMountsFor=/var
 # NOTE: do NOT add `After=local-fs.target` here. systemd already gives every
 # local .mount unit an implicit `Before=local-fs.target`, so an explicit

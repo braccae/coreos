@@ -35,20 +35,23 @@ Evidence lands under `output/evidence/nix-{app,systemd,vm}/<UTC-timestamp>/`
 
 ## Modes 1 & 2 — containers
 
-Run the orchestrator against a built image that ships the nix stack:
+Nix ships only in the **dx** image, with every unit disabled. The harness runs
+`just setup-nix` itself before probing, so it exercises the same opt-in path an
+operator uses. Run the orchestrator against a built dx image:
 
 ```bash
 cd .worktrees/nix-val-runmodes
-IMAGE=localhost/alma:nix-base \
+IMAGE=localhost/alma:dx \
     build/scripts/validate-nix-runmodes.sh app       # single-app, no systemd
-IMAGE=localhost/alma:nix-base \
+IMAGE=localhost/alma:dx \
     build/scripts/validate-nix-runmodes.sh systemd   # rootless multi-process
 ```
 
 - **app** — `podman run --rm` a one-shot container; the workload installs and
   executes the package in the container's own nix.
 - **systemd** — `podman run --systemd=always`; the workload runs once the
-  container's systemd is up (nix.mount active, nix-daemon.socket active).
+  container's systemd is up (the harness then runs `just setup-nix`, after
+  which `nix.mount` and `nix-daemon.socket` are active).
 
 ## Mode 3 — bootc VM
 
@@ -57,8 +60,9 @@ IMAGE=localhost/alma:nix-base \
 The VM mode boots a **prebuilt bootc qcow2**. That base disk must contain
 **both**:
 
-1. the **nix stack** (nix RPM + `nix.mount` + `nix-daemon.socket` + the
-   `build/selinux/nix` module), and
+1. the **nix stack** — i.e. the dx image (nix RPM + `nix.mount` +
+   `nix-daemon.socket` + the `build/selinux/nix` module), installed with every
+   unit **disabled**; the harness enables them with `just setup-nix`, and
 2. the **BUG-5 sshd host-key fix** (`build/selinux/sshd/*` +
    `/var/lib/sshd` `d`+`Z` tmpfiles entry) — without it `sshd` fails to start
    under SELinux enforcing and there is no way to run the workload remotely.
@@ -71,11 +75,11 @@ matches `~/.ssh/id_ed25519.pub` (see `build/config-img.toml`).
 
 ```bash
 # 1. build the container image from a checkout carrying nix + the BUG-5 fix
-podman build -t localhost/alma:nix-base .
+podman build -f dx.Containerfile -t localhost/alma:dx .
 
 # 2. BIB it to a qcow2 (config injects the core user + key)
-build/scripts/build-nix-base-disk.sh localhost/alma nix-base
-#   → output/alma/nix-base/qcow2/disk.qcow2
+build/scripts/build-nix-base-disk.sh localhost/alma dx
+#   → output/alma/dx/qcow2/disk.qcow2
 ```
 
 Already have the BUG-5-fixed image? Point straight at it:
@@ -88,11 +92,11 @@ build/scripts/build-nix-base-disk.sh localhost/alma bug5-fixed
 
 ```bash
 # base disk auto-resolved from the candidate list; or set it explicitly:
-BASE_DISK=output/alma/nix-base/qcow2/disk.qcow2 \
+BASE_DISK=output/alma/dx/qcow2/disk.qcow2 \
     build/scripts/validate-nix-vm-ssh.sh
 
 # via the orchestrator (same path, writes result.json):
-BASE_DISK=output/alma/nix-base/qcow2/disk.qcow2 \
+BASE_DISK=output/alma/dx/qcow2/disk.qcow2 \
     build/scripts/validate-nix-runmodes.sh vm
 ```
 
@@ -112,7 +116,7 @@ the script. If nothing is readable it prints the build instructions and exits
 
 ## Prerequisites
 
-- Modes 1/2: `podman`; an image with the nix stack.
+- Modes 1/2: `podman`; the dx image (Nix ships only there).
 - Mode 3: `qemu-system-x86_64`, `qemu-img`, `ssh`, `python3`, OVMF firmware
   (`/usr/share/OVMF/x64/OVMF_CODE.4m.fd`), and **read/write `/dev/kvm`** for the
   invoking user. No `sudo`, no `libvirt`, no `virt-install` required.
@@ -120,8 +124,8 @@ the script. If nothing is readable it prints the build instructions and exits
 ## Verifying all modes at once
 
 ```bash
-BASE_DISK=output/alma/nix-base/qcow2/disk.qcow2 \
-IMAGE=localhost/alma:nix-base \
+BASE_DISK=output/alma/dx/qcow2/disk.qcow2 \
+IMAGE=localhost/alma:dx \
     build/scripts/validate-nix-runmodes.sh all
 ```
 
@@ -136,7 +140,7 @@ image carrying the BUG-5 sshd fix. A single `all` invocation passed every mode
 
 | Mode | Command | Evidence dir (UTC) | Result |
 |------|---------|--------------------|--------|
-| app | `IMAGE=localhost/alma:nix-test validate-nix-runmodes.sh app` | `output/evidence/nix-app/20261016T130934Z` | pass — `hello` executed, `Hello, world!` |
+| app | `IMAGE=localhost/alma:nix-test validate-nix-runmodes.sh app` | `output/evidence/nix-app/20261016T130934Z` | pass — `hello` executed, `Hello, world!` (pre-dx-move image) |
 | systemd | `... validate-nix-runmodes.sh systemd` | `output/evidence/nix-systemd/20261016T130956Z` | pass — `nix.mount` active, `nix-daemon.socket` active |
 | vm | `... validate-nix-runmodes.sh vm` | `output/evidence/nix-vm/20261016T131044Z` | pass — base disk `…/bug5-vm/bug5-cfg.qcow2`, `nix 2.31.5` |
 
@@ -160,9 +164,11 @@ The vm `result.json` records the resolved disk in its `base_disk` field.
 
 | Disk | Notes |
 |------|-------|
-| `…/scratch/bug5-vm/bug5-cfg.qcow2` | BUG-5 sshd fix + config-built `core` user + nix stack. Used in the verified run above. |
-| `output/alma/nix-base/qcow2/disk.qcow2` | Freshly built by `build-nix-base-disk.sh` from a nix+BUG-5 image. Preferred for CI. |
+| `…/scratch/bug5-vm/bug5-cfg.qcow2` | BUG-5 sshd fix + config-built `core` user + nix stack (pre-dx-move). Used in the verified run above. |
+| `output/alma/dx/qcow2/disk.qcow2` | Freshly built by `build-nix-base-disk.sh` from the dx image (Nix units opt-in via `just setup-nix`). Preferred for CI. |
 
-Nix-only disks (nix stack but pre-BUG-5 sshd) are **not** candidates: sshd
+Disks without the nix stack (anything but a dx-derived image) are **not**
+candidates, and disks with the nix stack but pre-BUG-5 sshd are **not**
+candidates either: sshd
 fails under enforcing and the VM mode cannot reach the guest.
 

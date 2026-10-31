@@ -28,16 +28,18 @@ WD="$(cd "$HERE/../.." && pwd)"
 cd "$WD"
 
 # --- base disk resolution ----------------------------------------------------
-# The base qcow2 must contain BOTH the nix stack AND the BUG-5 sshd host-key
-# SELinux fix (so sshd starts under enforcing), and a `core` admin user whose
-# authorized key matches ${IDKEY}.pub.  A nix-ONLY disk (e.g. an image built
-# before BUG-5 landed) has no working sshd and would hang here, so such disks
-# are deliberately NOT candidates.  Resolution order:
+# The base qcow2 must contain BOTH the nix stack (dx image) AND the BUG-5 sshd
+# host-key SELinux fix (so sshd starts under enforcing), and a `core` admin user
+# whose authorized key matches ${IDKEY}.pub.  Nix units ship DISABLED in dx; the
+# harness runs `just setup-nix` over SSH before probing them.  A nix-ONLY disk
+# (e.g. an image built before BUG-5 landed) has no working sshd and would hang
+# here, so such disks are deliberately NOT candidates.  Resolution order:
 #   1. explicit $BASE_DISK (if set and readable)
 #   2. first readable path in the candidate list below
 # If nothing usable is found we SKIP (exit 2) and print how to build one with
 # build/scripts/build-nix-base-disk.sh — never a silent false pass.
 _BASE_CANDIDATES=(
+    "$WD/output/alma/dx/qcow2/disk.qcow2"
     "$WD/output/alma/nix-base/qcow2/disk.qcow2"
     "/home/pants/.hermes/profiles/cody-the-coder/cache/scratch/bug5-vm/bug5-cfg.qcow2"
     "/home/pants/.hermes/profiles/cody-the-coder/cache/scratch/bib-out2/qcow2/disk.qcow2"
@@ -247,6 +249,12 @@ if [ "$ssh_ready" -eq 0 ]; then
     echo "fail" > "$EVID_DIR/result.txt"
     exit 1
 fi
+
+# Nix ships disabled in the dx image: enable it the supported way (the same
+# `just setup-nix` an operator runs) before probing the units.
+ssh "${SSH_OPTS[@]}" "${TARGET_USER}@127.0.0.1" \
+  'if [ "$(id -u)" -eq 0 ]; then just setup-nix; else sudo -n just setup-nix; fi' \
+  > "$EVID_DIR/setup-nix.log" 2>&1 || true
 
 ssh "${SSH_OPTS[@]}" "${TARGET_USER}@127.0.0.1" \
   'systemctl is-system-running; echo "---units---"; systemctl is-active nix.mount nix-daemon.socket' \
