@@ -190,7 +190,45 @@ Requirements: `virglrenderer` on the host, a host GPU, and `-device virtio-vga-g
 
 ---
 
-## 5. Troubleshooting
+## 5. Known limitations
+
+### Multi-monitor / "Add screen"
+
+The session runs KWin nested on Selkies' built-in compositor. Adding a display
+asks KWin for a `zkde_screencast_unstable_v1` virtual output, and KWin refuses
+it when it is nested (`virtual screen 'SELKIES-2' refused: Could not find
+output`). The screen-settings section is therefore hidden in the dashboard
+instead of offering a button that always errors.
+
+Alternatives that were evaluated:
+
+* Point Selkies at KWin with `--wayland-host-display=wayland-0` and run KWin
+  with `--virtual`: Selkies still starts and captures its own `wayland-1`
+  compositor, so the stream shows an empty surface. Not viable as-is.
+* Use a labwc session compositor with the linuxserver IPC patch
+  (`labwc.sock`), which is what the `ADD_SCREEN` path expects. That is a larger
+  change (patched labwc build, new session topology) and is not done here.
+
+### Network indicator shows "disconnected"
+
+NetworkManager inside the container cannot manage the pod's `pasta` tun device
+(it reports `connected (externally)` and refuses to activate a profile), so
+plasma-nm draws a disconnected icon even though outbound networking works.
+Verify connectivity from a shell instead:
+
+```bash
+podman exec webtop ping -c1 1.1.1.1
+podman exec webtop curl -sI https://flathub.org
+podman exec webtop nmcli networking connectivity   # full
+```
+
+The container needs `--cap-add NET_RAW` for `ping` and explicit DNS when the
+host resolver is not reachable from the container netns (`DNS=1.1.1.1` on the
+pod).
+
+---
+
+## 6. Troubleshooting
 
 | Symptom | Cause / fix |
 | --- | --- |
