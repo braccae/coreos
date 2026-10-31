@@ -23,6 +23,9 @@ install-ublue-repos:
     dnf copr enable -y scottames/ghostty
 
 install-cloudflare-warp:
+    # Bazzite/ublue images ship /opt as a symlink to var/opt, and /var/opt does
+    # not exist, so rpm cannot create /opt/cloudflare-warp (cpio: mkdir failed).
+    mkdir -p /var/opt
     dnf5 install -y --setopt=install_weak_deps=False cloudflare-warp
     systemctl disable warp-svc
 
