@@ -47,6 +47,18 @@ Verify the graphics stack inside the running container:
 podman exec webtop webtop-gpu-report
 ```
 
+### Remote access
+
+The dashboard uses `VideoDecoder`, which browsers only expose in a **secure
+context**. `http://localhost:3000` works, but a plain-HTTP visit to a remote
+host shows "This application requires a secure connection (HTTPS)". Either
+terminate HTTPS in front of the container or use an SSH tunnel:
+
+```bash
+ssh -N -L 127.0.0.1:3000:127.0.0.1:3000 user@host
+# then browse http://127.0.0.1:3000
+```
+
 ---
 
 ## 2. Flatpak
