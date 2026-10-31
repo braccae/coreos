@@ -6,8 +6,11 @@ USER root
 # here because this image does not COPY the repos/ directory. Units are left
 # disabled: the client needs registration, so admins opt in with
 # `systemctl enable --now warp-svc`.
+# Bazzite ships /opt as a symlink to var/opt and /var/opt is absent, so create
+# it first or rpm cannot unpack /opt/cloudflare-warp (cpio: mkdir failed).
 COPY repos/cloudflare-warp.repo /etc/yum.repos.d/
-RUN dnf5 install -y --setopt=install_weak_deps=False cloudflare-warp && \
+RUN mkdir -p /var/opt && \
+    dnf5 install -y --setopt=install_weak_deps=False cloudflare-warp && \
     systemctl disable warp-svc && \
     dnf5 clean all
 
