@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Run an AppImage inside the streamed webtop session.
+#
+# AppImages mount themselves through FUSE. The container needs /dev/fuse and
+# CAP_SYS_ADMIN for that (see docs/webtop.md); when FUSE is unavailable this
+# wrapper falls back to AppImage's extract-and-run mode so the application still
+# starts. No helper is downloaded at runtime.
+set -euo pipefail
+
+if [ "$#" -lt 1 ]; then
+    echo "usage: webtop-appimage-run <appimage> [args...]" >&2
+    exit 2
+fi
+
+image="$1"
+shift
+
+if [ ! -f "$image" ]; then
+    echo "webtop-appimage-run: $image: no such file" >&2
+    exit 1
+fi
+
+# AppImages must be executable; if the file is on a read-only mount, run a
+# temporary copy instead.
+if [ ! -x "$image" ]; then
+    if ! chmod +x "$image" 2>/dev/null; then
+        tmp=$(mktemp /tmp/webtop-appimage.XXXXXX)
+        cp "$image" "$tmp"
+        chmod +x "$tmp"
+        image="$tmp"
+        trap 'rm -f "$tmp"' EXIT
+    fi
+fi
+
+if [ -e /dev/fuse ] && command -v fusermount3 >/dev/null 2>&1; then
+    exec "$image" "$@"
+fi
+
+echo "webtop-appimage-run: /dev/fuse unavailable, extracting the AppImage instead" >&2
+APPIMAGE_EXTRACT_AND_RUN=1 exec "$image" "$@"

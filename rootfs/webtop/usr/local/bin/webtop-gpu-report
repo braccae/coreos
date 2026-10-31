@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Report the graphics/encoding stack available to the streamed desktop.
+#
+# Run inside the webtop container (or through `podman exec`) after starting it
+# with the GPU passthrough flags from docs/webtop.md. Nothing here is fetched at
+# runtime; this script ships in the image overlay.
+set -uo pipefail
+
+echo "== DRM devices =="
+if [ -d /dev/dri ]; then
+    ls -l /dev/dri
+else
+    echo "  no /dev/dri (software rendering; start the container with --device /dev/dri)"
+fi
+
+echo
+echo "== render nodes =="
+found=0
+for node in /dev/dri/renderD*; do
+    [ -e "$node" ] || continue
+    found=1
+    printf '  %s' "$node"
+    if [ -r "$node" ] && [ -w "$node" ]; then
+        echo " (read/write)"
+    else
+        echo " (not read/write by $(id -un))"
+    fi
+done
+[ "$found" -eq 1 ] || echo "  none"
+
+echo
+echo "== VA-API =="
+if command -v vainfo >/dev/null 2>&1; then
+    vainfo 2>&1 | grep -E "VA-API version|Driver version|vainfo: Driver|VAProfileH264|VAProfileHEVC|VAProfileAV1" | head -20
+else
+    echo "  vainfo not installed"
+fi
+
+echo
+echo "== Vulkan =="
+if command -v vulkaninfo >/dev/null 2>&1; then
+    vulkaninfo --summary 2>&1 | grep -E "apiVersion|driverVersion|driverName|deviceName" | head -12
+else
+    echo "  vulkaninfo not installed (dnf install vulkan-tools)"
+fi
+
+echo
+echo "== OpenGL (needs an X/Wayland display) =="
+if command -v glxinfo >/dev/null 2>&1; then
+    gl_info=$(glxinfo -B 2>&1 | grep -E "OpenGL renderer|OpenGL version|OpenGL core profile version" | head -4)
+    if [ -n "$gl_info" ]; then
+        printf '%s\n' "$gl_info"
+    else
+        echo "  no X/Wayland display in this shell; run inside the session for OpenGL details"
+    fi
+else
+    echo "  glxinfo not installed"
+fi
+
+echo
+echo "== Selkies encoder hints =="
+printf '  PIXELFLUX_WAYLAND=%s\n' "${PIXELFLUX_WAYLAND:-<unset>}"
+printf '  SELKIES_USE_CPU=%s\n' "${SELKIES_USE_CPU:-<unset>}"
+printf '  SELKIES_ENCODER=%s\n' "${SELKIES_ENCODER:-<unset>}"
+printf '  SELKIES_RATE_CONTROL_MODE=%s\n' "${SELKIES_RATE_CONTROL_MODE:-<unset>}"
