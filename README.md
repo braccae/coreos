@@ -48,7 +48,7 @@ This project builds upon bootc-compatible base images to create customized, immu
   - Workstation apps: KMail, Merkuro, Konsole, Yakuake, KDE Partition Manager
   - Virtualization: virt-manager, QEMU/KVM, and virtio-gpu/SPICE display modules
   - Dev mode: VS Code (`code`), GitHub CLI (`gh`), Node.js and pnpm
-  - ZFS kernel modules and Nix inherited from the AlmaLinux base image
+  - ZFS kernel modules inherited from the AlmaLinux base image (Nix ships only in the `dx` image)
 - **Notes**: Package substitutions relative to the Bazzite image — `qemu-tools` → `qemu-kvm-tools`; `input-leap`, `ghostty`, and the Fedora-specific chromium/plasma-discover configs are omitted (not packaged for EL10).
 
 ## Project Structure
@@ -195,6 +195,7 @@ precedence.
 just          # list the base recipes
 just be       # become root in a login shell (run0-backed)
 just be core  # become the `core` user
+just setup-nix  # enable Nix (dx image only; units ship disabled)
 ```
 
 Full details, precedence rules, and verification evidence:

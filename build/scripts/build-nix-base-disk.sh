@@ -5,28 +5,30 @@
 # Build a bootc qcow2 that the nix VM validation modes
 # (build/scripts/validate-nix-vm-ssh.sh) can boot and prove Nix against.
 #
-# The source container image MUST already contain:
+# The source container image MUST be the dx image (Nix ships only there):
 #   * the nix stack (nix RPM + nix.mount + nix-daemon.socket + the nix SELinux
-#     module), so `nix` works under SELinux enforcing, AND
+#     module), installed with every unit DISABLED — the harness enables them
+#     with `just setup-nix` before probing, AND
 #   * the BUG-5 sshd host-key SELinux fix (build/selinux/sshd/* +
 #     /var/lib/sshd tmpfiles d+Z), so sshd actually starts under enforcing.
+#     That fix lives in the base image, so dx inherits it.
 #
 # Without BOTH, the VM mode cannot pass: a nix-only image has sshd fail under
 # enforcing (no host keys), and an sshd-only image has no nix.  The canonical
 # source tag for a validated image is therefore an image built from a checkout
 # that carries both changes, e.g. `localhost/alma:bug5-fixed` (task/bug5-sshd)
-# or your own `localhost/alma:nix-base`.
+# or your own `localhost/alma:dx`.
 #
 # Usage:
 #   build/scripts/build-nix-base-disk.sh [image] [tag] [outdir]
 #
 #   image   podman image repo to BIB from           (default: localhost/alma)
-#   tag     podman image tag  to BIB from           (default: nix-base)
-#   outdir  output directory for the qcow2 tree     (default: output/alma/nix-base)
+#   tag     podman image tag  to BIB from           (default: dx)
+#   outdir  output directory for the qcow2 tree     (default: output/alma/dx)
 #
 # Examples:
-#   # from the current checkout's image:
-#   podman build -t localhost/alma:nix-base .
+#   # from the current checkout's dx image:
+#   podman build -f dx.Containerfile -t localhost/alma:dx .
 #   build/scripts/build-nix-base-disk.sh
 #
 #   # from the BUG-5-fixed image already in podman storage:
@@ -42,8 +44,8 @@ WD="$(cd "$HERE/../.." && pwd)"
 cd "$WD"
 
 IMAGE="${1:-localhost/alma}"
-TAG="${2:-nix-base}"
-OUTDIR="${3:-output/alma/nix-base}"
+TAG="${2:-dx}"
+OUTDIR="${3:-output/alma/dx}"
 CONFIG="${CONFIG:-$WD/build/config-img.toml}"
 BIB_IMAGE="${BIB_IMAGE:-quay.io/centos-bootc/bootc-image-builder:latest}"
 

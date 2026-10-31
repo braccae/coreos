@@ -135,7 +135,7 @@ but absent here; **omitted** = deliberately not installed, with reason.
 | ZFS kernel modules | `kmods` image + `depmod` in `workstation.Containerfile` | covered | Alma base ingests `/zfs/alma/${TARGETARCH}/` from `kmods` (`Containerfile` lines 112–137) |
 | `modinfo` build fallback | — | covered (Alma-specific) | `rootfs/workstation-alma/usr/local/bin/modinfo` resolves in-image kernel when host kernel is absent |
 | dracut initramfs regen | `workstation.Containerfile` lines 44–48 | covered | done in base (`Containerfile` lines 143–147) |
-| Nix + persistent `/nix` | — | covered | Nix from base + `/nix` bind persistence (`nix.mount`) |
+| Nix + persistent `/nix` | — | not included | Nix ships only in the `dx` image (`just setup-nix` opts in); `workstation-alma` no longer inherits it |
 
 ### 2.8 Overlay differences (bazzite vs. Alma `rootfs/`)
 

@@ -81,6 +81,30 @@ be USER="root":
 
 `USER` defaults to `root`, so a bare `just be` drops into a root login shell.
 
+### `setup-nix` — enable Nix (dx image only)
+
+```bash
+just setup-nix
+```
+
+Nix is shipped **only in the `dx` image** and every Nix unit ships disabled —
+`nix.mount` and `nix-daemon.socket` are never on automatically. This recipe is
+the supported way to turn it on:
+
+1. seeds `/var/lib/nix` from the deployment's `/nix` (so store paths added by a
+   new image are merged before the bind mount hides them),
+2. enables and starts `nix.mount`,
+3. relabels `/nix` and `/var/lib/nix` using the SELinux module baked into the
+   image,
+4. enables and starts `nix-daemon.socket`, then verifies the socket and prints
+   `nix --version`.
+
+It is idempotent and re-execs itself through `run0` when not run as root. On
+images that do not ship Nix it exits with an explanatory error instead of
+failing obscurely. In rootless containers the bind mount needs
+`--cap-add SYS_ADMIN` (and `--security-opt label=disable` on an SELinux-enforcing
+host); the recipe reports that if `nix.mount` fails.
+
 ---
 
 ## 3. Verification
@@ -96,11 +120,13 @@ $ cd / && just --list
 Available recipes:
     be USER="root" # Become another user in a login shell — the `just be USER` shortcut.
     default        # List the recipes available from this system-wide justfile.
+    setup-nix      # Enable Nix (dx image only) and verify it.
 
 $ mkdir -p /var/lib/foo/bar && cd /var/lib/foo/bar && just --list
 Available recipes:
     be USER="root" # Become another user in a login shell — the `just be USER` shortcut.
     default        # List the recipes available from this system-wide justfile.
+    setup-nix      # Enable Nix (dx image only) and verify it.
 ```
 
 Discovery succeeds from `/` **and** from a deeply nested directory that has no

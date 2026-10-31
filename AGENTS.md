@@ -55,6 +55,7 @@ This repository maintains bootable container (`bootc`) operating system images, 
 └── rootfs/                     # Layered filesystem overlays
     ├── btrfs_config/           # Btrfs mount kargs and composefs config
     ├── common/                 # Base filesystem overlay for all Alma images
+    ├── dx/                     # dx-only overlay: Nix units, config and tmpfiles
     ├── hci/                    # Cockpit, QEMU, Samba configuration for HCI
     ├── non_btrfs/              # Standard composefs config for non-btrfs root
     ├── webtop/                 # Nginx, Selkies, and systemd units for Webtop
@@ -107,7 +108,7 @@ Summary of all 12 Containerfiles in this repository:
 | :--- | :--- | :--- | :--- | :--- |
 | [Containerfile](Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | Core bootc server image | Alma | `container.yml` |
 | [dockerhost.Containerfile](dockerhost.Containerfile) | `ghcr.io/braccae/alma:latest` | Docker engine host with Cockpit UI | Alma | `container-dockerhost.yml` |
-| [dx.Containerfile](dx.Containerfile) | `ghcr.io/braccae/alma:latest` | Developer workstation (Nix, Podman) | Alma | `container-dx.yml` |
+| [dx.Containerfile](dx.Containerfile) | `ghcr.io/braccae/alma:latest` | Developer workstation (dx-only Nix, Podman) | Alma | `container-dx.yml` |
 | [hci.Containerfile](hci.Containerfile) | `ghcr.io/braccae/alma:latest` | Hyperconverged virt host (KVM, Cockpit) | Alma | `container-hci.yml` |
 | [installer.Containerfile](installer.Containerfile) | `ghcr.io/braccae/coreos:workstation` | Anaconda installer builder environment | Alma | `container-installer.yml` |
 | [k3s.Containerfile](k3s.Containerfile) | `ghcr.io/braccae/alma:latest` | Lightweight Kubernetes node | Alma | `container-k3s.yml` |

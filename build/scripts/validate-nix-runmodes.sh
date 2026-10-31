@@ -18,7 +18,7 @@
 #   build/scripts/validate-nix-runmodes.sh [app|systemd|vm|all]
 #
 # Env overrides:
-#   IMAGE=localhost/alma:nix-test   container image under test
+#   IMAGE=localhost/alma:dx       container image under test (Nix ships in dx)
 #   PKG=hello                       nixpkgs attribute to install/execute
 #   CHANNEL=https://nixos.org/channels/nixpkgs-unstable
 #   VM_IMAGE=alma  VM_TAG=latest    bootc image ref for the vm mode
@@ -29,7 +29,7 @@
 # =============================================================================
 set -uo pipefail
 
-IMAGE="${IMAGE:-localhost/alma:nix-test}"
+IMAGE="${IMAGE:-localhost/alma:dx}"
 PKG="${PKG:-hello}"
 CHANNEL="${CHANNEL:-https://nixos.org/channels/nixpkgs-unstable}"
 VM_IMAGE="${VM_IMAGE:-alma}"
@@ -124,10 +124,14 @@ run_app() {
 # NOTE: podman's default rootless capability set DROPS CAP_SYS_ADMIN (verified
 # via /proc/1/status in a --systemd=always container). Without it, the shipped
 # nix.mount unit (bind /var/lib/nix -> /nix) cannot perform its mount and the
-# unit lands in `failed`. The nix workload itself still works without the cap,
-# but the /nix persistence feature does not. We therefore start the container
-# with `--cap-add SYS_ADMIN` (still rootless — NOT --privileged) so nix is
+# unit lands in `failed`. We therefore start the container with
+# `--cap-add SYS_ADMIN` (still rootless — NOT --privileged) so nix is
 # exercised end-to-end including the persistent store.
+#
+# We also pass `--security-opt label=disable`: on an SELinux-enforcing host the
+# container's systemd is denied the bind mount even with CAP_SYS_ADMIN (the
+# identical mount from a shell inside the same container succeeds). SELinux
+# enforcement is covered by the vm mode, which boots the real image.
 # ---------------------------------------------------------------------------
 run_systemd() {
     local started dir cname rc=0
@@ -137,7 +141,8 @@ run_systemd() {
     echo ">>> nix-${PKG} in rootless multi-process systemd container, image=${IMAGE}"
 
     podman rm -f "$cname" >/dev/null 2>&1 || true
-    if ! podman run -d --name "$cname" --systemd=always --cap-add SYS_ADMIN "$IMAGE" >/dev/null 2>&1; then
+    if ! podman run -d --name "$cname" --systemd=always --cap-add SYS_ADMIN \
+            --security-opt label=disable "$IMAGE" >/dev/null 2>&1; then
         write_result "$dir" systemd fail "$started"
         echo "FAIL: nix-systemd — container failed to start"
         return 1
@@ -156,6 +161,9 @@ run_systemd() {
         sleep 2; waited=$((waited + 2))
     done
     printf '%s\n' "${sys_state:-timeout}" > "${dir}/systemd-state.txt"
+    # Nix ships disabled in the dx image: enable it the supported way, exactly
+    # as an operator would, before probing the units.
+    podman exec "$cname" just setup-nix > "${dir}/setup-nix.log" 2>&1 || true
     # Give nix.mount / nix-daemon.socket a moment to reach steady state.
     podman exec "$cname" systemctl is-active nix.mount > "${dir}/nix-mount-active.txt" 2>&1 || true
     podman exec "$cname" systemctl is-active nix-daemon.socket > "${dir}/nix-daemon-socket-active.txt" 2>&1 || true
