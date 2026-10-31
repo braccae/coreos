@@ -18,11 +18,10 @@ This repository maintains bootable container (`bootc`) operating system images, 
 ## HARD RULES
 
 1. **Base Build FROM**: The base image in [Containerfile](Containerfile#L2) builds `FROM quay.io/almalinuxorg/almalinux-bootc:10 AS base`. The tag `ghcr.io/braccae/alma:latest` is the **PUBLISHED output** of this build, NOT the build input. Never change line 2 of [Containerfile](Containerfile#L2) to pull from `ghcr.io/braccae/alma:latest`.
-2. **Workstation Image Frozen**: [workstation.Containerfile](workstation.Containerfile) **MUST NOT BE MODIFIED**. A physical production machine depends on this exact image specification.
-3. **No Contradictions of Verified Facts**: Do not alter verified architectural facts regarding variants, build stages, or base distributions.
-4. **Local Reproduction Resource Limits**: Local test VM execution defaults to **2048 MB RAM** and **2 vCPUs** (`just test-vm` accepts overrides, e.g. `just test-vm latest 4096 4`). Keep local VM usage modest so the host stays responsive. Local testing uses rootless Podman alongside rootful KVM (`virsh`/`virt-install`).
-5. **Git Worktree Isolation**: Never develop directly on `main` or in the primary checkout. All feature and task development happens in dedicated worktrees under `.worktrees/<branch-name>`.
-6. **Caveman Payload-Verbatim Rule**: When communications require terseness or brevity, all functional payloads (code snippets, configuration blocks, diffs, terminal commands) must be provided **verbatim** without ellipses, trimming, or omissions.
+2. **No Contradictions of Verified Facts**: Do not alter verified architectural facts regarding variants, build stages, or base distributions.
+3. **Local Reproduction Resource Limits**: Local test VM execution defaults to **2048 MB RAM** and **2 vCPUs** (`just test-vm` accepts overrides, e.g. `just test-vm latest 4096 4`). Keep local VM usage modest so the host stays responsive. Local testing uses rootless Podman alongside rootful KVM (`virsh`/`virt-install`).
+4. **Git Worktree Isolation**: Never develop directly on `main` or in the primary checkout. All feature and task development happens in dedicated worktrees under `.worktrees/<branch-name>`.
+5. **Caveman Payload-Verbatim Rule**: When communications require terseness or brevity, all functional payloads (code snippets, configuration blocks, diffs, terminal commands) must be provided **verbatim** without ellipses, trimming, or omissions.
 
 ---
 
@@ -117,7 +116,7 @@ Summary of all 12 Containerfiles in this repository:
 | `test.Containerfile` | Configurable | Ephemeral local scratch testing (git-ignored) | Alma | None |
 | [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | Bazzite GNOME mobile workstation | Bazzite | `container-laptop.yml` |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | Remote KDE Wayland desktop in container | Bazzite | `container-webtop.yml` |
-| [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Production KDE desktop (**DO NOT MODIFY**) | Bazzite | `container-workstation.yml` |
+| [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Production KDE desktop (Bazzite F44) | Bazzite | `container-workstation.yml` |
 
 Full variant details and relationships are documented in [docs/variants.md](docs/variants.md).
 

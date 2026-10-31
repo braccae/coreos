@@ -2,6 +2,15 @@ FROM ghcr.io/ublue-os/bazzite:stable-43 as base
 
 USER root
 
+# Cloudflare WARP client. The repo file is vendored in repos/ and installed
+# here because this image does not COPY the repos/ directory. Units are left
+# disabled: the client needs registration, so admins opt in with
+# `systemctl enable --now warp-svc`.
+COPY repos/cloudflare-warp.repo /etc/yum.repos.d/
+RUN dnf5 install -y --setopt=install_weak_deps=False cloudflare-warp && \
+    systemctl disable warp-svc && \
+    dnf5 clean all
+
 # Install dependencies for building selkies and wtype, and nginx
 RUN dnf5 install -y \
     nginx \

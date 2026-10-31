@@ -139,5 +139,5 @@ The table below documents which Containerfile copies which `rootfs` subdirectory
 | `test.Containerfile` | Configurable | None (Scratch) | N/A | Local developer scratch containerfile. |
 | [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | `rootfs/workstation/` | `/` | Copies workstation overlay on top of Bazzite DX GNOME. |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | `rootfs/common/`<br>`rootfs/webtop/` | `/`<br>`/` | Reuses core system utilities from `common/` alongside desktop streaming files from `webtop/`. |
-| [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/btrfs_config/`<br>`rootfs/workstation/` | `/`<br>`/` | **FROZEN PRODUCTION IMAGE**. Lines 63-64 (`non_btrfs/`, `common/`) are commented out. |
+| [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/btrfs_config/`<br>`rootfs/workstation/` | `/`<br>`/` | Production image (freeze lifted). Lines 63-64 (`non_btrfs/`, `common/`) are commented out. |
 | [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/workstation-alma/` | `/` | Inherits `rootfs/common/` and `rootfs/non_btrfs/` from the Alma base; adds SDDM + ZRAM + polkit workstation files. |

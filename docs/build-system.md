@@ -142,6 +142,7 @@ The [build/justfile](build/justfile) contains specialized modular recipes invoke
 - `install-game-mode`: Enables COPR repository and installs XIVLauncher.
 - `install-virt-tools`: Installs QEMU/KVM userland tools, `virt-manager`, and virtio graphics drivers.
 - `install-dev-mode`: Installs development tools (Visual Studio Code, `pnpm`, `nodejs`, `gh`).
+- `install-cloudflare-warp`: Installs the Cloudflare WARP client and leaves `warp-svc` disabled (registration is an operator step).
 
 ---
 

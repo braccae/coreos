@@ -56,7 +56,8 @@ RUN just install-java && \
     just install-misc-tools && \
     just install-virt-tools && \
     just install-dev-mode && \
-    just install-kde-utils \
+    just install-kde-utils && \
+    just install-cloudflare-warp \
     && dnf clean all
 
 COPY rootfs/btrfs_config/ /

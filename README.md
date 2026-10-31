@@ -213,6 +213,11 @@ bootc container lint
 - `qemu-guest-agent`: VM integration
 - `tailscaled`: VPN mesh networking
 
+### Installed Clients (disabled by default)
+- `cloudflare-warp`: WARP client (`warp-cli`, `warp-svc`). Enable with
+  `sudo systemctl enable --now warp-svc`, then register with
+  `warp-cli registration new`.
+
 ### Web Interfaces
 - **Cockpit**: `https://your-host:9090` (only on hci images)
 

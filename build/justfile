@@ -22,6 +22,10 @@ install-ublue-repos:
     # dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
     dnf copr enable -y scottames/ghostty
 
+install-cloudflare-warp:
+    dnf5 install -y --setopt=install_weak_deps=False cloudflare-warp
+    systemctl disable warp-svc
+
 install-ansible:
     dnf install -y \
         ansible \
