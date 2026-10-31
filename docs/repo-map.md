@@ -104,9 +104,9 @@ The bootc ostree sysroot preparation requires filesystem-aware mount and compose
 ### 5. `rootfs/webtop/` (Webtop Container Overlay)
 - **Target**: [webtop.Containerfile](webtop.Containerfile).
 - **Purpose**: Configures headless KDE Wayland desktop streaming inside a rootless container:
-  - `etc/nginx/conf.d/webtop.conf`: Reverse proxy serving the Selkies web interface over HTTP port 3000.
+  - `etc/nginx/conf.d/webtop.conf`: Reverse proxy for the Selkies dashboard and websocket on HTTP port 3000 (Selkies serves both; nginx adds upgrade headers and timeouts).
   - `etc/systemd/system/webtop.service`: Systemd service orchestrating the desktop startup sequence.
-  - Helper scripts: `start-webtop.sh`, `kwin-xwayland.py`, and `patch-selkies.py`.
+  - Helper script: `start-webtop.sh` (Selkies compositor -> nested KWin -> Plasma session).
 
 ### 6. `rootfs/workstation/` (Bazzite Workstation Overlay)
 - **Target**: [workstation.Containerfile](workstation.Containerfile) and [laptop.Containerfile](laptop.Containerfile).
@@ -138,6 +138,6 @@ The table below documents which Containerfile copies which `rootfs` subdirectory
 | [kmods-bundle.Containerfile](kmods-bundle.Containerfile) | `scratch` | None | N/A | Bundles pre-built multi-arch RPM trees from `zfs/`. |
 | `test.Containerfile` | Configurable | None (Scratch) | N/A | Local developer scratch containerfile. |
 | [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | `rootfs/workstation/` | `/` | Copies workstation overlay on top of Bazzite DX GNOME. |
-| [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | `rootfs/common/`<br>`rootfs/webtop/` | `/`<br>`/` | Reuses core system utilities from `common/` alongside desktop streaming files from `webtop/`. |
+| [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/common/`<br>`rootfs/webtop/` | `/`<br>`/` | Selkies 2.1 in a pinned venv; nested KWin session; nginx front door on 3000. |
 | [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/btrfs_config/`<br>`rootfs/workstation/` | `/`<br>`/` | Production image (freeze lifted). Lines 63-64 (`non_btrfs/`, `common/`) are commented out. |
 | [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/workstation-alma/` | `/` | Inherits `rootfs/common/` and `rootfs/non_btrfs/` from the Alma base; adds SDDM + ZRAM + polkit workstation files. |

@@ -1,4 +1,4 @@
-FROM ghcr.io/ublue-os/bazzite:stable-43 as base
+FROM ghcr.io/ublue-os/bazzite:stable-44 as base
 
 USER root
 
@@ -14,44 +14,50 @@ RUN mkdir -p /var/opt && \
     systemctl disable warp-svc && \
     dnf5 clean all
 
-# Install dependencies for building selkies and wtype, and nginx
+# Runtime dependencies: nginx front-end, mesa/pciutils for the compositor,
+# xhost for KWin's Xwayland, and the venv tooling for Selkies.
 RUN dnf5 install -y \
     nginx \
-    gcc gcc-c++ make cmake git \
-    cairo-devel wayland-devel wayland-protocols-devel \
-    python3-pip python3-devel \
-    mesa-dri-drivers pciutils vte291 \
-    jq tar gzip ca-certificates curl && \
-    dnf5 clean all
+    python3-pip \
+    mesa-dri-drivers \
+    pciutils \
+    vte291 \
+    jq tar gzip ca-certificates curl \
+    xorg-x11-xauth \
+    && dnf5 clean all
 
-# Copy linuxserver components
-COPY --from=lscr.io/linuxserver/webtop:fedora-kde /usr/share/selkies /usr/share/selkies
-COPY --from=lscr.io/linuxserver/webtop:fedora-kde /lsiopy /lsiopy
-RUN ln -sf /usr/bin/python3 /lsiopy/bin/python3
-COPY --from=lscr.io/linuxserver/webtop:fedora-kde /usr/lib/selkies_joystick_interposer.so /usr/lib/
+# --- Selkies streaming server -----------------------------------------------
+# selkies 2.1 brings its own Wayland compositor (pixelflux) and audio engine
+# (pcmflux), so the server is installed from PyPI into a pinned venv instead of
+# copying the linuxserver /lsiopy python tree. The previous selkies-desktop
+# build is gone: the session launched here never invoked it, and its repository
+# no longer ships a Makefile.
+ENV UV_CACHE_DIR=/tmp/uv-cache
+# Use /usr/bin/python3 explicitly: rootfs/common/ copies usr/sbin/, which turns
+# Bazzite's /usr/sbin -> bin symlink into a real directory, so a venv built from
+# the PATH entry /usr/sbin/python3 would end up with a dangling interpreter.
+RUN /usr/bin/python3 -m venv /opt/selkies && \
+    /opt/selkies/bin/pip install --no-cache-dir "selkies==2.1.0" && \
+    rm -rf /tmp/uv-cache
+
+# Native input/webcam interposers come from the linuxserver reference image,
+# which runs the same selkies 2.1 release. The python tree and the static
+# dashboard are NOT copied: the venv pins selkies/pixelflux/pcmflux and selkies
+# serves its own bundled dashboard.
+COPY --from=lscr.io/linuxserver/webtop:fedora-kde /usr/lib/selkies_input_interposer.so /usr/lib/
+COPY --from=lscr.io/linuxserver/webtop:fedora-kde /usr/lib/selkies_v4l2_interposer.so /usr/lib/
 COPY --from=lscr.io/linuxserver/webtop:fedora-kde /opt/lib/libudev.so.1.0.0-fake /opt/lib/
-# kwin-xwayland.py is NOT copied from the linuxserver image any more: upstream
-# stopped shipping /kwin-xwayland.py, and this repo has its own copy in
-# rootfs/webtop/usr/local/bin/kwin-xwayland.py (installed by the overlay COPY
-# below, before the chmod/entrypoint steps).
+# Upstream ships the joystick interposer as a copy of the input one.
+RUN ln -sf selkies_input_interposer.so /usr/lib/selkies_joystick_interposer.so
 
-# Build selkies-desktop since binary from F44 fails on F40/F43 glibc
-RUN git clone https://github.com/selkies-project/selkies-desktop.git /tmp/selkies-desktop && \
-    cd /tmp/selkies-desktop && make && mv selkies-desktop /usr/bin/selkies-desktop && \
-    rm -rf /tmp/selkies-desktop
-
-# Setup frontend web folder
-RUN rm -rf /usr/share/selkies/web && \
-    cp -a /usr/share/selkies/selkies-dashboard /usr/share/selkies/web && \
-    cp /usr/share/selkies/www/icon.png /usr/share/selkies/web/favicon.ico || true && \
-    echo '{ "name": "Webtop", "short_name": "Webtop", "manifest_version": 2, "version": "1.0.0", "display": "fullscreen", "start_url": "/" }' > /usr/share/selkies/web/manifest.json
+# Interposer and capture defaults shared by the session launcher.
+ENV SELKIES_INTERPOSER=/usr/lib/selkies_input_interposer.so \
+    SELKIES_WEBCAM_INTERPOSER=/usr/lib/selkies_v4l2_interposer.so \
+    PIXELFLUX_WAYLAND=true
 
 # Copy local overlay
 COPY rootfs/common/ /
 COPY rootfs/webtop/ /
-
-# Run the selkies.py patch
-RUN python3 /usr/local/bin/patch-selkies.py && rm -f /usr/local/bin/patch-selkies.py
 
 # Replace nginx default config
 RUN rm -f /etc/nginx/conf.d/default.conf
@@ -62,7 +68,8 @@ RUN useradd -m -u 1000 -G wheel webtop && \
     passwd -d webtop && \
     echo "webtop ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/webtop
 
-RUN chmod +x /usr/local/bin/start-webtop.sh /usr/local/bin/kwin-xwayland.py && \
+RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
+    chmod +x /usr/local/bin/start-webtop.sh && \
     (setcap -r /usr/bin/kwin_wayland || true) && \
     systemctl enable webtop.service
 

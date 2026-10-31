@@ -13,6 +13,7 @@ User=core
 Group=core
 Environment=XDG_RUNTIME_DIR=/run/user/1000
 Environment=HOME=/home/core
+Environment=KWIN_WAYLAND_NO_PERMISSION_CHECKS=1
 WorkingDirectory=/home/core
 # Optional overrides (e.g. SELKIES_BASIC_AUTH_PASSWORD, SELKIES_BASIC_AUTH).
 EnvironmentFile=-/etc/webtop-alma/session.env

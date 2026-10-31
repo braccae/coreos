@@ -115,7 +115,7 @@ Summary of all 12 Containerfiles in this repository:
 | [kmods-bundle.Containerfile](kmods-bundle.Containerfile) | `scratch` | Multi-arch bundle of compiled ZFS RPMs | Alma | `container-kmods.yml` |
 | `test.Containerfile` | Configurable | Ephemeral local scratch testing (git-ignored) | Alma | None |
 | [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | Bazzite GNOME mobile workstation | Bazzite | `container-laptop.yml` |
-| [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | Remote KDE Wayland desktop in container | Bazzite | `container-webtop.yml` |
+| [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Remote KDE Wayland desktop in container | Bazzite | `container-webtop.yml` |
 | [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Production KDE desktop (Bazzite F44) | Bazzite | `container-workstation.yml` |
 
 Full variant details and relationships are documented in [docs/variants.md](docs/variants.md).
