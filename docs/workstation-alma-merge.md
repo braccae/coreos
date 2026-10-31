@@ -2,7 +2,11 @@
 
 **Task:** `t_372aa4f5` — Full workstation to Alma merge (merge/cutover half)
 **Branch:** `feature/workstation-alma-merge` (local only; no push, no PR)
-**Status:** PLAN + VERIFY complete. **The production cutover has NOT been executed.**
+**Status:** SHELVED (Oct 2026). The production cutover has **not** been executed,
+and the workstation image remains on Fedora/Bazzite for the foreseeable future
+(the current hardware is too new for the AlmaLinux variant). The
+`workstation.Containerfile` modification freeze has therefore been lifted;
+this document is kept as a historical gap analysis.
 
 This document is the staged cutover plan for replacing the bazzite-based
 `workstation.Containerfile` production image with the Alma-based
@@ -29,7 +33,7 @@ already publishes `ghcr.io/braccae/workstation-alma` on `main` (tag `workstation
 ## 2. Gap analysis: `workstation-alma` vs. bazzite `workstation`
 
 Reference sources (read-only):
-- `workstation.Containerfile` (bazzite — **frozen production file**)
+- `workstation.Containerfile` (bazzite — production file; freeze lifted)
 - `build/justfile` (`install-*` recipes invoked by the bazzite workstation build)
 - `Containerfile` (Alma base — what `workstation-alma` inherits)
 - `workstation-alma.Containerfile` + `rootfs/workstation-alma/`

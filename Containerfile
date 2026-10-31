@@ -183,6 +183,18 @@ RUN dnf install -y checkpolicy make && \
 RUN bash /tmp/build_scripts/install-hermes.sh
 ENV HERMES_HOME=/usr/local/lib/hermes-agent
 
+# --- Cloudflare WARP client -------------------------------------------------
+# Cloudflare ships a single RPM bundling warp-cli, warp-svc and a desktop GUI.
+# The GUI's hard Requires pull WebKitGTK/GStreamer, so weak dependencies are
+# skipped to trim ~245 MB; warp-cli/warp-svc never use them.
+# The RPM %post enables warp-svc.service, which is then disabled again: the
+# client needs explicit registration and admins opt in with
+# `systemctl enable --now warp-svc`. This must run before the factory /etc
+# snapshot below so the disabled state is what gets restored in container mode.
+RUN dnf install -y --setopt=install_weak_deps=False cloudflare-warp && \
+    systemctl disable warp-svc && \
+    dnf clean all
+
 # --- Factory /etc snapshot -------------------------------------------------
 # etc-overlay-sync.service restores this snapshot over /etc on every container
 # boot. Runtime-owned files must NOT be baked into the snapshot: copying a

@@ -19,7 +19,7 @@ This repository maintains 13 Containerfiles across two primary OS families: **Al
 | `test.Containerfile` | Configurable | Ephemeral test container definition for local validation | AlmaLinux | **None** | Explicitly git-ignored. Used for scratch builds. |
 | [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | Mobile developer workstation with GNOME desktop environment | Bazzite | `.github/workflows/container-laptop.yml` | Installs developer tooling, Ansible, Java, and Bazzite overlays. |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-43` | Containerized remote KDE Wayland desktop accessible over HTTP via Selkies | Bazzite | `.github/workflows/container-webtop.yml` | Experimental rootless desktop streaming container. |
-| [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Primary desktop workstation image with KDE, ZFS, and virtualization tools | Bazzite | `.github/workflows/container-workstation.yml` | **FROZEN PRODUCTION IMAGE**. Must not be modified. |
+| [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Primary desktop workstation image with KDE, ZFS, and virtualization tools | Bazzite | `.github/workflows/container-workstation.yml` | Production image; the previous modification freeze was lifted (migration to AlmaLinux is shelved). |
 | [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | Local KDE Plasma 6 desktop workstation (SDDM, virtualization, dev tooling) | AlmaLinux | `.github/workflows/container-workstation-alma.yml` | AlmaLinux equivalent of the Bazzite workstation image. |
 
 ---
@@ -31,7 +31,7 @@ This repository maintains 13 Containerfiles across two primary OS families: **Al
 1. **[Containerfile](Containerfile) (Base)**
    - **Build Source**: `FROM quay.io/almalinuxorg/almalinux-bootc:10 AS base` (Line 2).
    - **Published Tag**: `ghcr.io/braccae/alma:latest`.
-   - **Role**: Foundational bootc base for all Alma derivatives. Integrates Tailscale, Cockpit management plugins, EPEL/RPM Fusion repositories, ZFS module ingestion, and rootless Podman user provisioning.
+   - **Role**: Foundational bootc base for all Alma derivatives. Integrates Tailscale, the Cloudflare WARP client (installed, disabled by default), Cockpit management plugins, EPEL/RPM Fusion repositories, ZFS module ingestion, and rootless Podman user provisioning.
    - **Overlay**: Copies `rootfs/non_btrfs/` and `rootfs/common/`.
 
 2. **[dockerhost.Containerfile](dockerhost.Containerfile)**
@@ -94,7 +94,7 @@ This repository maintains 13 Containerfiles across two primary OS families: **Al
     - **Build Source**: `FROM ghcr.io/ublue-os/bazzite:stable-44 AS base`.
     - **Role**: Primary desktop workstation operating system with KDE Plasma, ZFS filesystem support via kmods, virtualization tools, and development tooling.
     - **Overlay**: Copies `rootfs/btrfs_config/` and `rootfs/workstation/`.
-    - **CRITICAL HARD RULE**: **DO NOT MODIFY THIS FILE**. A live production machine depends directly on this specification. Any modification risks destabilizing production hardware.
+    - **Production image**: a live machine depends on this specification, so changes must be verified in a VM before publishing. The former modification freeze was lifted when the AlmaLinux migration was shelved.
 
 ---
 
