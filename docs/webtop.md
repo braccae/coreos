@@ -36,6 +36,7 @@ podman run -d \
 | `--device /dev/fuse` | AppImage self-mounting. |
 | `--cap-add SYS_ADMIN` | FUSE mounting (AppImages) needs it in the container's user namespace; `fusermount3` is setuid so the unprivileged session can use it. `--privileged` is **not** required. |
 | `--cap-add NET_ADMIN` | Lets NetworkManager own the pasta tap instead of only *assuming* it, so the desktop network indicator reports a real connection. See [Network indicator](#network-indicator). |
+| `--pids-limit=8192` | Headroom for the session's threads. Podman's default limit is 2048, and systemd caps `webtop.service` at 15% of that (307 tasks) unless the unit raises it. With the shipped unit the service is unbounded, but the container ceiling still applies. |
 | `--security-opt seccomp=unconfined` | `bwrap` must create user/PID namespaces (blocked by the default seccomp profile). |
 | `--security-opt label=disable` | `bwrap` cannot mount `devpts`/`proc` under the container SELinux label. |
 | `--security-opt unmask=all` | Podman's masked `/proc` paths prevent `bwrap` from mounting a fresh `/proc` inside its sandbox. |
@@ -294,5 +295,7 @@ resolver is not reachable from the container netns. The image sets
 | AppImage: `failed to open … fuse` | Missing `--device /dev/fuse`; the wrapper falls back to extract-and-run. |
 | `webtop-gpu-report` shows `llvmpipe` | No usable render node (software VM, or `/dev/dri` not passed). |
 | Network icon shows a red cross | Missing `NET_ADMIN`, or the uplink is not named `eth0` (`Network=pasta:--ns-ifname=eth0`). Check `podman exec webtop nmcli device status` and `journalctl -u webtop-nm-uplink`. |
+| Panel stops updating but windows still open/close | The session ran out of threads: `QThread::start: Thread creation error (Resource temporarily unavailable)` in the journal, and `systemctl show webtop -p TasksMax` low. The shipped unit sets `TasksMax=infinity`; the deployment must also raise the container limit (`PidsLimit=8192` or `--pids-limit=8192`). |
+| `cardwired.service` restart loop | Bazzite's Cardwire daemon needs eBPF/LSM and cannot run in the container (`CardwireEbpfError(LSMNotEnabled)`). The image disables it; re-enabling only restores the restart loop. |
 | No `VAProfile…` lines | Host GPU does not expose VA-API (e.g. virtio-gpu without virgl). |
 | Flatpak app missing from the menu | Install it, then log out/in of the session (KDE rebuilds the menu on `kbuildsycoca6`). |

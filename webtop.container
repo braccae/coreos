@@ -15,6 +15,11 @@ AddCapability=SYS_ADMIN
 # NetworkManager needs NET_ADMIN to take ownership of the pasta tap instead of
 # only assuming it; without it the desktop network indicator shows "unavailable".
 AddCapability=NET_ADMIN
+# Podman's default pids limit (2048) also caps the session through systemd's
+# default TasksMax=15%, which a KDE session with a browser exhausts (thread
+# creation fails, the panel freezes). TasksMax=infinity in webtop.service
+# removes the service cap; this raises the container-wide ceiling.
+PidsLimit=8192
 # Flatpak needs to create namespaces; without these bwrap cannot mount /proc
 # ("Can't mount proc on /proc: Operation not permitted").
 SecurityLabelDisable=true

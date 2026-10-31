@@ -6,6 +6,12 @@ After=network.target
 Type=simple
 ExecStart=/usr/local/bin/start-webtop.sh
 Restart=on-failure
+# The session and every application it launches share this service's cgroup.
+# systemd's default TasksMax=15% of the container's pids limit (2048 by
+# default) gives only 307 tasks, which a normal KDE session with a browser
+# exhausts; thread creation then fails and plasmashell's panel freezes while
+# KWin keeps compositing. Let the container's pids limit be the only bound.
+TasksMax=infinity
 
 [Install]
 WantedBy=multi-user.target
