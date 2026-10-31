@@ -1,23 +1,28 @@
 # Webtop (Alma) — remote KDE Plasma desktop streamed with Selkies.
 #
-# Native AlmaLinux build. KDE Plasma comes from EPEL (Plasma 6.6.4 — the same
-# series the linuxserver fedora-kde reference image ships), and Selkies is
+# Native AlmaLinux build. KDE Plasma comes from EPEL (Plasma 6.6.4), and
+# Selkies 2.1 (with its pixelflux compositor and pcmflux audio engine) is
 # installed from PyPI into its own venv.
 #
 # Nothing is copied out of the linuxserver images. Selkies 2.x bundles its own
 # web dashboard (selkies/selkies_web) and serves it from the same aiohttp
-# process as the websocket, so there is no nginx front-end, no /lsiopy venv
-# copy, and no source patch. The desktop session is launched by Selkies' own
-# `selkies-session` supervisor, which brings up Selkies' compositor and nests
-# the Plasma session (from /usr/share/wayland-sessions) inside it.
+# process as the websocket, so there is no nginx front-end and no /lsiopy venv
+# copy. The session is started explicitly by start-webtop.sh: selkies brings up
+# its compositor (wayland-1), kwin_wayland nests on it (wayland-0), and
+# plasmashell runs inside. startplasma-wayland is not used because its
+# systemd-managed target cannot be restarted inside a container.
+#
+# The streaming-friendly KDE defaults (no screen lock, wl-clipboard rule) are
+# seeded for `core` below, and KWIN_WAYLAND_NO_PERMISSION_CHECKS is set in
+# webtop.service, matching what the linuxserver fedora-kde session does at
+# runtime.
 FROM ghcr.io/braccae/alma:latest
 
 # --- KDE Plasma 6 desktop, Wayland + Xwayland, audio ------------------------
 # plasma-workspace/plasma-desktop/kwin are 6.6.4 in EPEL 10. Xwayland and mesa
 # are needed for X11 client apps; pipewire + wireplumber are the audio stack.
 # dbus-daemon provides /usr/bin/dbus-run-session on EL 10 (it lives in
-# dbus-tools on Fedora) — /usr/libexec/plasma-dbus-run-session-if-needed execs
-# it before startplasma-wayland, so without it the Plasma session never starts.
+# dbus-tools on Fedora); start-webtop.sh wraps the session in it.
 RUN dnf install -y \
         plasma-workspace \
         plasma-desktop \
@@ -46,7 +51,7 @@ RUN dnf install -y \
 # private venv keeps Selkies off the system Python.
 ENV UV_CACHE_DIR=/tmp/uv-cache
 RUN uv venv /opt/selkies --python python3 && \
-    uv pip install --python /opt/selkies/bin/python --no-cache "selkies==2.0.0" && \
+    uv pip install --python /opt/selkies/bin/python --no-cache "selkies==2.1.0" && \
     rm -rf /tmp/uv-cache
 
 # --- core user ---------------------------------------------------------------
@@ -88,18 +93,38 @@ RUN groupadd -g 1000 core && \
     cp -a /etc/sudoers.d/core /usr/share/factory/etc/sudoers.d/core && \
     rm -f /usr/share/factory/etc/machine-id
 
+# --- KDE defaults for the streamed session -----------------------------------
+# start-webtop.sh starts plasmashell directly, so these first-run settings are
+# seeded at build time: disable screen locking, pick the Breeze look-and-feel,
+# and add the KWin rule that hides wl-clipboard helper windows from the
+# taskbar/switcher. Compositing is deliberately NOT disabled: KWin on Wayland
+# (Plasma 6.6 in EPEL) stops producing frames when kwinrc turns it off.
+RUN mkdir -p /home/core/.config && \
+    printf '[Daemon]\nAutolock=false\n' > /home/core/.config/kscreenlockerrc && \
+    printf '[KDE]\nLookAndFeelPackage=org.kde.breeze.desktop\n' > /home/core/.config/kdeglobals && \
+    { \
+      echo '[General]'; \
+      echo 'count=1'; \
+      echo 'rules=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'; \
+      echo; \
+      echo '[aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee]'; \
+      echo 'Description=wl-clipboard support'; \
+      echo 'wmclass=wl-(copy|paste)'; \
+      echo 'wmclassmatch=3'; \
+      echo 'skiptaskbar=true'; \
+      echo 'skiptaskbarrule=2'; \
+      echo 'skipswitcher=true'; \
+      echo 'skipswitcherrule=2'; \
+      echo 'fsplevel=3'; \
+      echo 'fsplevelrule=2'; \
+      echo 'noborder=true'; \
+      echo 'noborderrule=2'; \
+    } > /home/core/.config/kwinrulesrc && \
+    chown -R core:core /home/core/.config
+
 # --- session overlay ---------------------------------------------------------
 # webtop.service + the launcher; see rootfs/webtop-alma/.
 COPY rootfs/webtop-alma/ /
-
-# --- selkies session.py patch ------------------------------------------------
-# selkies 2.0.0 strips DBUS_SESSION_BUS_ADDRESS from the desktop environment and
-# then wraps the session in `dbus-run-session`, so Plasma lands on a private bus
-# with no user manager behind it and KDE's systemd-activated portal never starts.
-# The patch keeps the advertised address and only spawns a private bus when none
-# is present — see patch-selkies-session.py.
-RUN python3 /usr/local/bin/patch-selkies-session.py && \
-    rm -f /usr/local/bin/patch-selkies-session.py
 
 # Selkies' dashboard uploads into $HOME/Desktop; create the XDG dirs up front so
 # the first connection does not log "Could not create upload directory".
@@ -107,5 +132,11 @@ RUN mkdir -p /home/core/Desktop /home/core/Downloads /etc/webtop-alma && \
     chown -R core:core /home/core && \
     chmod +x /usr/local/bin/start-webtop.sh && \
     systemctl enable webtop.service
+
+# EPEL's kwin_wayland ships cap_sys_nice=ep. Rootless containers drop that
+# capability, and execve then fails with EPERM ("Operation not permitted") even
+# for root, so the session never starts. KWin only wants the cap for realtime
+# scheduling, which a container cannot grant anyway.
+RUN setcap -r /usr/bin/kwin_wayland /usr/bin/kwin_wayland_wrapper 2>/dev/null || true
 
 ENTRYPOINT ["/usr/lib/systemd/systemd"]
