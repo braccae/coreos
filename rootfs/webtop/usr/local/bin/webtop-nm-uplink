@@ -1,0 +1,83 @@
+#!/bin/bash
+# Give NetworkManager real ownership of the container uplink.
+#
+# Rootless Podman/pasta pre-configures the tap interface and its address before
+# NetworkManager starts, so NM only "assumes" the device
+# (connected (externally)) and never sets PrimaryConnection. That makes every
+# network indicator - including plasma-nm - report "unavailable" even though
+# traffic works.
+#
+# NM also refuses to autoconnect over an externally activated device (see
+# nm-policy.c: only loopback is allowed), so this unit activates an explicit
+# profile at boot. The address is read from the live tap instead of using DHCP:
+# pasta's DHCP server does not always answer after NM flushes the link, and a
+# static profile works in every deployment we tested.
+#
+# NET_ADMIN is required on the container (AddCapability=NET_ADMIN). Without it
+# nmcli cannot activate anything; we then leave the container's original
+# (external) networking untouched and exit successfully.
+set -u
+
+log() { echo "webtop-nm-uplink: $*"; }
+
+command -v nmcli >/dev/null 2>&1 || { log "nmcli not installed, skipping"; exit 0; }
+
+# Wait for NetworkManager to answer on the system bus.
+for _ in $(seq 1 30); do
+    nmcli -t general status >/dev/null 2>&1 && break
+    sleep 1
+done
+if ! nmcli -t general status >/dev/null 2>&1; then
+    log "NetworkManager is not responding, skipping"
+    exit 0
+fi
+
+# The uplink is whatever interface carries the default route. With
+# pasta:--ns-ifname=eth0 this is eth0.
+dev=$(ip route 2>/dev/null | awk '/^default/ {print $5; exit}')
+[ -n "${dev:-}" ] || dev=$(ip -o link show 2>/dev/null | awk -F': ' '$2 != "lo" {print $2; exit}')
+if [ -z "${dev:-}" ]; then
+    log "no uplink interface found, skipping"
+    exit 0
+fi
+
+addr=$(ip -4 -o addr show dev "$dev" 2>/dev/null | awk '{print $4; exit}')
+gw=$(ip route 2>/dev/null | awk -v d="$dev" '$1 == "default" && $5 == d {print $3; exit}')
+
+# Recreate the profile on every boot: the pasta address is not stable across
+# container restarts, and nmcli has no idempotent "set all these" operation.
+nmcli connection delete pod-uplink >/dev/null 2>&1 || true
+
+# Build the profile arguments. Fall back to DHCP when the tap has no address
+# yet (e.g. a network driver other than pasta).
+set -- type tun ifname "$dev" con-name pod-uplink mode tap ipv6.method disabled \
+    connection.autoconnect yes connection.autoconnect-priority 100
+if [ -n "${addr:-}" ]; then
+    set -- "$@" ipv4.method manual ipv4.addresses "$addr"
+    [ -n "${gw:-}" ] && set -- "$@" ipv4.gateway "$gw"
+else
+    log "no IPv4 address on $dev, falling back to DHCP"
+    set -- "$@" ipv4.method auto
+fi
+
+if ! nmcli connection add "$@" >/dev/null; then
+    log "could not create the pod-uplink profile (missing NET_ADMIN?)"
+    exit 0
+fi
+
+if ! nmcli connection up pod-uplink >/dev/null; then
+    log "could not activate pod-uplink (missing NET_ADMIN?)"
+    exit 0
+fi
+
+# Report the outcome; never fail the boot over an indicator.
+for _ in $(seq 1 20); do
+    state=$(nmcli -t -f GENERAL.STATE device show "$dev" 2>/dev/null)
+    case "$state" in
+        *"(connected)"*) log "$dev is managed by NetworkManager ($addr)"; exit 0 ;;
+    esac
+    sleep 1
+done
+
+log "profile activated but $dev did not report a managed connected state"
+exit 0

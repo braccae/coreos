@@ -1,0 +1,40 @@
+diff --git a/libs/connectionicon.cpp b/libs/connectionicon.cpp
+--- a/libs/connectionicon.cpp	2026-09-08 06:56:44.000000000 -0400
++++ b/libs/connectionicon.cpp	2026-10-31 03:57:11.065698305 -0400
+@@ -361,7 +361,11 @@
+                         setWirelessIcon(device, ap->ssid());
+                     }
+                 }
+-            } else if (type == NetworkManager::Device::Ethernet) {
++            } else if (type == NetworkManager::Device::Ethernet //
++                       || type == NetworkManager::Device::Tun //
++                       || type == NetworkManager::Device::Veth) {
++                // Container uplinks are Tun (pasta tap) or Veth (netavark); the
++                // wired icon is the correct representation for them too.
+                 setConnectionIcon(QStringLiteral("network-wired-activated"));
+                 setConnectionTooltipIcon(QStringLiteral("network-wired-activated"));
+             } else if (type == NetworkManager::Device::Bond //
+diff --git a/libs/editor/uiutils.cpp b/libs/editor/uiutils.cpp
+--- a/libs/editor/uiutils.cpp	2026-09-08 06:56:44.000000000 -0400
++++ b/libs/editor/uiutils.cpp	2026-10-31 03:57:11.066096448 -0400
+@@ -95,7 +95,7 @@
+ 
+ bool UiUtils::isConnectionTypeSupported(NetworkManager::ConnectionSettings::ConnectionType type)
+ {
+-    if (type == NetworkManager::ConnectionSettings::Generic || type == NetworkManager::ConnectionSettings::Tun) {
++    if (type == NetworkManager::ConnectionSettings::Generic) {
+         return false;
+     }
+ 
+diff --git a/libs/networkstatus.cpp b/libs/networkstatus.cpp
+--- a/libs/networkstatus.cpp	2026-09-08 06:56:44.000000000 -0400
++++ b/libs/networkstatus.cpp	2026-10-31 03:57:11.065871236 -0400
+@@ -178,6 +178,8 @@
+             NetworkManager::Device::Ptr device = NetworkManager::findNetworkInterface(active->devices().first());
+             if (device
+                 && ((device->type() != NetworkManager::Device::Generic && device->type() <= NetworkManager::Device::Team)
++                    || device->type() == NetworkManager::Device::Tun
++                    || device->type() == NetworkManager::Device::Veth
+                     || device->type() == NetworkManager::Device::WireGuard)
+                 && device->type() != NetworkManager::Device::Loopback) {
+                 bool connecting = false;
