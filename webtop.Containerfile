@@ -114,6 +114,7 @@ RUN useradd -m -u 1000 -G wheel webtop && \
     echo "webtop ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/webtop
 
 RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
+    systemctl disable cardwired.service 2>/dev/null || true; \
     chmod +x /usr/local/bin/start-webtop.sh \
               /usr/local/bin/webtop-gpu-report \
               /usr/local/bin/webtop-appimage-run \
