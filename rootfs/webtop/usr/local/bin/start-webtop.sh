@@ -37,6 +37,17 @@ export MOZ_ENABLE_WAYLAND=0
 export KWIN_WAYLAND_NO_PERMISSION_CHECKS=1
 export DISPLAY=:0
 
+# Flatpak installs export their desktop entries under the flatpak data dirs;
+# the systemd unit runs a non-login shell, so /etc/profile.d/flatpak.sh is not
+# sourced. Add the paths explicitly so the KDE menu sees installed apps.
+for flatpak_dir in /var/lib/flatpak/exports/share "$HOME/.local/share/flatpak/exports/share"; do
+    case ":${XDG_DATA_DIRS:-/usr/local/share:/usr/share}:" in
+        *":${flatpak_dir}:"*) ;;
+        *) XDG_DATA_DIRS="${flatpak_dir}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" ;;
+    esac
+done
+export XDG_DATA_DIRS
+
 # --- streaming server settings ---------------------------------------------
 export PIXELFLUX_WAYLAND=true
 export SELKIES_MODE=websockets

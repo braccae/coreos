@@ -24,6 +24,7 @@ RUN dnf5 install -y \
     vte291 \
     jq tar gzip ca-certificates curl \
     xorg-x11-xauth \
+    vulkan-tools \
     && dnf5 clean all
 
 # --- Selkies streaming server -----------------------------------------------
@@ -62,6 +63,17 @@ COPY rootfs/webtop/ /
 # Replace nginx default config
 RUN rm -f /etc/nginx/conf.d/default.conf
 
+# --- container DNS ----------------------------------------------------------
+# podman provides /etc/resolv.conf for the container. NetworkManager would
+# replace it with the container's DHCP DNS (typically 169.254.1.1) and
+# systemd-resolved has no usable upstream inside the container, while Fedora's
+# nsswitch then stops at "resolve [!UNAVAIL=return]" before reaching "dns".
+# Keep podman's resolv.conf and resolve through it directly.
+RUN mkdir -p /etc/NetworkManager/conf.d && \
+    printf '[main]\ndns=none\n' > /etc/NetworkManager/conf.d/99-webtop-dns.conf && \
+    sed -i 's/^hosts:.*/hosts:      files dns/' /etc/nsswitch.conf && \
+    systemctl disable systemd-resolved.service 2>/dev/null; true
+
 # Webtop User setup
 RUN useradd -m -u 1000 -G wheel webtop && \
     usermod -U webtop && \
@@ -69,7 +81,9 @@ RUN useradd -m -u 1000 -G wheel webtop && \
     echo "webtop ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/webtop
 
 RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
-    chmod +x /usr/local/bin/start-webtop.sh && \
+    chmod +x /usr/local/bin/start-webtop.sh \
+              /usr/local/bin/webtop-gpu-report \
+              /usr/local/bin/webtop-appimage-run && \
     (setcap -r /usr/bin/kwin_wayland || true) && \
     systemctl enable webtop.service
 

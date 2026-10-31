@@ -1,13 +1,27 @@
 [Unit]
 Description=Fedora KDE Webtop Container with Selkies (Pixelflux Wayland)
 After=network-online.target
+Wants=network-online.target
 
 [Container]
-Image=grcr.io/braccae/webtop:latest
+ContainerName=webtop
+Image=ghcr.io/braccae/webtop:latest
 PublishPort=3000:3000
+# GPU render node for hardware capture/encode. Remove for software rendering.
 AddDevice=/dev/dri
-Systemd=always
+# FUSE for AppImages (fusermount is setuid, the container's root needs SYS_ADMIN).
+AddDevice=/dev/fuse
+AddCapability=SYS_ADMIN
+# Flatpak needs to create namespaces; without these bwrap cannot mount /proc
+# ("Can't mount proc on /proc: Operation not permitted").
+SecurityLabelDisable=true
+SeccompProfile=unconfined
+PodmanArgs=--systemd=always --security-opt=unmask=all
+# Desktop state and system-wide Flatpak installs survive container updates.
 Volume=webtop-home:/home/webtop
+Volume=webtop-flatpak:/var/lib/flatpak
+# Optional: ROCm/OpenCL on AMD GPUs.
+#AddDevice=/dev/kfd
 
 [Service]
 Restart=always

@@ -133,10 +133,22 @@ podman run -d \
   --name webtop-run \
   --systemd=always \
   --device /dev/dri \
+  --device /dev/fuse \
+  --cap-add SYS_ADMIN \
+  --security-opt seccomp=unconfined \
+  --security-opt label=disable \
+  --security-opt unmask=all \
   --volume webtop-home:/home/webtop \
+  --volume webtop-flatpak:/var/lib/flatpak \
   -p 3000:3000 \
   localhost/fedora-webtop:latest
 ```
+
+`/dev/dri` enables hardware capture/encode (omit it for software rendering).
+`/dev/fuse` + `SYS_ADMIN` + `seccomp=unconfined` + `label=disable` +
+`unmask=all` are required for Flatpak and FUSE AppImages. See [docs/webtop.md](docs/webtop.md) for GPU passthrough, Flatpak,
+AppImage and virgl details, and verify the result with
+`podman exec webtop-run webtop-gpu-report`.
 
 After starting, navigate to `http://localhost:3000` in your web browser to access the interactive Fedora KDE desktop! All your custom desktop preferences, configurations, and files inside `/home/webtop` will be persisted!
 
