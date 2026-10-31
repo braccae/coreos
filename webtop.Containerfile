@@ -30,7 +30,10 @@ COPY --from=lscr.io/linuxserver/webtop:fedora-kde /lsiopy /lsiopy
 RUN ln -sf /usr/bin/python3 /lsiopy/bin/python3
 COPY --from=lscr.io/linuxserver/webtop:fedora-kde /usr/lib/selkies_joystick_interposer.so /usr/lib/
 COPY --from=lscr.io/linuxserver/webtop:fedora-kde /opt/lib/libudev.so.1.0.0-fake /opt/lib/
-COPY --from=lscr.io/linuxserver/webtop:fedora-kde /kwin-xwayland.py /usr/local/bin/kwin-xwayland.py
+# kwin-xwayland.py is NOT copied from the linuxserver image any more: upstream
+# stopped shipping /kwin-xwayland.py, and this repo has its own copy in
+# rootfs/webtop/usr/local/bin/kwin-xwayland.py (installed by the overlay COPY
+# below, before the chmod/entrypoint steps).
 
 # Build selkies-desktop since binary from F44 fails on F40/F43 glibc
 RUN git clone https://github.com/selkies-project/selkies-desktop.git /tmp/selkies-desktop && \

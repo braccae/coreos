@@ -20,8 +20,11 @@ RUN git clone https://github.com/chabad360/cockpit-docker.git \
 
 FROM base AS final
 
+# --allowerasing: the Alma base ships podman-docker, whose `docker` command
+# conflicts with docker-ce. Let the transaction replace the shim with the real
+# engine instead of failing the build.
 RUN dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo \
-    && dnf install -y \
+    && dnf install -y --allowerasing \
     docker-ce \
     docker-ce-cli \
     containerd.io \
