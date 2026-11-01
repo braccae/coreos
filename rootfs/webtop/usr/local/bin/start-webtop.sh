@@ -56,7 +56,12 @@ export SELKIES_PORT=8082
 # No browser login: the dashboard is the only entry point (matches the previous
 # behaviour of this image). Set SELKIES_ENABLE_BASIC_AUTH=true to require one.
 export SELKIES_ENABLE_BASIC_AUTH="${SELKIES_ENABLE_BASIC_AUTH:-false}"
-export SELKIES_ENCODER="${SELKIES_ENCODER:-h264enc,h265enc,vp8enc,vp9enc,av1enc,jpeg}"
+# H.264 is the only codec every browser can decode. Recent pixelflux builds
+# prefer VAAPI H.265 when the render node advertises it, which breaks clients
+# without HEVC (the dashboard reports "This session streams H.265 video, which
+# this browser cannot decode"). Keep H.264 as the default; set SELKIES_ENCODER
+# explicitly (e.g. h264enc,h265enc,...) when all clients support HEVC.
+export SELKIES_ENCODER="${SELKIES_ENCODER:-h264enc}"
 export SELKIES_RATE_CONTROL_MODE="${SELKIES_RATE_CONTROL_MODE:-crf,cbr}"
 # The nested-KWin session cannot grow a screen (KWin refuses the
 # zkde_screencast virtual output), so advertising "add screen" only produces
