@@ -130,7 +130,7 @@ COPY rootfs/webtop-alma/ /
 # the first connection does not log "Could not create upload directory".
 RUN mkdir -p /home/core/Desktop /home/core/Downloads /etc/webtop-alma && \
     chown -R core:core /home/core && \
-    chmod +x /usr/local/bin/start-webtop.sh && \
+    chmod +x /usr/local/bin/start-webtop.sh /usr/local/bin/socket-activate-shim && \
     systemctl enable webtop.service
 
 # EPEL's kwin_wayland ships cap_sys_nice=ep. Rootless containers drop that
