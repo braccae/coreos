@@ -11,6 +11,10 @@ PublishPort=3000:3000
 AddDevice=/dev/dri
 # FUSE for AppImages (fusermount is setuid, the container's root needs SYS_ADMIN).
 AddDevice=/dev/fuse
+# TUN for WireGuard clients (Tailscale, Cloudflare WARP). Rootless pasta owns the
+# container netns, so NET_ADMIN + /dev/net/tun is enough to create tun/wireguard
+# interfaces and get the client's overlay IP; no host network access is needed.
+AddDevice=/dev/net/tun
 # CEF/Chromium (Steam, Discover, Bazaar) needs more than podman's 64 MB
 # /dev/shm or steamwebhelper crash-loops. For a pod, pass
 # --shm-size=1g to `podman pod create` instead.
