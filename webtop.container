@@ -1,12 +1,23 @@
 [Unit]
 Description=Fedora KDE Webtop Container with Selkies (Pixelflux Wayland)
-After=network-online.target
+After=network-online.target webtop.socket
 Wants=network-online.target
+# The socket unit owns the WebUI listener and starts this container on the
+# first connection, passing the listening fd into the container.
+Requires=webtop.socket
 
 [Container]
 ContainerName=webtop
 Image=ghcr.io/braccae/webtop:latest
-PublishPort=3000:3000
+# Socket-activated ingress: webtop.socket binds 127.0.0.1:3000 (or a Unix
+# socket) and Podman passes the fd in as LISTEN_FDS. Do not also publish 3000
+# here: that would collide with the socket and route through pasta.
+Network=pasta:--ns-ifname=eth0,--address=192.0.2.2/24,--gateway=192.0.2.1
+DNS=1.1.1.1
+DNS=9.9.9.9
+# Hands the socket-activated fd to systemd-socket-proxyd before exec'ing
+# systemd; a plain `podman run` falls through to systemd unchanged.
+Entrypoint=/usr/local/bin/webtop-entrypoint
 # GPU render node for hardware capture/encode. Remove for software rendering.
 AddDevice=/dev/dri
 # FUSE for AppImages (fusermount is setuid, the container's root needs SYS_ADMIN).
@@ -16,8 +27,7 @@ AddDevice=/dev/fuse
 # interfaces and get the client's overlay IP; no host network access is needed.
 AddDevice=/dev/net/tun
 # CEF/Chromium (Steam, Discover, Bazaar) needs more than podman's 64 MB
-# /dev/shm or steamwebhelper crash-loops. For a pod, pass
-# --shm-size=1g to `podman pod create` instead.
+# /dev/shm or steamwebhelper crash-loops.
 ShmSize=1g
 AddCapability=SYS_ADMIN
 # NetworkManager needs NET_ADMIN to take ownership of the pasta tap instead of
@@ -32,7 +42,7 @@ PidsLimit=8192
 # ("Can't mount proc on /proc: Operation not permitted").
 SecurityLabelDisable=true
 SeccompProfile=unconfined
-PodmanArgs=--systemd=always --security-opt=unmask=all
+PodmanArgs=--pull=never --systemd=always --security-opt=unmask=all
 # bootc layout: the image is read-only, /home is a symlink to /var/home, and
 # only /var and /etc are writable. Persist exactly those two; /home, Flatpaks,
 # WARP state and the AppStream cache live under /var, and /etc is merged from
@@ -43,7 +53,6 @@ Volume=webtop-etc:/etc
 #AddDevice=/dev/kfd
 
 [Service]
-Restart=always
+TimeoutStopSec=20
 
-[Install]
-WantedBy=multi-user.target default.target
+# No [Install]: webtop.socket starts this unit on the first connection.

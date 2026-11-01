@@ -1,0 +1,12 @@
+[Unit]
+Description=Webtop WebUI socket
+
+[Socket]
+# TCP listener for direct browser access. For a host reverse proxy, replace
+# this with the Unix socket and uncomment SocketMode:
+#   ListenStream=%t/webtop-web.sock
+#   SocketMode=0600
+ListenStream=127.0.0.1:3000
+
+[Install]
+WantedBy=sockets.target
