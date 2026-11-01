@@ -176,10 +176,12 @@ export WAYLAND_DISPLAY=wayland-0
 dbus-update-activation-environment --all 2>/dev/null || true
 
 # --- polkit agent ----------------------------------------------------------
-if [ -f /usr/lib/libexec/polkit-kde-authentication-agent-1 ]; then
-    /usr/lib/libexec/polkit-kde-authentication-agent-1 &
-elif [ -f /usr/libexec/polkit-kde-authentication-agent-1 ]; then
+if [ -x /usr/libexec/kf6/polkit-kde-authentication-agent-1 ]; then
+    /usr/libexec/kf6/polkit-kde-authentication-agent-1 &
+elif [ -x /usr/libexec/polkit-kde-authentication-agent-1 ]; then
     /usr/libexec/polkit-kde-authentication-agent-1 &
+elif [ -x /usr/lib/libexec/polkit-kde-authentication-agent-1 ]; then
+    /usr/lib/libexec/polkit-kde-authentication-agent-1 &
 fi
 
 # --- desktop ---------------------------------------------------------------
