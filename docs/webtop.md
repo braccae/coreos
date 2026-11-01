@@ -46,7 +46,9 @@ podman run -d \
 | `--security-opt unmask=all` | Podman's masked `/proc` paths prevent `bwrap` from mounting a fresh `/proc` inside its sandbox. |
 
 The same settings are in the [`webtop.container`](../webtop.container) quadlet
-(`AddDevice`, `AddCapability`, `SecurityLabelDisable`, volumes).
+(`AddDevice`, `AddCapability`, `SecurityLabelDisable`, volumes). That quadlet
+uses socket activation instead of `-p 3000:3000`; see
+[Socket activation](#socket-activation-native-rootless-ingress).
 
 Verify the graphics stack inside the running container:
 
@@ -65,6 +67,63 @@ terminate HTTPS in front of the container or use an SSH tunnel:
 ssh -N -L 127.0.0.1:3000:127.0.0.1:3000 user@host
 # then browse http://127.0.0.1:3000
 ```
+
+### Socket activation (native rootless ingress)
+
+Rootless Podman forwards published ports through pasta, a userspace TCP stack.
+A systemd socket avoids that path: `webtop.socket` binds the listener on the
+host, Podman passes the fd into the container (`LISTEN_FDS=1`,
+`LISTEN_PID=1`), and `/usr/local/bin/webtop-entrypoint` hands it to
+`systemd-socket-proxyd` before exec'ing systemd. Traffic goes
+host socket → kernel → proxy → Selkies, with no pasta hop.
+
+```ini
+# ~/.config/systemd/user/webtop.socket
+[Unit]
+Description=Webtop WebUI socket
+
+[Socket]
+ListenStream=127.0.0.1:3000
+# For a host reverse proxy instead:
+# ListenStream=%t/webtop-web.sock
+# SocketMode=0600
+
+[Install]
+WantedBy=sockets.target
+```
+
+The container unit must reference the socket, use the entrypoint, and must
+**not** publish 3000 or install itself:
+
+```ini
+# ~/.config/containers/systemd/webtop.container (changes only)
+[Unit]
+Requires=webtop.socket
+After=webtop.socket
+
+[Container]
+Network=pasta:--ns-ifname=eth0,--address=192.0.2.2/24,--gateway=192.0.2.1
+Entrypoint=/usr/local/bin/webtop-entrypoint
+PodmanArgs=--pull=never --systemd=always --security-opt=unmask=all
+# no PublishPort, no [Service] Restart=, no [Install]
+```
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now webtop.socket
+# first connect cold-boots the desktop (~30-60 s); the request is queued
+curl --max-time 300 http://127.0.0.1:3000/
+```
+
+Keep `Restart=` off the container unit: when the desktop exits, the next
+connection starts it again. `PodmanArgs=--pull=never` keeps the cold start from
+checking the registry. If the browser gives up before the session reaches
+`8082`, a refresh after boot is served normally.
+
+For a Caddy/nginx edge, replace `ListenStream` with the Unix socket. The socket
+file is created by the host's systemd, not by the container, so there is no
+bind-mounted socket for SELinux to label; the container only inherits the fd.
+Everything else in `webtop.container` (devices, caps, volumes) is unchanged.
 
 ---
 
@@ -285,33 +344,25 @@ only). No DHCP is used: pasta's DHCP server does not reliably answer after NM
 flushes the link, so the service reads the current address/gateway from the tap
 and writes a static profile on every boot.
 
-For a **pod** deployment, give the pasta interface a stable name and add the
-capability to the container:
-
-```ini
-# webtop.pod
-[Pod]
-PodName=webtop
-PublishPort=3000:3000
-DNS=1.1.1.1
-DNS=9.9.9.9
-Network=pasta:--ns-ifname=eth0,--address=192.0.2.2/24,--gateway=192.0.2.1
-```
+Give the pasta interface a stable name and add the capability to the container
+(`webtop.container` is standalone; `webtop.socket` provides the ingress):
 
 ```ini
 # webtop.container
 [Container]
+Network=pasta:--ns-ifname=eth0,--address=192.0.2.2/24,--gateway=192.0.2.1
 AddCapability=NET_ADMIN
 ```
 
-`--address`/`--gateway` give each pod its own identity instead of copying the
-host address into every namespace. `192.0.2.0/24` is RFC 5737 TEST-NET-1,
-reserved for documentation, so it cannot collide with a real LAN, Podman's
-rootless/netavark bridges (`10.88.0.0/16`, `10.89.0.0/16`), WARP
+`--address`/`--gateway` give each container its own identity instead of
+copying the host address into every namespace. `192.0.2.0/24` is RFC 5737
+TEST-NET-1, reserved for documentation, so it cannot collide with a real LAN,
+Podman's rootless/netavark bridges (`10.88.0.0/16`, `10.89.0.0/16`), WARP
 (`172.16.0.0/12`, `10.64.0.0/24`) or Tailscale (`100.64.0.0/10`). Use `.2`,
-`.3`, … per pod with `.1` as the gateway. The address is local to the pod's
-network namespace: pasta still translates egress to the host address, and
-nothing on the LAN can dial it — publish ports for inbound access.
+`.3`, … per container with `.1` as the gateway. The address is local to the
+container's network namespace: pasta still translates egress to the host
+address, and nothing on the LAN can dial it — publish a port or use
+`webtop.socket` for inbound access.
 
 On a plain `podman run`,
 `--network pasta:--ns-ifname=eth0,--address=192.0.2.2/24,--gateway=192.0.2.1 --cap-add NET_ADMIN`
@@ -337,6 +388,8 @@ resolver is not reachable from the container netns. The image sets
 
 | Symptom | Cause / fix |
 | --- | --- |
+| First `webtop.socket` connection hangs or resets | The desktop is cold-booting; the request is queued until Selkies binds `127.0.0.1:8082`. Wait for the boot and refresh. `systemctl --user status webtop.socket webtop.service`, and check `ss -ltn` shows the user systemd on port 3000 rather than pasta. |
+| `webtop.service` starts at boot without the socket fd | The container unit still has `[Install]` or `Restart=always`. Remove both, `systemctl --user daemon-reload`, then let the socket start it on the first connection. |
 | `bwrap: Creating new namespace failed` | Missing `--cap-add SYS_ADMIN`. |
 | `bwrap: Can't mount devpts … Permission denied` | Missing `--security-opt label=disable`. |
 | `bwrap: Can't mount proc on /proc: Operation not permitted` | Missing `--security-opt seccomp=unconfined` or `--security-opt unmask=all`. |

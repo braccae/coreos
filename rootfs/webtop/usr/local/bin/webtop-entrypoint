@@ -1,0 +1,30 @@
+#!/bin/bash
+# Entrypoint for the socket-activated Webtop container.
+#
+# Podman passes the systemd .socket listener into the container as fd 3 and
+# sets LISTEN_FDS=1 and LISTEN_PID=1. The desktop needs systemd as PID 1, so
+# hand the fd to systemd-socket-proxyd in the background and exec systemd
+# immediately. The first client stays queued on the listening socket while the
+# desktop boots; the proxy starts once Selkies binds its loopback port.
+#
+# Without socket activation (a plain `podman run`), just exec systemd.
+set -u
+
+if [ "${LISTEN_FDS:-0}" = 1 ] && [ "${LISTEN_PID:-0}" = 1 ]; then
+    (
+        # The first connection is queued in the listen backlog; do not accept
+        # it until the stream server can answer.
+        for _ in $(seq 1 180); do
+            ss -ltn 2>/dev/null | grep -q '127\.0\.0\.1:8082' && break
+            sleep 1
+        done
+        # Keep the listening fd in this subshell and restart the proxy if it
+        # ever exits. LISTEN_PID must match the exec'd proxy process.
+        while :; do
+            sh -c 'LISTEN_PID=$$; export LISTEN_PID; exec /usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:8082'
+            sleep 1
+        done
+    ) &
+fi
+
+exec /usr/lib/systemd/systemd
