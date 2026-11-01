@@ -1,0 +1,10 @@
+[Unit]
+Description=Wait for Tailscale before starting WARP
+Documentation=file:/usr/local/bin/webtop-wait-tailscale
+After=tailscaled.service
+Before=warp-svc.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/webtop-wait-tailscale
+TimeoutStartSec=40
