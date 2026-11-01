@@ -1,0 +1,16 @@
+[Unit]
+Description=Refresh Flatpak AppStream metadata for Bazaar
+After=network-online.target NetworkManager.service webtop-nm-uplink.service
+Wants=network-online.target webtop-nm-uplink.service
+Before=graphical.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/flatpak update --appstream -y
+Restart=on-failure
+RestartSec=60
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=multi-user.target

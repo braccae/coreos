@@ -16,20 +16,22 @@ RUN mkdir -p /tmp/srpm /tmp/rpmbuild/BUILD /tmp/rpmbuild/RPMS /tmp/rpmbuild/SOUR
     dnf5 builddep -y /tmp/rpmbuild/SPECS/plasma-nm.spec && \
     rpmbuild -bb --nodeps --define "_topdir /tmp/rpmbuild" /tmp/rpmbuild/SPECS/plasma-nm.spec
 
-FROM ghcr.io/ublue-os/bazzite:stable-44 as base
+# Dogfood the published workstation image (same bazzite base plus this
+# repository's desktop configuration) instead of the bare ublue base.
+FROM ghcr.io/braccae/workstation:latest as base
 
 USER root
 
 # Cloudflare WARP client. The repo file is vendored in repos/ and installed
-# here because this image does not COPY the repos/ directory. Units are left
-# disabled: the client needs registration, so admins opt in with
-# `systemctl enable --now warp-svc`.
+# here because this image does not COPY the repos/ directory. The daemon is
+# enabled so the client can initialise; a registration is per-user and must be
+# created once with `warp-cli registration new` (it lives in /var).
 # Bazzite ships /opt as a symlink to var/opt and /var/opt is absent, so create
 # it first or rpm cannot unpack /opt/cloudflare-warp (cpio: mkdir failed).
 COPY repos/cloudflare-warp.repo /etc/yum.repos.d/
 RUN mkdir -p /var/opt && \
     dnf5 install -y --setopt=install_weak_deps=False cloudflare-warp && \
-    systemctl disable warp-svc && \
+    systemctl enable warp-svc && \
     dnf5 clean all
 
 # --- patched plasma-nm -------------------------------------------------------
@@ -113,6 +115,13 @@ RUN useradd -m -u 1000 -G wheel webtop && \
     passwd -d webtop && \
     echo "webtop ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/webtop
 
+# Unprivileged ping: Fedora's iputils ships no file capabilities and the
+# container's ping_group_range is 65534 only, so `ping` as webtop fails with
+# "Operation not permitted". Setting cap_net_raw on the binary makes iputils
+# try SOCK_RAW, which rootless pasta cannot grant, so instead widen the
+# ping_group_range in /etc/sysctl.d/50-webtop-ping.conf.
+# Steam's runtime calls /sbin/ldconfig; Fedora 44 ships /usr/bin/ldconfig only,
+# which makes the client abort in surface_linux.cpp (glXChooseVisual).
 RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
     systemctl disable cardwired.service 2>/dev/null || true; \
     chmod +x /usr/local/bin/start-webtop.sh \
@@ -120,6 +129,8 @@ RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
               /usr/local/bin/webtop-appimage-run \
               /usr/local/bin/webtop-nm-uplink && \
     (setcap -r /usr/bin/kwin_wayland || true) && \
-    systemctl enable webtop.service webtop-nm-uplink.service
+    ([ -e /usr/sbin/ldconfig ] || ln -s ../bin/ldconfig /usr/sbin/ldconfig) && \
+    systemctl enable webtop.service webtop-nm-uplink.service \
+                     webtop-flatpak-appstream.service
 
 ENTRYPOINT [ "/usr/lib/systemd/systemd" ]
