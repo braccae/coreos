@@ -174,9 +174,10 @@ podman run ... --device /dev/dri ...
 cannot open it add the host render group with `--group-add keep-groups` (rootless)
 or the numeric group id.
 
-The image already ships the Mesa drivers relevant to this:
+The image already ships the drivers relevant to this:
 
 * `radeonsi_dri.so` / `radeonsi_drv_video.so` (AMD OpenGL + VA-API)
+* `iHD_drv_video.so` from `libva-intel-media-driver` (Intel Arc/Gen VA-API)
 * `virtio_gpu_dri.so` / `virtio_gpu_drv_video.so` (QEMU virtio-gpu / virgl)
 * `mesa-vulkan-drivers`, `vulkan-loader`, `vulkan-tools`
 * `libva`, `libva-utils` (`vainfo`)
@@ -199,8 +200,9 @@ podman exec webtop webtop-gpu-report
 ```
 
 Expected on a working AMD setup: `renderD128 (read/write)`, a `radeonsi` Vulkan
-device, and `VAProfileH264…`/`VAProfileHEVC…` entries. `llvmpipe` / `virtio_gpu`
-means software rendering.
+device, and `VAProfileH264…`/`VAProfileHEVC…` entries. On Intel Arc/Gen the
+VA-API line reads `Driver version: Intel iHD driver …` instead. `llvmpipe` /
+`virtio_gpu` means software rendering.
 
 ### virgl (QEMU)
 
@@ -293,7 +295,7 @@ PodName=webtop
 PublishPort=3000:3000
 DNS=1.1.1.1
 DNS=9.9.9.9
-Network=pasta:--ns-ifname=eth0
+Network=pasta:--ns-ifname=eth0,--address=192.0.2.2/24,--gateway=192.0.2.1
 ```
 
 ```ini
@@ -302,7 +304,17 @@ Network=pasta:--ns-ifname=eth0
 AddCapability=NET_ADMIN
 ```
 
-On a plain `podman run`, `--network pasta:--ns-ifname=eth0 --cap-add NET_ADMIN`
+`--address`/`--gateway` give each pod its own identity instead of copying the
+host address into every namespace. `192.0.2.0/24` is RFC 5737 TEST-NET-1,
+reserved for documentation, so it cannot collide with a real LAN, Podman's
+rootless/netavark bridges (`10.88.0.0/16`, `10.89.0.0/16`), WARP
+(`172.16.0.0/12`, `10.64.0.0/24`) or Tailscale (`100.64.0.0/10`). Use `.2`,
+`.3`, … per pod with `.1` as the gateway. The address is local to the pod's
+network namespace: pasta still translates egress to the host address, and
+nothing on the LAN can dial it — publish ports for inbound access.
+
+On a plain `podman run`,
+`--network pasta:--ns-ifname=eth0,--address=192.0.2.2/24,--gateway=192.0.2.1 --cap-add NET_ADMIN`
 has the same effect. Without `NET_ADMIN` the service logs a warning, leaves the
 container's original networking untouched, and the icon stays "unavailable".
 
@@ -336,6 +348,7 @@ resolver is not reachable from the container netns. The image sets
 | `This session streams H.265 video, which this browser cannot decode` | The default encoder is H.264. If `SELKIES_ENCODER` is overridden to include `h265enc`, the client must support HEVC; remove it to restore H.264. |
 | `cardwired.service` restart loop | Bazzite's Cardwire daemon needs eBPF/LSM and cannot run in the container (`CardwireEbpfError(LSMNotEnabled)`). The image disables it; re-enabling only restores the restart loop. |
 | `ping: socket: Operation not permitted` | Fedora's `ping` has no file capabilities and the container's `ping_group_range` is `65534` only. The image sets `cap_net_raw+ep` on `/usr/bin/ping`; if a deployment strips capabilities (e.g. `--security-opt no-new-privileges`), restore it or use `sudo ping`/`curl` for reachability. |
+| `sudo: pam_open_session: Permission denied` | Rootless user namespaces lack `CAP_SYS_RESOURCE`, so the stock `/etc/pam.d/sudo` `pam_limits.so` session line fails. The launcher removes that line at boot; `run0` also works. |
 | `warp-cli status` → `Unable … Registration Missing` | The daemon is enabled by the image, but a WARP registration lives in `/var` and is per-deployment. Run `warp-cli registration new` (or `warp-cli registration token …`) once. |
 | Steam exits at `surface_linux.cpp … glXChooseVisual failed` | The Steam runtime needs `/sbin/ldconfig`; Fedora 44 ships `/usr/bin/ldconfig` only. The image creates `/usr/sbin/ldconfig`; keep it when rebasing. |
 | Bazaar shows empty catalog sections / "No Applications Found" | Flatpak AppStream metadata is missing or stale. The image runs `webtop-flatpak-appstream.service` at boot; force it with `flatpak update --appstream` and restart Bazaar. |

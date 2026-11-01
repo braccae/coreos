@@ -50,12 +50,14 @@ RUN set -e; \
     rpm -Uvh --replacepkgs --oldpackage $rpms; \
     rm -rf /tmp/plasma-nm-rpms
 
-# Runtime dependencies: nginx front-end, mesa/pciutils for the compositor,
-# xhost for KWin's Xwayland, and the venv tooling for Selkies.
+# Runtime dependencies: nginx front-end, mesa for the compositor and AMD
+# VA-API, the Intel iHD VA-API driver for Arc/Gen graphics, pciutils, xhost for
+# KWin's Xwayland, and the venv tooling for Selkies.
 RUN dnf5 install -y \
     nginx \
     python3-pip \
     mesa-dri-drivers \
+    libva-intel-media-driver \
     pciutils \
     vte291 \
     jq tar gzip ca-certificates curl \
