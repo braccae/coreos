@@ -302,5 +302,6 @@ resolver is not reachable from the container netns. The image sets
 | `warp-cli status` → `Unable … Registration Missing` | The daemon is enabled by the image, but a WARP registration lives in `/var` and is per-deployment. Run `warp-cli registration new` (or `warp-cli registration token …`) once. |
 | Steam exits at `surface_linux.cpp … glXChooseVisual failed` | The Steam runtime needs `/sbin/ldconfig`; Fedora 44 ships `/usr/bin/ldconfig` only. The image creates `/usr/sbin/ldconfig`; keep it when rebasing. |
 | Bazaar shows empty catalog sections / "No Applications Found" | Flatpak AppStream metadata is missing or stale. The image runs `webtop-flatpak-appstream.service` at boot; force it with `flatpak update --appstream` and restart Bazaar. |
+| Discover says "Application deployment is not enabled for this user" / install fails | The container has no logind session, so Fedora's Flatpak polkit rule (`subject.active && subject.local && wheel`) does not match. The image ships `49-webtop-flatpak.rules` and starts the agent from `/usr/libexec/kf6/`. Check with `pkcheck --action-id org.freedesktop.Flatpak.app-install --process $$`. |
 | No `VAProfile…` lines | Host GPU does not expose VA-API (e.g. virtio-gpu without virgl). |
 | Flatpak app missing from the menu | Install it, then log out/in of the session (KDE rebuilds the menu on `kbuildsycoca6`). |

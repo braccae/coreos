@@ -1,0 +1,24 @@
+/* Webtop runs without a logind seat, so Fedora's Flatpak rule in
+ * org.freedesktop.Flatpak.rules (which requires subject.active && subject.local
+ * && wheel) never matches and Discover/CLI installation fails with an
+ * authorization error. This is a single-user appliance: allow the desktop user
+ * to manage the system Flatpak installation without an agent. */
+polkit.addRule(function(action, subject) {
+    var allowed = [
+        "org.freedesktop.Flatpak.app-install",
+        "org.freedesktop.Flatpak.runtime-install",
+        "org.freedesktop.Flatpak.install-bundle",
+        "org.freedesktop.Flatpak.app-update",
+        "org.freedesktop.Flatpak.runtime-update",
+        "org.freedesktop.Flatpak.update-remote",
+        "org.freedesktop.Flatpak.modify-repo",
+        "org.freedesktop.Flatpak.configure-remote",
+        "org.freedesktop.Flatpak.app-uninstall",
+        "org.freedesktop.Flatpak.runtime-uninstall"
+    ];
+
+    if (allowed.indexOf(action.id) !== -1 &&
+        (subject.user == "webtop" || subject.isInGroup("wheel"))) {
+        return polkit.Result.YES;
+    }
+});
