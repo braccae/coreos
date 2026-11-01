@@ -137,6 +137,10 @@ RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
     # Fedora package installs /usr/bin/tailscaled; without this link the
     # service fails with 203/EXEC even with /dev/net/tun.
     ln -sf ../bin/tailscaled /usr/sbin/tailscaled && \
+    # Cloudflare WARP's firewall engine hardcodes /usr/sbin/nft, while Fedora
+    # installs /usr/bin/nft; without this link Connect fails with
+    # Firewall(ApplyError("No such file or directory")).
+    ln -sf ../bin/nft /usr/sbin/nft && \
     systemctl enable webtop.service webtop-nm-uplink.service \
                      webtop-flatpak-appstream.service; \
     # bootc-style /etc persistence: /etc is a volume, and the base image ships
