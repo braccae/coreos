@@ -20,7 +20,7 @@ This repository maintains 13 Containerfiles across two primary OS families: **Al
 | [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | Mobile developer workstation with GNOME desktop environment | Bazzite | `.github/workflows/container-laptop.yml` | Installs developer tooling, Ansible, Java, and Bazzite overlays. |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Containerized remote KDE Wayland desktop accessible over HTTP via Selkies | Bazzite | `.github/workflows/container-webtop.yml` | Experimental rootless desktop streaming container. Selkies 2.1 (pixelflux compositor, pcmflux audio), all units opt-in at boot. |
 | [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Primary desktop workstation image with KDE, ZFS, and virtualization tools | Bazzite | `.github/workflows/container-workstation.yml` | Production image; the previous modification freeze was lifted (migration to AlmaLinux is shelved). |
-| [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | Local KDE Plasma 6 desktop workstation (SDDM, virtualization, dev tooling) | AlmaLinux | `.github/workflows/container-workstation-alma.yml` | AlmaLinux equivalent of the Bazzite workstation image. |
+| [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | Bare-bones KDE Plasma 6 GUI base (Plasma Login Manager, Flatpak/Discover, hardware/filesystem/codec support) | AlmaLinux | `.github/workflows/container-workstation-alma.yml` | Base for derived GUI variants; applications come from Flatpak/AppImage. |
 
 ---
 
@@ -71,7 +71,7 @@ This repository maintains 13 Containerfiles across two primary OS families: **Al
 
 10. **[workstation-alma.Containerfile](workstation-alma.Containerfile)**
     - **Build Source**: `FROM ghcr.io/braccae/alma:latest`.
-    - **Role**: Local KDE Plasma 6 desktop workstation. Installs the KDE Plasma stack from EPEL, SDDM display manager (Wayland), virtualization tooling (virt-manager, QEMU/KVM), Java 21, and dev tooling (VS Code, GitHub CLI, pnpm).
+    - **Role**: Bare-bones KDE Plasma 6 GUI base. Installs the KDE Plasma Workspaces environment from EPEL, Plasma Login Manager (Wayland), Flatpak + Discover Flatpak backend, Konqueror, Dolphin/Dolphin plugins, and the hardware/filesystem/codec layer that cannot come from Flatpak/AppImage (VA-API, firmware, exFAT/NTFS/APFS, MTP, iOS, printing, Samba/CIFS, and game controllers via ELRepo `kmod-game-controllers`). Applications, dev tooling, virtualization, and gaming belong in derived variants.
     - **Overlay**: Copies `rootfs/workstation-alma/`.
     - **CI Note**: Automated CI workflow `.github/workflows/container-workstation-alma.yml`.
 

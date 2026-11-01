@@ -57,8 +57,8 @@ rootfs/
 │   ├── etc/systemd/            # ZRAM generator memory compression configuration
 │   ├── usr/lib/ostree/         # Workstation-specific prepare-root.conf
 │   └── usr/share/polkit-1/     # Desktop polkit rules (Bitwarden)
-└── workstation-alma/           # AlmaLinux KDE Plasma workstation overlay
-    ├── etc/sddm.conf.d/        # SDDM Wayland display-manager configuration
+└── workstation-alma/           # AlmaLinux KDE Plasma GUI base overlay
+    ├── etc/flatpak/remotes.d/  # System-wide Flathub remote
     ├── etc/systemd/            # ZRAM generator memory compression configuration
     ├── usr/local/bin/          # modinfo fallback helper for container builds
     └── usr/share/polkit-1/     # Desktop polkit rules (Bitwarden)
@@ -114,8 +114,8 @@ The bootc ostree sysroot preparation requires filesystem-aware mount and compose
 
 ### 7. `rootfs/workstation-alma/` (AlmaLinux Workstation Overlay)
 - **Target**: [workstation-alma.Containerfile](workstation-alma.Containerfile).
-- **Purpose**: Configures the local KDE Plasma 6 desktop on AlmaLinux:
-  - `etc/sddm.conf.d/10-wayland.conf`: selects the Wayland display server for SDDM and runs KWin Wayland as the greeter compositor.
+- **Purpose**: Configures the bare-bones KDE Plasma 6 GUI base on AlmaLinux:
+  - `etc/flatpak/remotes.d/flathub.flatpakrepo`: system-wide Flathub remote so Discover can install Flatpak applications.
   - `etc/systemd/zram-generator.conf`: enables ZRAM swap memory compression.
   - `usr/local/bin/modinfo`: fallback helper that resolves the in-image kernel version when the host kernel is not present under `/lib/modules` (build-time tooling).
   - `usr/share/polkit-1/actions/com.bitwarden.Bitwarden.policy`: Bitwarden vault-unlock polkit rule.
@@ -140,4 +140,4 @@ The table below documents which Containerfile copies which `rootfs` subdirectory
 | [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | `rootfs/workstation/` | `/` | Copies workstation overlay on top of Bazzite DX GNOME. |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/common/`<br>`rootfs/webtop/` | `/`<br>`/` | Selkies 2.1 in a pinned venv; nested KWin session; nginx front door on 3000. |
 | [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/btrfs_config/`<br>`rootfs/workstation/` | `/`<br>`/` | Production image (freeze lifted). Lines 63-64 (`non_btrfs/`, `common/`) are commented out. |
-| [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/workstation-alma/` | `/` | Inherits `rootfs/common/` and `rootfs/non_btrfs/` from the Alma base; adds SDDM + ZRAM + polkit workstation files. |
+| [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/workstation-alma/` | `/` | Inherits `rootfs/common/` and `rootfs/non_btrfs/` from the Alma base; adds the Flathub remote, ZRAM, and polkit workstation files. |
