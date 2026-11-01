@@ -9,6 +9,16 @@
 # to selkies on :8082.
 set -euo pipefail
 
+# sudo's PAM stack includes pam_limits, which cannot apply limits in a rootless
+# user namespace (no CAP_SYS_RESOURCE); sudo then aborts with
+# "pam_open_session: Permission denied". run0 works because it does not open a
+# PAM session. Drop that one line and leave the rest of system-auth intact.
+# Applied at boot because /etc is a persisted volume, so an image-only copy
+# would not reach an existing deployment.
+if [ -f /etc/pam.d/sudo ]; then
+    sed -i '/^[[:space:]]*session[[:space:]].*pam_limits\.so/d' /etc/pam.d/sudo || true
+fi
+
 # Rendering device permissions (only when /dev/dri is passed through).
 for dev in /dev/dri/renderD*; do
     [ -e "$dev" ] || continue
