@@ -104,7 +104,7 @@ After=webtop.socket
 [Container]
 Network=pasta:--ns-ifname=eth0,--address=192.0.2.2/24,--gateway=192.0.2.1
 Entrypoint=/usr/local/bin/webtop-entrypoint
-PodmanArgs=--pull=never --systemd=always --security-opt=unmask=all
+PodmanArgs=--hostname=webtop --pull=never --systemd=always --security-opt=unmask=all
 # no PublishPort, no [Service] Restart=, no [Install]
 ```
 
@@ -161,6 +161,12 @@ Both clients are installed and can run at the same time (verified with both
 * WARP: daemon enabled; register once with `warp-cli registration new` (or a
   token), then `warp-cli connect`. With a Teams registration the tunnel
   protocol is policy-controlled (MASQUE); WARP works once IPv6 is enabled.
+* WARP rewrites `/etc/resolv.conf` to its DoH resolver. Before the WARP tunnel
+  has a usable IPv6 route, that resolver can return only AAAA addresses for
+  `controlplane.tailscale.com`, so `tailscaled` fails to fetch its control key
+  and stays offline. `webtop-tailscale-first.service` runs before `warp-svc`
+  and waits up to 30 s for Tailscale to report online, so both clients connect
+  on a cold boot.
 
 A LAN-routable address still requires rootful macvlan; these give 100.x /
 172.16.x overlay IPs.
@@ -389,6 +395,7 @@ resolver is not reachable from the container netns. The image sets
 | Symptom | Cause / fix |
 | --- | --- |
 | First `webtop.socket` connection hangs or resets | The desktop is cold-booting; the request is queued until Selkies binds `127.0.0.1:8082`. Wait for the boot and refresh. `systemctl --user status webtop.socket webtop.service`, and check `ss -ltn` shows the user systemd on port 3000 rather than pasta. |
+| Tailscale shows `offline` after a cold boot while WARP is connected | WARP's DoH resolver returned AAAA-only addresses before its IPv6 route existed, so `tailscaled` could not fetch its control key. `webtop-tailscale-first.service` delays `warp-svc` until Tailscale is online; if it still happens, run `warp-cli disconnect; systemctl restart tailscaled; tailscale up; warp-cli connect`. |
 | `webtop.service` starts at boot without the socket fd | The container unit still has `[Install]` or `Restart=always`. Remove both, `systemctl --user daemon-reload`, then let the socket start it on the first connection. |
 | `bwrap: Creating new namespace failed` | Missing `--cap-add SYS_ADMIN`. |
 | `bwrap: Can't mount devpts … Permission denied` | Missing `--security-opt label=disable`. |

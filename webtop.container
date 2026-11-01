@@ -42,7 +42,7 @@ PidsLimit=8192
 # ("Can't mount proc on /proc: Operation not permitted").
 SecurityLabelDisable=true
 SeccompProfile=unconfined
-PodmanArgs=--pull=never --systemd=always --security-opt=unmask=all
+PodmanArgs=--hostname=webtop --pull=never --systemd=always --security-opt=unmask=all
 # bootc layout: the image is read-only, /home is a symlink to /var/home, and
 # only /var and /etc are writable. Persist exactly those two; /home, Flatpaks,
 # WARP state and the AppStream cache live under /var, and /etc is merged from

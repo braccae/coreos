@@ -1,0 +1,18 @@
+#!/bin/sh
+# WARP rewrites /etc/resolv.conf to its DoH resolver. Before the WARP tunnel
+# has a usable IPv6 route, that resolver can return only AAAA addresses for
+# controlplane.tailscale.com, so tailscaled fails to fetch its control key and
+# stays offline. Give tailscaled a bounded head start on the container's normal
+# resolver, then let WARP start even if the node is logged out.
+set -u
+
+i=0
+while [ "$i" -lt 30 ]; do
+    if tailscale status --json 2>/dev/null |
+        jq -e '.BackendState == "Running" and .Self.Online == true' >/dev/null 2>&1; then
+        exit 0
+    fi
+    i=$((i + 1))
+    sleep 1
+done
+exit 0

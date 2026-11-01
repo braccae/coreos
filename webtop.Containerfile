@@ -139,7 +139,8 @@ RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
               /usr/local/bin/webtop-gpu-report \
               /usr/local/bin/webtop-appimage-run \
               /usr/local/bin/webtop-nm-uplink \
-              /usr/local/bin/webtop-entrypoint && \
+              /usr/local/bin/webtop-entrypoint \
+              /usr/local/bin/webtop-wait-tailscale && \
     (setcap -r /usr/bin/kwin_wayland || true) && \
     ([ -e /usr/sbin/ldconfig ] || ln -s ../bin/ldconfig /usr/sbin/ldconfig) && \
     ln -sf ../bin/tailscaled /usr/sbin/tailscaled && \
