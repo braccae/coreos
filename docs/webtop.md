@@ -19,6 +19,7 @@ podman run -d \
   --systemd=always \
   --device /dev/dri \
   --device /dev/fuse \
+  --device /dev/net/tun \
   --cap-add SYS_ADMIN \
   --cap-add NET_ADMIN \
   --security-opt seccomp=unconfined \
@@ -35,6 +36,7 @@ podman run -d \
 | --- | --- |
 | `--device /dev/dri` | GPU render node for capture/encode (AMD, Intel, virtio-gpu/virgl). Omit for software rendering. |
 | `--device /dev/fuse` | AppImage self-mounting. |
+| `--device /dev/net/tun` | WireGuard clients (Tailscale, Cloudflare WARP) create `tun`/`wireguard` interfaces inside the container netns. `NET_ADMIN` is already required for NetworkManager; rootless pasta allows these interfaces. |
 | `--cap-add SYS_ADMIN` | FUSE mounting (AppImages) needs it in the container's user namespace; `fusermount3` is setuid so the unprivileged session can use it. `--privileged` is **not** required. |
 | `--cap-add NET_ADMIN` | Lets NetworkManager own the pasta tap instead of only *assuming* it, so the desktop network indicator reports a real connection. See [Network indicator](#network-indicator). |
 | `--pids-limit=8192` | Headroom for the session's threads. Podman's default limit is 2048, and systemd caps `webtop.service` at 15% of that (307 tasks) unless the unit raises it. With the shipped unit the service is unbounded, but the container ceiling still applies. |
