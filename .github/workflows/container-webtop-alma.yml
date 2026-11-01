@@ -57,8 +57,12 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          # :latest is published from the default branch only. Feature branches
+          # and PRs keep their own tag via type=ref,event=branch / event=pr, so
+          # a manual workflow_dispatch on a branch can never move :latest.
           tags: |
             type=raw,value=${{ env.VARIENT }}
+            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
             type=ref,event=branch
             type=ref,event=pr
@@ -199,10 +203,18 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # 6f9f17788090df1f26f669e9d70d6ae9567deba6
 
-      - name: Sign multi-arch manifest
+      - name: Sign multi-arch manifests
         run: |
           REPOSITORY="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
-          cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}:${{ env.VARIENT }}"
+          TAGS="${{ env.VARIENT }}"
+          # :latest only exists on the default branch, so only sign it there.
+          if [ "${{ github.ref }}" = "refs/heads/${{ github.event.repository.default_branch }}" ]; then
+            TAGS="$TAGS latest"
+          fi
+          for TAG in $TAGS; do
+            echo "Signing ${REPOSITORY}:${TAG}"
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}:${TAG}"
+          done
         env:
           COSIGN_EXPERIMENTAL: false
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
