@@ -133,6 +133,10 @@ RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
               /usr/local/bin/webtop-nm-uplink && \
     (setcap -r /usr/bin/kwin_wayland || true) && \
     ([ -e /usr/sbin/ldconfig ] || ln -s ../bin/ldconfig /usr/sbin/ldconfig) && \
+    # The workstation tailscaled unit calls /usr/sbin/tailscaled, but the
+    # Fedora package installs /usr/bin/tailscaled; without this link the
+    # service fails with 203/EXEC even with /dev/net/tun.
+    ln -sf ../bin/tailscaled /usr/sbin/tailscaled && \
     systemctl enable webtop.service webtop-nm-uplink.service \
                      webtop-flatpak-appstream.service; \
     # bootc-style /etc persistence: /etc is a volume, and the base image ships

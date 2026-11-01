@@ -84,6 +84,16 @@ sudo flatpak install -y flathub org.kde.kcalc
 flatpak run org.kde.kcalc
 ```
 
+### VPN clients (Tailscale, WARP)
+
+Both clients are installed. Pass `--device /dev/net/tun` (the quadlet does);
+rootless pasta owns the netns, so they can create their WireGuard interfaces
+and overlay addresses. `tailscaled` is enabled and starts with `tailscale0`;
+authenticate once with `tailscale up` (or `--authkey`). WARP's daemon is
+enabled; register once with `warp-cli registration new` (or a token). A
+LAN-routable address still requires rootful macvlan; these give 100.x / 172.16.x
+overlay IPs.
+
 ### Persistence (bootc layout)
 
 The image is built from a bootc base, so the root filesystem is read-only,
