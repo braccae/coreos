@@ -14,7 +14,10 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: webtop-alma
-  VARIENT: webtop-alma
+  # Same convention as the base Alma workflow: VARIENT is the rolling tag.
+  VARIENT: latest
+  # Kept separate from VARIENT: the tag is `latest`, the Containerfile is not.
+  CONTAINERFILE: webtop-alma.Containerfile
   IMAGE_NAME_BASE: "webtop-alma"
   IMAGE_DESC: "alma kde webtop (selkies)"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
@@ -57,12 +60,10 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-          # :latest is published from the default branch only. Feature branches
-          # and PRs keep their own tag via type=ref,event=branch / event=pr, so
-          # a manual workflow_dispatch on a branch can never move :latest.
+          # VARIENT is `latest`, so gate it to the default branch: a manual
+          # workflow_dispatch from a branch must not move :latest.
           tags: |
-            type=raw,value=${{ env.VARIENT }}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ env.VARIENT }},enable={{is_default_branch}}
             type=sha,format=short
             type=ref,event=branch
             type=ref,event=pr
@@ -72,7 +73,7 @@ jobs:
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
             org.opencontainers.image.description=${{ env.IMAGE_DESC }}
             org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/refs/heads/main/README.md
-            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/blob/main/${{ env.VARIENT }}.Containerfile
+            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}/blob/main/${{ env.CONTAINERFILE }}
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BASE }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
@@ -126,7 +127,7 @@ jobs:
         id: build
         with:
           context: .
-          containerfiles: ./${{ env.VARIENT }}.Containerfile
+          containerfiles: ./${{ env.CONTAINERFILE }}
           platforms: ${{ matrix.platform }}
           image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: ${{ needs.build-metadata.outputs.tags }}
@@ -203,18 +204,16 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # 6f9f17788090df1f26f669e9d70d6ae9567deba6
 
-      - name: Sign multi-arch manifests
+      - name: Sign multi-arch manifest
         run: |
           REPOSITORY="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
-          TAGS="${{ env.VARIENT }}"
-          # :latest only exists on the default branch, so only sign it there.
-          if [ "${{ github.ref }}" = "refs/heads/${{ github.event.repository.default_branch }}" ]; then
-            TAGS="$TAGS latest"
+          # VARIENT is `latest`, which is gated to the default branch, so a
+          # branch dispatch has nothing to sign.
+          if [ "${{ github.ref }}" != "refs/heads/${{ github.event.repository.default_branch }}" ]; then
+            echo "not the default branch; :${{ env.VARIENT }} is not published, skipping signature"
+            exit 0
           fi
-          for TAG in $TAGS; do
-            echo "Signing ${REPOSITORY}:${TAG}"
-            cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}:${TAG}"
-          done
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}:${{ env.VARIENT }}"
         env:
           COSIGN_EXPERIMENTAL: false
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
