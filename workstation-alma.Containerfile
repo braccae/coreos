@@ -31,8 +31,10 @@ RUN dnf -y group install \
     && dnf clean all
 
 # --- Core desktop pins, firmware, graphics/VA-API, codecs -------------------
-# Every package in this layer except falkon is already pulled by the group;
-# they are pinned so the base keeps its intended features if comps changes.
+# Most of these are already pulled by the group; they are pinned so the base
+# keeps its intended features if comps changes. GPU/CPU firmware and the
+# VA-API drivers are listed explicitly because EL10's linux-firmware wrapper
+# pulls no subpackages and the media stack must not depend on comps ordering.
 RUN dnf install -y \
         plasma-login-manager \
         flatpak \
@@ -48,17 +50,31 @@ RUN dnf install -y \
         kio-gdrive \
         kdenetwork-filesharing \
         plasma-print-manager \
+        plasma-nm \
+        kscreen \
+        kinfocenter \
+        plasma-systemmonitor \
+        kf6-kwallet \
+        bluedevil \
         kdnssd \
         dolphin \
         dolphin-plugins \
         konqueror \
         linux-firmware \
+        amd-gpu-firmware \
+        intel-gpu-firmware \
+        nvidia-gpu-firmware \
+        amd-ucode-firmware \
+        microcode_ctl \
         alsa-sof-firmware \
         alsa-firmware \
+        alsa-ucm \
+        alsa-tools-firmware \
         fwupd \
         libva \
         libva-utils \
         libva-intel-driver \
+        libva-intel-hybrid-driver \
         intel-media-driver \
         libva-nvidia-driver \
         mesa-dri-drivers \
@@ -104,9 +120,66 @@ RUN dnf install -y \
         cups-filters-driverless \
         cups-browsed \
         hplip \
+        cups \
+        cups-pk-helper \
+        ipp-usb \
+        sane-backends \
+        sane-backends-drivers-scanners \
+        sane-airscan \
+    && dnf clean all
+
+# --- Wireless, WWAN, Bluetooth, and firmware breadth ------------------------
+# linux-firmware on EL10 is only a wrapper: it requires linux-firmware-whence
+# and no firmware subpackages, so every wireless/GPU/audio blob has to be named
+# explicitly. The base image installs a subset; pinning the rest keeps Wi-Fi,
+# WWAN, USB Wi-Fi, DVB tuners, and newer Intel camera hardware working.
+#
+# NetworkManager-wifi/-bluetooth/-wwan are separate plugins: without them the
+# daemon cannot manage Wi-Fi, Bluetooth PAN, or mobile broadband at all.
+RUN dnf install -y \
+        iwlwifi-mvm-firmware \
+        iwlwifi-dvm-firmware \
+        iwlegacy-firmware \
+        qcom-firmware \
+        libertas-firmware \
+        dvb-firmware \
+        intel-vsc-firmware \
+        NetworkManager-wifi \
+        NetworkManager-bluetooth \
+        NetworkManager-wwan \
+        wpa_supplicant \
+        wireless-regdb \
+        ModemManager \
+        bluez-obexd \
+        iw \
+        ethtool \
+        pciutils \
+        usbutils \
+    && dnf clean all
+
+# --- Laptop sensors, fingerprint, smartcards, cameras ----------------------
+# iio-sensor-proxy: accelerometer/ambient light. libwacom: tablet metadata.
+# bolt: Thunderbolt authorization. tuned-ppd: the power-profiles D-Bus API
+# backed by the tuned daemon already present in the base image.
+RUN dnf install -y \
+        iio-sensor-proxy \
+        libwacom \
+        bolt \
+        fprintd \
+        fprintd-pam \
+        tuned-ppd \
+        lm_sensors \
+        smartmontools \
+        pcsc-lite \
+        pcsc-lite-ccid \
+        opensc \
+        v4l-utils \
+        libcamera-tools \
     && dnf clean all
 
 # --- Zeroconf, S3, game controllers, archives, remote apps ------------------
+# distrobox: containerised tooling on top of the podman and toolbox already in
+# the base image; applications themselves belong in Flatpak.
 RUN dnf install -y \
         avahi \
         avahi-tools \
@@ -117,6 +190,7 @@ RUN dnf install -y \
         sdl2-compat \
         libevdev \
         waypipe \
+        distrobox \
         7zip \
         unrar \
         zip \
@@ -124,6 +198,9 @@ RUN dnf install -y \
     && dnf clean all
 
 # --- ELRepo game-controller HID modules -------------------------------------
+# ELRepo is used for prebuilt weak-modules only. kernel-ml is never installed:
+# bootc supports exactly one kernel under /usr/lib/modules, and
+# `bootc container lint` fails when a second one appears.
 # ELRepo ships the in-tree xpad/hid-playstation/hid-nintendo modules that the
 # EL10 kernel package omits. The package is built for an older kernel; the
 # weak-modules call links it into the image kernel's weak-updates directory.
@@ -145,8 +222,26 @@ RUN rm -rf /var/cache/dnf /var/cache/PackageKit /var/cache/app-info \
 COPY rootfs/workstation-alma/ /
 
 # Graphical boot via Plasma Login Manager (Alias=display-manager.service).
+# Services that are D-Bus or udev activated (bolt, fprintd, iio-sensor-proxy,
+# ipp-usb) need no enablement; the units below are the ones that do:
+#   cups.socket/cups-browsed  driverless + discovered printers and scanners
+#   avahi-daemon.socket      mDNS/DNS-SD discovery (also for remote CUPS)
+#   tuned-ppd.service        power-profiles API for Plasma's powerdevil
+#   pcscd.socket             smartcard readers
+# firewalld blocks mDNS on the public zone, which breaks automatic printer and
+# scanner discovery; allow the service permanently. Fingerprint login needs
+# the authselect feature in addition to fprintd-pam.
 RUN systemctl set-default graphical.target && \
-    systemctl enable plasmalogin.service
+    systemctl enable plasmalogin.service \
+        cups.socket \
+        cups-browsed.service \
+        avahi-daemon.socket \
+        bluetooth.service \
+        tuned-ppd.service \
+        ModemManager.service \
+        pcscd.socket && \
+    firewall-offline-cmd --zone=public --add-service=mdns && \
+    authselect enable-feature with-fingerprint
 
 RUN bootc container lint
 

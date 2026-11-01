@@ -71,7 +71,7 @@ This repository maintains 13 Containerfiles across two primary OS families: **Al
 
 10. **[workstation-alma.Containerfile](workstation-alma.Containerfile)**
     - **Build Source**: `FROM ghcr.io/braccae/alma:latest`.
-    - **Role**: Bare-bones KDE Plasma 6 GUI base. Installs the KDE Plasma Workspaces environment from EPEL, Plasma Login Manager (Wayland), Flatpak + Discover Flatpak backend, Konqueror, Dolphin/Dolphin plugins, and the hardware/filesystem/codec layer that cannot come from Flatpak/AppImage (VA-API, firmware, exFAT/NTFS/APFS, MTP, iOS, printing, Samba/CIFS, and game controllers via ELRepo `kmod-game-controllers`). Applications, dev tooling, virtualization, and gaming belong in derived variants.
+    - **Role**: Bare-bones KDE Plasma 6 GUI base. Installs the KDE Plasma Workspaces environment from EPEL, Plasma Login Manager (Wayland), Flatpak + Discover Flatpak backend, Konqueror, Dolphin/Dolphin plugins, and the hardware/filesystem/codec layer that cannot come from Flatpak/AppImage: Intel VA-API, Mesa/Vulkan, full firmware breadth (GPU, Intel Wi-Fi, USB Wi-Fi, WWAN, DVB, Intel camera), dual-vendor CPU microcode, `NetworkManager-wifi`/`-bluetooth`/`-wwan`, ModemManager, fingerprint/sensor/Thunderbolt/smartcard support, CUPS driverless printing and SANE/airscan scanning, exFAT/NTFS/APFS, MTP, iOS, Samba/CIFS, `distrobox`, and game controllers via ELRepo `kmod-game-controllers`. Applications, dev tooling, virtualization, and gaming belong in derived variants.
     - **Overlay**: Copies `rootfs/workstation-alma/`.
     - **CI Note**: Automated CI workflow `.github/workflows/container-workstation-alma.yml`.
 
