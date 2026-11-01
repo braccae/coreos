@@ -296,6 +296,7 @@ resolver is not reachable from the container netns. The image sets
 | `webtop-gpu-report` shows `llvmpipe` | No usable render node (software VM, or `/dev/dri` not passed). |
 | Network icon shows a red cross | Missing `NET_ADMIN`, or the uplink is not named `eth0` (`Network=pasta:--ns-ifname=eth0`). Check `podman exec webtop nmcli device status` and `journalctl -u webtop-nm-uplink`. |
 | Panel stops updating but windows still open/close | The session ran out of threads: `QThread::start: Thread creation error (Resource temporarily unavailable)` in the journal, and `systemctl show webtop -p TasksMax` low. The shipped unit sets `TasksMax=infinity`; the deployment must also raise the container limit (`PidsLimit=8192` or `--pids-limit=8192`). |
+| `This session streams H.265 video, which this browser cannot decode` | The default encoder is H.264. If `SELKIES_ENCODER` is overridden to include `h265enc`, the client must support HEVC; remove it to restore H.264. |
 | `cardwired.service` restart loop | Bazzite's Cardwire daemon needs eBPF/LSM and cannot run in the container (`CardwireEbpfError(LSMNotEnabled)`). The image disables it; re-enabling only restores the restart loop. |
 | No `VAProfile…` lines | Host GPU does not expose VA-API (e.g. virtio-gpu without virgl). |
 | Flatpak app missing from the menu | Install it, then log out/in of the session (KDE rebuilds the menu on `kbuildsycoca6`). |
