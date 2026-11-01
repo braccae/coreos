@@ -28,8 +28,17 @@ export DISPLAY=:0
 
 # --- streaming server settings ---------------------------------------------
 export PIXELFLUX_WAYLAND=true
-export SELKIES_ADDR=0.0.0.0
-export SELKIES_PORT=3000
+# Two listen modes:
+#   SELKIES_UNIX_SOCKET set   -> bind a Unix domain socket, no TCP at all.
+#                                Used by the socket-activated rootless quadlet.
+#   otherwise                 -> TCP on SELKIES_ADDR/SELKIES_PORT, which is what
+#                                the published-port rootful quadlet expects.
+if [ -n "${SELKIES_UNIX_SOCKET:-}" ]; then
+    export SELKIES_UNIX_SOCKET
+else
+    export SELKIES_ADDR="${SELKIES_ADDR:-0.0.0.0}"
+    export SELKIES_PORT="${SELKIES_PORT:-3000}"
+fi
 export SELKIES_BASIC_AUTH_PASSWORD="${SELKIES_BASIC_AUTH_PASSWORD:-webtop}"
 export SELKIES_BASIC_AUTH_ENABLED="${SELKIES_BASIC_AUTH:-true}"
 export SELKIES_ENCODER="${SELKIES_ENCODER:-h264enc,h265enc,vp8enc,vp9enc,av1enc,jpeg}"
@@ -73,7 +82,12 @@ LD_PRELOAD= wireplumber &
 pipewire-pulse &
 
 # --- selkies: built-in compositor on wayland-1 -----------------------------
-/opt/selkies/bin/selkies --addr="$SELKIES_ADDR" --port="$SELKIES_PORT" \
+if [ -n "${SELKIES_UNIX_SOCKET:-}" ]; then
+    selkies_listen=(--unix-socket="$SELKIES_UNIX_SOCKET")
+else
+    selkies_listen=(--addr="$SELKIES_ADDR" --port="$SELKIES_PORT")
+fi
+/opt/selkies/bin/selkies "${selkies_listen[@]}" \
     --enable-basic-auth="$SELKIES_BASIC_AUTH_ENABLED" &
 SELKIES_PID=$!
 

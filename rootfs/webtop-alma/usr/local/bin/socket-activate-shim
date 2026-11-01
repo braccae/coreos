@@ -1,0 +1,84 @@
+#!/bin/bash
+# socket-activate-shim
+#
+# Hand systemd's inherited listening descriptor(s) to systemd-socket-proxyd,
+# forward them to an in-container Unix socket, then make systemd PID 1.
+#
+# This container always runs rootless and the desktop session runs as `core`
+# inside; the proxy runs as container root, so it can connect to a
+# `core`-owned socket regardless of the node's mode.
+#
+# Environment:
+#   TARGET_SOCKET    in-container Unix socket the app listens on
+#                    (default /run/selkies/selkies.sock). Set empty to use TARGET_ADDR.
+#   TARGET_ADDR      TCP target host:port, used only when TARGET_SOCKET is empty
+#   READY_TIMEOUT    seconds to wait for the target before starting regardless
+#   PROXY_PROTOCOL   set 1 to prepend PROXY protocol v1 to the forwarded stream
+#   CONNECTIONS_MAX  proxyd concurrency limit (default 256)
+#   PROXYD           proxy binary (Debian images: /lib/systemd/systemd-socket-proxyd)
+#   SYSTEMD          PID 1 to exec when the script is called with no arguments
+set -u
+
+TARGET_SOCKET=${TARGET_SOCKET-/run/selkies/selkies.sock}
+TARGET_ADDR=${TARGET_ADDR-}
+READY_TIMEOUT=${READY_TIMEOUT:-180}
+CONNECTIONS_MAX=${CONNECTIONS_MAX:-256}
+PROXYD=${PROXYD:-/usr/lib/systemd/systemd-socket-proxyd}
+SYSTEMD=${SYSTEMD:-/usr/lib/systemd/systemd}
+
+log() { printf 'socket-activate-shim: %s\n' "$*" >&2; }
+
+# Destination: Unix socket when configured, otherwise TCP host:port.
+if [ -n "$TARGET_SOCKET" ]; then
+    target=$TARGET_SOCKET
+    ready() { [ -S "$TARGET_SOCKET" ]; }
+else
+    target=$TARGET_ADDR
+    ready_host=${TARGET_ADDR%:*}
+    ready_port=${TARGET_ADDR##*:}
+    ready() { ss -ltn 2>/dev/null | grep -q -- "${ready_host}:${ready_port}"; }
+fi
+
+if [ -z "$target" ]; then
+    log "no TARGET_SOCKET or TARGET_ADDR set; starting without an activation bridge"
+elif [ "${LISTEN_FDS:-0}" -ge 1 ] && [ "${LISTEN_PID:-0}" = 1 ]; then
+    if [ ! -x "$PROXYD" ]; then
+        log "$PROXYD is not executable; inherited descriptors will be dropped"
+    else
+        (
+            waited=0
+            until ready; do
+                if [ "$waited" -ge "$READY_TIMEOUT" ]; then
+                    log "target $target not ready after ${READY_TIMEOUT}s; starting the proxy anyway"
+                    break
+                fi
+                sleep 1
+                waited=$((waited + 1))
+            done
+
+            proxy_args=(--connections-max="$CONNECTIONS_MAX")
+            if [ "${PROXY_PROTOCOL:-0}" = 1 ]; then
+                proxy_args+=(--proxy-protocol=v1)
+            fi
+
+            while :; do
+                # A subshell PID becomes the proxy PID through exec, so
+                # sd_listen_fds() sees LISTEN_PID == getpid(). Do not use $$
+                # here: inside a subshell it is still the parent's PID.
+                (
+                    export LISTEN_PID=$BASHPID
+                    exec "$PROXYD" "${proxy_args[@]}" "$target"
+                )
+                sleep 1
+            done
+        ) &
+    fi
+else
+    log "not socket-activated (LISTEN_FDS=${LISTEN_FDS:-0} LISTEN_PID=${LISTEN_PID:-0}); no bridge"
+fi
+
+# Plain `podman run` (no activation): run whatever we were given, else systemd.
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
+exec "$SYSTEMD"
