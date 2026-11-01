@@ -16,6 +16,28 @@ bazzite image, so nothing here is executed until the operator frees the device
 
 ---
 
+## 0. 2026-11 Scope Revision
+
+The image has been re-scoped from a full Bazzite-workstation replacement to a
+**bare-bones KDE Plasma 6 GUI base** for derived variants:
+
+- The base installs only the `KDE Plasma Workspaces` comps environment group,
+  Plasma Login Manager, Flatpak + Discover's Flatpak backend, and the
+  hardware/filesystem/codec layer that cannot come from Flatpak or AppImage.
+- KDE Applications/Multimedia/PIM groups, browsers other than Falkon, office,
+  developer tooling, virtualization, and gaming are deliberately excluded.
+  They belong in `workstation-dx`, gaming, webtop, and similar derived images.
+- The SDDM configuration was removed; Plasma Login Manager is the Wayland
+  greeter.
+- Flatpak is supported, with a system-wide Flathub remote baked into
+  `/etc/flatpak/remotes.d/flathub.flatpakrepo`.
+- The root disk minimum was raised to 24 GiB.
+- The historical gap analysis below is retained for context; entries marked
+  "omitted" may now be intentional base-vs-variant decisions rather than
+  packaging gaps.
+
+---
+
 ## 1. Image naming
 
 | Context | Reference |
@@ -66,14 +88,14 @@ but absent here; **omitted** = deliberately not installed, with reason.
 | `qt6-qtwebsockets-devel` | `install-kde-utils` | **missing** | -devel header; no runtime impact |
 | `chromium-qt6-ui` | `install-kde-utils` | **covered (fixed)** | in EPEL 10; added this task |
 | `fedora-chromium-config-kde` | `install-kde-utils` | omitted | Fedora-specific config; not in EL10 |
-| `plasma-discover-flatpak` | `install-kde-utils` | omitted | Fedora packaging; flatpak/Discover unsupported on bootc |
+| `plasma-discover-flatpak` | `install-kde-utils` | covered | In EPEL 10; Discover uses the Flatpak backend (PackageKit backend excluded on bootc) |
 | `plasma-discover-rpm-ostree` | `install-kde-utils` | omitted | Fedora packaging; rpm-ostree not used on Alma bootc |
 
 ### 2.2 Display manager & session
 
 | Feature | Bazzite source | Alma status | Notes |
 | :--- | :--- | :--- | :--- |
-| SDDM (Wayland) | bazzite base | covered | `sddm`, `sddm-kcm`; `rootfs/workstation-alma/etc/sddm.conf.d/10-wayland.conf` selects Wayland + `kwin_wayland` greeter |
+| Plasma Login Manager (Wayland) | bazzite base | covered | `plasma-login-manager`, `kcm-plasmalogin`; `plasmalogin.service` is enabled, SDDM is excluded |
 | Graphical default target | bazzite base | covered | `systemctl set-default graphical.target` |
 | Xwayland | bazzite base | covered | `xorg-x11-server-Xwayland`, `libxcvt` |
 | Mesa / GL | bazzite base | covered | `mesa-dri-drivers`, `mesa-libEGL` |
@@ -148,7 +170,7 @@ but absent here; **omitted** = deliberately not installed, with reason.
 | `etc/systemd/zram-generator.conf` | present | present (identical intent) |
 | `usr/lib/ostree/prepare-root.conf` | present | **absent** — Alma uses the base's `rootfs/non_btrfs/usr/lib/ostree/prepare-root.conf` |
 | `usr/share/polkit-1/actions/com.bitwarden.Bitwarden.policy` | present | present (trailing-newline-only diff) |
-| `etc/sddm.conf.d/10-wayland.conf` | — | present (Alma-specific) |
+| `etc/flatpak/remotes.d/flathub.flatpakrepo` | — | present (Alma-specific) |
 | `usr/local/bin/modinfo` | — | present (Alma-specific build fallback) |
 
 The `prepare-root.conf` difference is expected: the bazzite workstation layers on
@@ -175,7 +197,7 @@ are all published in EPEL 10 as `155.0.8059.39-1.el10_2`. Only
 | `ghostty` | No EL10 package (Fedora COPR only). Would require a third-party COPR. |
 | `input-leap` | Not packaged in EPEL 10 or RPMFusion EL10. |
 | `bees` | Not in EPEL 10. |
-| `plasma-discover-flatpak` / `plasma-discover-rpm-ostree` | Fedora packaging; flatpak/rpm-ostree not supported on Alma bootc. |
+| `plasma-discover-rpm-ostree` | Fedora packaging; rpm-ostree is not used on Alma bootc. `plasma-discover-flatpak` is available in EPEL 10 and is installed. |
 | `fedora-chromium-config-kde` | Fedora-specific config; not in EL10. |
 | `qt6-qtwebsockets-devel` | -devel header; no runtime consumer on the workstation. |
 | `XIVLauncher` | Fedora game COPR only; not part of the bazzite workstation build either. |
@@ -212,7 +234,8 @@ decision for the operator, not a trivial substitution.
 3. **Key userland present** in the image:
    ```bash
    podman run --entrypoint rpm localhost/workstation-alma:test -q \
-       plasma-workspace sddm kwin virt-manager qemu-kvm java-21-openjdk code gh chromium
+       plasma-login-manager plasma-workspace kwin dolphin konsole ark \
+       flatpak plasma-discover-flatpak xdg-desktop-portal-kde falkon
    # NOTE: `core` is NOT baked into the container image (only webtop bakes a user).
    # It is created at VM image build time via build/config-img.toml, so `id core`
    # inside the container is expected to fail. Verify it on the booted VM instead.
@@ -254,22 +277,23 @@ sudo systemctl reboot
 
 ### 3.3 Post-reboot verification
 
-Log in on the console (SDDM Wayland session) and confirm each subsystem:
+Log in on the console (Plasma Login Manager Wayland session) and confirm each subsystem:
 
 | Check | Command / action | Expected |
 | :--- | :--- | :--- |
 | Deployment switched | `bootc status` | Active image = `workstation-alma` |
-| Graphical boot | console | SDDM greeter on Wayland; Plasma 6 session starts |
+| Graphical boot | console | Plasma Login Manager greeter on Wayland; Plasma 6 session starts |
 | Compositor | `echo $XDG_SESSION_TYPE` (in session) | `wayland` |
 | ZFS | `zpool status`, `zfs list`, `modinfo zfs` | pools imported/healthy; module loaded |
 | Kernel/modules | `uname -r` vs `ls /usr/lib/modules` | booted kernel has modules (kmods match) |
-| Virtualization | open `virt-manager`, start a test VM | libvirt/qemu stack works; virtio-gpu/SPICE display |
+| Flatpak/Discover | `flatpak remotes`, open Discover | `flathub` remote present; Discover lists Flathub apps |
+| Native browser | launch Falkon | Falkon starts |
+| Hardware/filesystems | `vainfo`, mount exFAT/NTFS/APFS test images | Intel VA-API works; exFAT/NTFS read-write, APFS read-only |
+| MTP/Apple devices | connect a phone, open Dolphin | MTP device appears; iOS device accessible via `ifuse` |
+| Printing | open the print dialog | CUPS/driverless printers discoverable |
 | Audio | `wpctl status` / play test sound | PipeWire sink present |
-| Nix | `nix --version`, `nix shell nixpkgs#hello -c hello` | store works; `/nix` persisted |
 | Network/Tailscale | `tailscale status` | node online |
-| Dev tooling | `code --version`, `gh --version`, `pnpm --version` | present |
-| Chromium | launch `chromium` | launches (added this task) |
-| User identity | `id core` (on the booted VM) | uid=1000, groups wheel/video/render — `core` exists only **after** the VM image is built (config-img.toml), not in the container image itself |
+| User identity | `id core` (on the booted VM) | uid=1000, groups wheel — `core` exists only **after** the VM image is built (config-img.toml), not in the container image itself |
 
 ### 3.4 Rollback path
 
@@ -323,6 +347,11 @@ are untouched. Nothing was pushed and no PR was opened.
 ---
 
 ## 5. Build & verification evidence
+
+> **Historical note:** The build and verification evidence below predates the
+> 2026-11 re-scope and reflects the earlier full-workstation attempt. It is
+> retained as historical evidence. Re-run the checks in §3 against the current
+> bare-bones base.
 
 Raw evidence is in [`build.log`](../build.log) in the worktree root. This build
 reflects the follow-up `t_0c8501b9` change that dropped the baked-in `core` user.
@@ -444,3 +473,129 @@ $ podman run --entrypoint /usr/local/bin/modinfo localhost/workstation-alma:test
    plasma-discover-*). Closing them needs a third-party repo decision.
 5. **ARM/kmods and Nix-validation siblings** — tracked on separate cards; full
    parity for non-x86_64 and Nix run-mode validation is outside this card's scope.
+
+---
+
+## 7. 2026-11 Re-scope Build Evidence
+
+Build (final lines):
+
+```bash
+$ podman build -f workstation-alma.Containerfile -t localhost/workstation-alma:test .
+Successfully tagged localhost/workstation-alma:test
+340774f0a56c9984530026898f71c3957c0e940233ce040cfb536bc8725f3994
+```
+
+Image size:
+
+```text
+localhost/workstation-alma:test 12.8 GB 340774f0a56c
+```
+
+Lint:
+
+```bash
+$ podman run --rm --entrypoint bootc localhost/workstation-alma:test container lint
+Checks passed: 10
+Checks skipped: 1
+Warnings: 3
+lint_exit=0
+```
+
+Warnings are non-blocking base-image hygiene items:
+
+```text
+Lint warning: nonempty-run-tmp: Found content in runtime-only directories (/run, /tmp)
+Lint warning: sysusers: Found /etc/passwd entry without corresponding systemd sysusers.d
+Lint warning: var-tmpfiles: Found content in /var missing systemd tmpfiles.d entries
+```
+
+Service and session checks:
+
+```bash
+$ podman run --rm --entrypoint systemctl localhost/workstation-alma:test get-default
+graphical.target
+$ podman run --rm --entrypoint systemctl localhost/workstation-alma:test is-enabled plasmalogin.service
+enabled
+$ podman run --rm --entrypoint ls localhost/workstation-alma:test -l /etc/systemd/system/display-manager.service
+lrwxrwxrwx. 1 root root 43 Nov  1 09:27 /etc/systemd/system/display-manager.service -> /usr/lib/systemd/system/plasmalogin.service
+```
+
+Package presence (abridged):
+
+```text
+plasma-login-manager-6.6.4-1.el10_2.x86_64
+plasma-desktop-6.6.4-1.el10_2.x86_64
+plasma-workspace-6.6.4-1.el10_2.x86_64
+kwin-6.6.4-2.el10_2.x86_64
+dolphin-25.12.3-1.el10_2.x86_64
+konsole-25.12.3-1.el10_2.x86_64
+ark-25.12.3-1.el10_2.x86_64
+spectacle-6.6.4-1.el10_2.x86_64
+kwrite-25.12.3-1.el10_2.x86_64
+flatpak-1.16.0-9.el10_2.6.x86_64
+plasma-discover-6.6.4-1.el10_2.x86_64
+plasma-discover-flatpak-6.6.4-1.el10_2.x86_64
+xdg-desktop-portal-kde-6.6.4-1.el10_2.x86_64
+wireplumber-0.5.10-1.el10.x86_64
+falkon-25.12.3-1.el10_2.x86_64
+kio-extras-25.12.3-1.el10_2.x86_64
+kio-gdrive-25.12.3-1.el10_2.x86_64
+kdnssd-25.12.3-1.el10_2.x86_64
+s3fs-fuse-1.97-1.el10_2.x86_64
+linuxconsoletools-1.8.1-9.el10_1.x86_64
+sdl2-compat-2.32.50-1.el10.x86_64
+libva-2.22.0-2.el10.x86_64
+intel-media-driver-25.2.6-1.el10.x86_64
+libva-intel-driver-2.4.1^20241027gitd30e013-1.el10.x86_64
+libva-nvidia-driver-0.0.18-1.el10_2.x86_64
+ffmpeg-7.1.5-1.el10.x86_64
+libavcodec-freeworld-7.1.5-1.el10.x86_64
+gstreamer1-plugins-bad-freeworld-1.26.7-1.el10.x86_64
+exfatprogs-1.2.8-1.el10.x86_64
+ntfs-3g-2022.10.3-10.el10_2.x86_64
+apfs-fuse-0-27.20200928gitee71aa5.el10_0.x86_64
+libmtp-1.1.19-10.el10.x86_64
+gvfs-mtp-1.54.4-4.el10_2.1.x86_64
+ifuse-1.1.4-17.el10_0.x86_64
+usbmuxd-1.1.1^20240915git0b1b233-1.el10_0.x86_64
+cups-filters-2.0.0-11.el10.x86_64
+cups-filters-driverless-2.0.0-11.el10.x86_64
+hplip-3.26.6-1.el10_2.3.x86_64
+waypipe-0.8.6-7.el10.x86_64
+7zip-26.04-1.el10_2.x86_64
+unrar-7.2.7-1.el10.x86_64
+bsdtar-3.7.7-11.el10_2.x86_64
+```
+
+Intentionally absent from the base:
+
+```text
+absent: sddm
+absent: code
+absent: gh
+absent: virt-manager
+absent: libvirt-daemon-kvm
+absent: chromium
+absent: firefox
+```
+
+KIO slaves present from `kio-extras`:
+
+```text
+afc.so
+mtp.so
+nfs.so
+sftp.so
+smb.so
+```
+
+Controller modules present from the EL10 kernel:
+
+```text
+hid-logitech-dj.ko.xz
+hid-logitech-hidpp.ko.xz
+hid-logitech.ko.xz
+hid-sony.ko.xz
+hid-wiimote.ko.xz
+```

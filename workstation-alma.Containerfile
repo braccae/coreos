@@ -1,117 +1,137 @@
-# Workstation (Alma) — KDE Plasma 6 desktop workstation variant on AlmaLinux 10 bootc.
+# Workstation (Alma) — bare-bones KDE Plasma 6 desktop base on AlmaLinux 10 bootc.
+#
+# This is the GUI base image: KDE Plasma Workspaces, Plasma Login Manager,
+# Flatpak + Discover's Flatpak backend, a native browser, and the hardware/
+# filesystem/codec support that cannot come from Flatpak or AppImage.
+# Application-layer packages (office, PIM, multimedia apps, dev tools,
+# virtualization, gaming) belong in derived variants.
 FROM ghcr.io/braccae/alma:latest
 
 LABEL containers.bootc 1
 
-# --- Microsoft VS Code repository key ---------------------------------------
-# /etc/yum.repos.d/code.repo is baked into the base image; import Microsoft's
-# GPG signing key to satisfy rpm signature checks during dnf installation.
-RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc
-
-# --- KDE Plasma 6 desktop, Wayland + Xwayland, Audio, SDDM, Workstation Tools
-# 1. KDE Plasma:
-#    plasma-workspace, plasma-desktop, kwin, kdecoration, plasma-breeze,
-#    breeze-icon-theme, polkit-kde, konsole, qt6-qtwayland, xorg-x11-server-Xwayland,
-#    libxcvt, mesa-dri-drivers, mesa-libEGL, dejavu-sans-fonts, pipewire,
-#    wireplumber, pipewire-pulseaudio, pulseaudio-utils, alsa-utils.
-# 2. Display Manager:
-#    sddm, sddm-kcm.
-# 3. Workstation utilities & KDE apps:
-#    java-21-openjdk, kmail, merkuro, kde-partitionmanager, yakuake, virt-manager,
-#    qemu-kvm, qemu-img, waypipe, mpv, bat.
-#    - qemu-kvm-tools substituted for Fedora's qemu-tools.
-#    - Virtio GPU / spice / audio modules: in AlmaLinux 10 these are packaged under
-#      qemu-kvm-device-display-virtio-gpu, qemu-kvm-device-display-virtio-gpu-pci,
-#      qemu-kvm-device-usb-redirect, qemu-kvm-ui-opengl, qemu-kvm-ui-spice.
-# 4. Dev Mode:
-#    code (VS Code), gh (GitHub CLI).
+# --- KDE Plasma desktop environment -----------------------------------------
+# The comps environment group provides Plasma, KWin, Plasma Login Manager,
+# Dolphin, Konsole, Ark, Spectacle, KWrite, System Settings, Discover,
+# Flatpak, xdg-desktop-portal-kde, PipeWire/WirePlumber, Bluetooth, printing,
+# power management, fonts, and Breeze GTK.
 #
-# Base image already provides:
-#    git, tmux, sqlite, samba, tuned, realmd, sssd, rclone, borgbackup/borgmatic,
-#    nodejs, nodejs-npm, nix, and ZFS kernel modules.
-#
-# Package substitutions and omissions for AlmaLinux 10 / EPEL 10:
-#    - input-leap: omitted; not packaged in EPEL 10 or RPMFusion EL10.
-#    - pnpm: omitted from RPM transaction; installed globally via npm below.
-#    - ghostty: omitted; Fedora COPR only, no EL10 package available.
-#    - fedora-chromium-config-kde: omitted; Fedora-specific config, not in EL10.
-#    - plasma-discover-flatpak, plasma-discover-rpm-ostree: omitted; Fedora packaging.
-#    - bees: omitted; Fedora deduplication package not in EPEL 10.
-#    - XIVLauncher: omitted; Fedora game COPR only.
-# Note: chromium, chromium-headless, chromedriver and chromium-qt6-ui ARE available
-#    in EPEL 10 (155.0.x) and are installed below to match the bazzite workstation set.
-RUN dnf install -y \
-        plasma-workspace \
-        plasma-desktop \
-        kwin \
-        kdecoration \
-        plasma-breeze \
-        breeze-icon-theme \
-        polkit-kde \
-        konsole \
-        qt6-qtwayland \
-        xorg-x11-server-Xwayland \
-        libxcvt \
-        mesa-dri-drivers \
-        mesa-libEGL \
-        dejavu-sans-fonts \
-        pipewire \
-        wireplumber \
-        pipewire-pulseaudio \
-        pulseaudio-utils \
-        alsa-utils \
-        sddm \
-        sddm-kcm \
-        java-21-openjdk \
-        kmail \
-        merkuro \
-        kde-partitionmanager \
-        yakuake \
-        virt-manager \
-        qemu-kvm \
-        qemu-img \
-        qemu-kvm-tools \
-        qemu-kvm-device-display-virtio-gpu \
-        qemu-kvm-device-display-virtio-gpu-pci \
-        qemu-kvm-device-usb-redirect \
-        qemu-kvm-ui-opengl \
-        qemu-kvm-ui-spice \
-        waypipe \
-        mpv \
-        bat \
-        chromium \
-        chromium-headless \
-        chromedriver \
-        chromium-qt6-ui \
-        sqlite-devel \
-        code \
-        gh \
+# sddm/sddm-kcm: Plasma Login Manager is the Wayland greeter.
+# plasma-discover-packagekit / offline-updates: RPM installs and offline
+# updates are not supported on bootc; Discover is Flatpak-only.
+# PackageKit-command-not-found / gstreamer-plugin: not useful on bootc;
+# codecs are shipped directly.
+RUN dnf -y group install \
+        "KDE Plasma Workspaces" \
+        --exclude=sddm \
+        --exclude=sddm-kcm \
+        --exclude=plasma-discover-packagekit \
+        --exclude=plasma-discover-offline-updates \
+        --exclude=PackageKit-command-not-found \
+        --exclude=PackageKit-gstreamer-plugin \
     && dnf clean all
 
-# --- pnpm (dev-mode) ---------------------------------------------------------
-# pnpm is not in EPEL 10 RPM repos; install globally using the nodejs-npm toolchain.
-# HOME=/tmp avoids bootc /var/roothome missing home directory during build time.
-RUN HOME=/tmp npm install -g pnpm && rm -rf /tmp/.npm
+# --- Core desktop pins, firmware, graphics/VA-API, codecs -------------------
+# Every package in this layer except falkon is already pulled by the group;
+# they are pinned so the base keeps its intended features if comps changes.
+RUN dnf install -y \
+        plasma-login-manager \
+        flatpak \
+        flatpak-selinux \
+        plasma-discover-flatpak \
+        xdg-desktop-portal-kde \
+        wireplumber \
+        breeze-gtk-common \
+        breeze-gtk-gtk3 \
+        breeze-gtk-gtk4 \
+        kio-extras \
+        kio-admin \
+        kio-gdrive \
+        kdenetwork-filesharing \
+        plasma-print-manager \
+        kdnssd \
+        falkon \
+        linux-firmware \
+        alsa-sof-firmware \
+        alsa-firmware \
+        fwupd \
+        libva \
+        libva-utils \
+        libva-intel-driver \
+        intel-media-driver \
+        libva-nvidia-driver \
+        mesa-dri-drivers \
+        mesa-libEGL \
+        mesa-libGL \
+        mesa-vulkan-drivers \
+        vulkan-loader \
+        libvdpau \
+        ffmpeg \
+        libavcodec-freeworld \
+        libheif-freeworld \
+        gstreamer1-plugins-bad-freeworld \
+        gstreamer1-plugins-ugly \
+    && dnf clean all
 
-# --- core user ---------------------------------------------------------------
-# Intentionally NOT baked into the container image. Like the base image, this
-# image ships NO user: the `core` user is provisioned at disk/VM image build
-# time via build/config-img.toml (`[[customizations.user]] name = "core"`,
-# groups = ["wheel"], ssh key) and/or created at first boot. The desktop
-# session, SSH and podman.socket (SocketGroup=core) resolve against that
-# build-time user. Only the webtop container bakes a user in — see policy in
-# docs/workstation-alma-merge.md.
+# --- Filesystems, removable devices, printing -------------------------------
+# exFAT: kernel module + exfatprogs. NTFS: ntfs-3g (EL10 has no ntfs3 module).
+# APFS: apfs-fuse (read-only). MTP: libmtp + gvfs-mtp + KDE kio-extras.
+# Apple iOS: ifuse/libimobiledevice/usbmuxd. Samba/CIFS: base samba-client +
+# cifs-utils, plus gvfs-smb and the KDE sharing integration from the group.
+RUN dnf install -y \
+        exfatprogs \
+        ntfs-3g \
+        ntfsprogs \
+        apfs-fuse \
+        dosfstools \
+        fuse \
+        fuse3 \
+        libmtp \
+        gvfs \
+        gvfs-fuse \
+        gvfs-mtp \
+        gvfs-smb \
+        gvfs-gphoto2 \
+        ifuse \
+        libimobiledevice \
+        libimobiledevice-utils \
+        usbmuxd \
+        bluez \
+        bluez-cups \
+        cups-filters \
+        cups-filters-driverless \
+        cups-browsed \
+        hplip \
+    && dnf clean all
 
-# --- filesystem overlay ------------------------------------------------------
-# Overlay provides SDDM Wayland configuration, ZRAM generator settings,
-# Bitwarden polkit policy, and modinfo fallback helper.
+# --- Zeroconf, S3, game controllers, archives, remote apps ------------------
+RUN dnf install -y \
+        avahi \
+        avahi-tools \
+        nss-mdns \
+        s3fs-fuse \
+        linuxconsoletools \
+        sdl2-compat \
+        libevdev \
+        waypipe \
+        7zip \
+        unrar \
+        zip \
+        bsdtar \
+    && dnf clean all
+
+# Trim build-time package-manager state. /var is runtime state on bootc; the
+# immutable /etc snapshot lives in /usr/share/factory/etc.
+RUN rm -rf /var/cache/dnf /var/cache/PackageKit /var/cache/app-info \
+           /var/lib/dnf /var/log/dnf*.log /var/log/hawkey.log
+
+# Overlay: system-wide Flathub remote, ZRAM, Bitwarden polkit action, and the
+# in-image modinfo fallback. SDDM configuration has been removed.
 COPY rootfs/workstation-alma/ /
 
-# --- systemd target and display manager enablement --------------------------
+# Graphical boot via Plasma Login Manager (Alias=display-manager.service).
 RUN systemctl set-default graphical.target && \
-    systemctl enable sddm.service
+    systemctl enable plasmalogin.service
 
-# --- bootc container validation ----------------------------------------------
 RUN bootc container lint
 
 ENTRYPOINT ["/usr/lib/systemd/systemd"]

@@ -41,15 +41,19 @@ This project builds upon bootc-compatible base images to create customized, immu
 
 ### 6. Workstation (Alma) (`workstation-alma.Containerfile`)
 - **Base**: AlmaLinux bootc 10 (`ghcr.io/braccae/alma:latest`)
-- **Purpose**: Local KDE Plasma 6 desktop workstation — the AlmaLinux equivalent of the Bazzite `workstation.Containerfile`
+- **Purpose**: Bare-bones KDE Plasma 6 GUI base for derived workstation variants — the AlmaLinux GUI base layer, not a full application bundle.
 - **Key Features**:
-  - KDE Plasma 6 desktop from EPEL (plasma-workspace, plasma-desktop, kwin, plasma-breeze) with SDDM display manager and Wayland/Xwayland
-  - PipeWire/WirePlumber audio stack
-  - Workstation apps: KMail, Merkuro, Konsole, Yakuake, KDE Partition Manager
-  - Virtualization: virt-manager, QEMU/KVM, and virtio-gpu/SPICE display modules
-  - Dev mode: VS Code (`code`), GitHub CLI (`gh`), Node.js and pnpm
-  - ZFS kernel modules inherited from the AlmaLinux base image (Nix ships only in the `dx` image)
-- **Notes**: Package substitutions relative to the Bazzite image — `qemu-tools` → `qemu-kvm-tools`; `input-leap`, `ghostty`, and the Fedora-specific chromium/plasma-discover configs are omitted (not packaged for EL10).
+  - Full KDE Plasma Workspaces environment from EPEL: Plasma, KWin, Plasma Login Manager (Wayland), Dolphin, Konsole, Ark, Spectacle, KWrite, System Settings, and Discover
+  - Flatpak + Discover Flatpak backend, with a system-wide Flathub remote baked into `/etc/flatpak/remotes.d/`
+  - Falkon as the native Qt/KDE browser
+  - Hardware/filesystem/codec support that cannot come from Flatpak or AppImage: Intel VA-API, Mesa/Vulkan, `linux-firmware`, ALSA DSP firmware, exFAT/NTFS/APFS (read-only) userspace drivers, MTP, Apple iOS device support, CUPS/driverless printing, and Samba/CIFS clients
+  - KIO integration: Google Drive, MTP, SMB, NFS, SFTP, and AFC via `kio-extras`
+  - Zeroconf/mDNS via `kdnssd`, Avahi, and `nss-mdns`
+  - Game-controller userspace support (`linuxconsoletools`, `sdl2-compat`, `libevdev`) for the controllers supported by the EL10 kernel (PS3/PS4, Wii, Logitech, generic joysticks)
+  - `waypipe` for remote applications
+  - ZFS kernel modules inherited from the AlmaLinux base image
+- **Not included**: browsers other than Falkon, office suites, KDE PIM/multimedia application groups, developer tooling, virtualization, and gaming stacks. Install applications via Flatpak/AppImage or build a derived variant (`workstation-dx`, gaming, webtop).
+- **Notes**: Gearlever is Flathub-only (`it.mijorus.gearlever`); install it from Discover or with `flatpak install flathub it.mijorus.gearlever`. HFS+ and write-capable APFS are not available in EL10; AMD VA-API (`mesa-va-drivers`) is not packaged for x86_64 EL10; Xbox, PS5, and Switch controller kernel modules are missing from the EL10 kernel.
 
 ## Project Structure
 
@@ -66,7 +70,7 @@ This project builds upon bootc-compatible base images to create customized, immu
 │   ├── common/              # Shared configurations
 │   ├── hci/                 # HCI-specific files
 │   ├── workstation/         # Workstation-specific files
-│   ├── workstation-alma/    # AlmaLinux workstation overlay (SDDM, ZRAM, polkit)
+│   ├── workstation-alma/    # AlmaLinux workstation overlay (Flathub remote, ZRAM, polkit)
 │   └── webtop/              # Desktop environment files
 ├── build/                    # Build artifacts
 ├── scripts/                  # Build and deployment scripts
