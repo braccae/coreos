@@ -86,13 +86,25 @@ flatpak run org.kde.kcalc
 
 ### VPN clients (Tailscale, WARP)
 
-Both clients are installed. Pass `--device /dev/net/tun` (the quadlet does);
-rootless pasta owns the netns, so they can create their WireGuard interfaces
-and overlay addresses. `tailscaled` is enabled and starts with `tailscale0`;
-authenticate once with `tailscale up` (or `--authkey`). WARP's daemon is
-enabled; register once with `warp-cli registration new` (or a token). A
-LAN-routable address still requires rootful macvlan; these give 100.x / 172.16.x
-overlay IPs.
+Both clients are installed and can run at the same time (verified with both
+`tailscale0` and `CloudflareWARP` up).
+
+* Pass `--device /dev/net/tun` (the quadlet does). Rootless pasta owns the
+  netns, so `NET_ADMIN` is enough to create the interfaces.
+* Keep **IPv6 enabled**. WARP's Onoma DNS binds an IPv6 address; with
+  `net.ipv6.conf.all.disable_ipv6=1` Connect aborts with
+  `OnomaDnsServerError(SocketBind ... Cannot assign requested address)`.
+* The image links `/usr/sbin/nft` and `/usr/sbin/tailscaled` because both
+  clients hardcode the `/usr/sbin` paths while Fedora installs them in
+  `/usr/bin`.
+* Tailscale: enabled, starts as `tailscale0`; authenticate once with
+  `tailscale up` (or `--authkey`).
+* WARP: daemon enabled; register once with `warp-cli registration new` (or a
+  token), then `warp-cli connect`. With a Teams registration the tunnel
+  protocol is policy-controlled (MASQUE); WARP works once IPv6 is enabled.
+
+A LAN-routable address still requires rootful macvlan; these give 100.x /
+172.16.x overlay IPs.
 
 ### Persistence (bootc layout)
 
