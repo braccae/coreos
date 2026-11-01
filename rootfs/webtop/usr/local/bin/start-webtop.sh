@@ -175,6 +175,18 @@ fi
 export WAYLAND_DISPLAY=wayland-0
 dbus-update-activation-environment --all 2>/dev/null || true
 
+# --- secrets: KWallet + Secret Service compatibility -----------------------
+# ksecretd exports org.freedesktop.secrets (used by libsecret clients such as
+# Bazaar, Chromium and Steam); kwalletd6 backs it. Starting both here means
+# the service exists from the first request instead of failing activation.
+# The first secret store may prompt once to create the kdewallet wallet.
+if [ -x /usr/bin/kwalletd6 ]; then
+    kwalletd6 &
+fi
+if [ -x /usr/bin/ksecretd ]; then
+    ksecretd &
+fi
+
 # --- polkit agent ----------------------------------------------------------
 if [ -x /usr/libexec/kf6/polkit-kde-authentication-agent-1 ]; then
     /usr/libexec/kf6/polkit-kde-authentication-agent-1 &
