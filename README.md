@@ -43,17 +43,17 @@ This project builds upon bootc-compatible base images to create customized, immu
 - **Base**: AlmaLinux bootc 10 (`ghcr.io/braccae/alma:latest`)
 - **Purpose**: Bare-bones KDE Plasma 6 GUI base for derived workstation variants — the AlmaLinux GUI base layer, not a full application bundle.
 - **Key Features**:
-  - Full KDE Plasma Workspaces environment from EPEL: Plasma, KWin, Plasma Login Manager (Wayland), Dolphin, Konsole, Ark, Spectacle, KWrite, System Settings, and Discover
+  - Full KDE Plasma Workspaces environment from EPEL: Plasma, KWin, Plasma Login Manager (Wayland), Dolphin, Dolphin plugins, Konsole, Ark, Spectacle, KWrite, System Settings, and Discover
   - Flatpak + Discover Flatpak backend, with a system-wide Flathub remote baked into `/etc/flatpak/remotes.d/`
-  - Falkon as the native Qt/KDE browser
+  - Konqueror as the native KDE browser
   - Hardware/filesystem/codec support that cannot come from Flatpak or AppImage: Intel VA-API, Mesa/Vulkan, `linux-firmware`, ALSA DSP firmware, exFAT/NTFS/APFS (read-only) userspace drivers, MTP, Apple iOS device support, CUPS/driverless printing, and Samba/CIFS clients
   - KIO integration: Google Drive, MTP, SMB, NFS, SFTP, and AFC via `kio-extras`
   - Zeroconf/mDNS via `kdnssd`, Avahi, and `nss-mdns`
-  - Game-controller userspace support (`linuxconsoletools`, `sdl2-compat`, `libevdev`) for the controllers supported by the EL10 kernel (PS3/PS4, Wii, Logitech, generic joysticks)
+  - Game-controller support: in-kernel PS3/PS4, Wii, Logitech, and generic joysticks, plus ELRepo `kmod-game-controllers` for Xbox, PS5, and Switch via weak-modules
   - `waypipe` for remote applications
   - ZFS kernel modules inherited from the AlmaLinux base image
-- **Not included**: browsers other than Falkon, office suites, KDE PIM/multimedia application groups, developer tooling, virtualization, and gaming stacks. Install applications via Flatpak/AppImage or build a derived variant (`workstation-dx`, gaming, webtop).
-- **Notes**: Gearlever is Flathub-only (`it.mijorus.gearlever`); install it from Discover or with `flatpak install flathub it.mijorus.gearlever`. HFS+ and write-capable APFS are not available in EL10; AMD VA-API (`mesa-va-drivers`) is not packaged for x86_64 EL10; Xbox, PS5, and Switch controller kernel modules are missing from the EL10 kernel.
+- **Not included**: browsers other than Konqueror, office suites, KDE PIM/multimedia application groups, developer tooling, virtualization, and gaming stacks. Install applications via Flatpak/AppImage or build a derived variant (`workstation-dx`, gaming, webtop).
+- **Notes**: Gearlever is Flathub-only (`it.mijorus.gearlever`); install it from Discover or with `flatpak install flathub it.mijorus.gearlever`. HFS+ and write-capable APFS are not available in EL10; AMD VA-API (`mesa-va-drivers`) is not packaged for x86_64 EL10. Xbox, PS5, and Switch controllers are provided by ELRepo's `kmod-game-controllers` and linked into the image kernel through weak-modules.
 
 ## Project Structure
 

@@ -49,7 +49,9 @@ RUN dnf install -y \
         kdenetwork-filesharing \
         plasma-print-manager \
         kdnssd \
-        falkon \
+        dolphin \
+        dolphin-plugins \
+        konqueror \
         linux-firmware \
         alsa-sof-firmware \
         alsa-firmware \
@@ -68,6 +70,7 @@ RUN dnf install -y \
         ffmpeg \
         libavcodec-freeworld \
         libheif-freeworld \
+        gstreamer1-plugin-libav \
         gstreamer1-plugins-bad-freeworld \
         gstreamer1-plugins-ugly \
     && dnf clean all
@@ -110,6 +113,7 @@ RUN dnf install -y \
         nss-mdns \
         s3fs-fuse \
         linuxconsoletools \
+        steam-devices \
         sdl2-compat \
         libevdev \
         waypipe \
@@ -118,6 +122,18 @@ RUN dnf install -y \
         zip \
         bsdtar \
     && dnf clean all
+
+# --- ELRepo game-controller HID modules -------------------------------------
+# ELRepo ships the in-tree xpad/hid-playstation/hid-nintendo modules that the
+# EL10 kernel package omits. The package is built for an older kernel; the
+# weak-modules call links it into the image kernel's weak-updates directory.
+# Scriptlets are skipped to avoid dracut trying to build an initramfs in the
+# container; game controllers are runtime-only modules.
+RUN dnf install -y --nogpgcheck https://www.elrepo.org/elrepo-release-10.el10.elrepo.noarch.rpm && \
+    dnf install -y --setopt=tsflags=noscripts kmod-game-controllers && \
+    find /lib/modules/*/extra/game-controllers -name '*.ko' | \
+        /usr/sbin/weak-modules --add-modules --no-initramfs && \
+    dnf clean all
 
 # Trim build-time package-manager state. /var is runtime state on bootc; the
 # immutable /etc snapshot lives in /usr/share/factory/etc.

@@ -24,7 +24,7 @@ The image has been re-scoped from a full Bazzite-workstation replacement to a
 - The base installs only the `KDE Plasma Workspaces` comps environment group,
   Plasma Login Manager, Flatpak + Discover's Flatpak backend, and the
   hardware/filesystem/codec layer that cannot come from Flatpak or AppImage.
-- KDE Applications/Multimedia/PIM groups, browsers other than Falkon, office,
+- KDE Applications/Multimedia/PIM groups, browsers other than Konqueror, office,
   developer tooling, virtualization, and gaming are deliberately excluded.
   They belong in `workstation-dx`, gaming, webtop, and similar derived images.
 - The SDDM configuration was removed; Plasma Login Manager is the Wayland
@@ -32,6 +32,8 @@ The image has been re-scoped from a full Bazzite-workstation replacement to a
 - Flatpak is supported, with a system-wide Flathub remote baked into
   `/etc/flatpak/remotes.d/flathub.flatpakrepo`.
 - The root disk minimum was raised to 24 GiB.
+- Xbox, PS5, and Switch controller modules come from ELRepo's
+  `kmod-game-controllers`, linked into the image kernel via weak-modules.
 - The historical gap analysis below is retained for context; entries marked
   "omitted" may now be intentional base-vs-variant decisions rather than
   packaging gaps.
@@ -235,7 +237,7 @@ decision for the operator, not a trivial substitution.
    ```bash
    podman run --entrypoint rpm localhost/workstation-alma:test -q \
        plasma-login-manager plasma-workspace kwin dolphin konsole ark \
-       flatpak plasma-discover-flatpak xdg-desktop-portal-kde falkon
+       flatpak plasma-discover-flatpak xdg-desktop-portal-kde konqueror
    # NOTE: `core` is NOT baked into the container image (only webtop bakes a user).
    # It is created at VM image build time via build/config-img.toml, so `id core`
    # inside the container is expected to fail. Verify it on the booted VM instead.
@@ -287,7 +289,7 @@ Log in on the console (Plasma Login Manager Wayland session) and confirm each su
 | ZFS | `zpool status`, `zfs list`, `modinfo zfs` | pools imported/healthy; module loaded |
 | Kernel/modules | `uname -r` vs `ls /usr/lib/modules` | booted kernel has modules (kmods match) |
 | Flatpak/Discover | `flatpak remotes`, open Discover | `flathub` remote present; Discover lists Flathub apps |
-| Native browser | launch Falkon | Falkon starts |
+| Native browser | launch Konqueror | Konqueror starts |
 | Hardware/filesystems | `vainfo`, mount exFAT/NTFS/APFS test images | Intel VA-API works; exFAT/NTFS read-write, APFS read-only |
 | MTP/Apple devices | connect a phone, open Dolphin | MTP device appears; iOS device accessible via `ifuse` |
 | Printing | open the print dialog | CUPS/driverless printers discoverable |
@@ -483,13 +485,13 @@ Build (final lines):
 ```bash
 $ podman build -f workstation-alma.Containerfile -t localhost/workstation-alma:test .
 Successfully tagged localhost/workstation-alma:test
-340774f0a56c9984530026898f71c3957c0e940233ce040cfb536bc8725f3994
+e8b82e836c05361e19339ecafcccd62e5c7ba2f3bee24dfbf8933839c83c4f9a
 ```
 
 Image size:
 
 ```text
-localhost/workstation-alma:test 12.8 GB 340774f0a56c
+localhost/workstation-alma:test 13 GB e8b82e836c05
 ```
 
 Lint:
@@ -529,6 +531,7 @@ plasma-desktop-6.6.4-1.el10_2.x86_64
 plasma-workspace-6.6.4-1.el10_2.x86_64
 kwin-6.6.4-2.el10_2.x86_64
 dolphin-25.12.3-1.el10_2.x86_64
+dolphin-plugins-25.12.3-1.el10_2.x86_64
 konsole-25.12.3-1.el10_2.x86_64
 ark-25.12.3-1.el10_2.x86_64
 spectacle-6.6.4-1.el10_2.x86_64
@@ -538,19 +541,23 @@ plasma-discover-6.6.4-1.el10_2.x86_64
 plasma-discover-flatpak-6.6.4-1.el10_2.x86_64
 xdg-desktop-portal-kde-6.6.4-1.el10_2.x86_64
 wireplumber-0.5.10-1.el10.x86_64
-falkon-25.12.3-1.el10_2.x86_64
+konqueror-25.12.3-1.el10_2.x86_64
+kwebenginepart-25.12.3-1.el10_2.x86_64
 kio-extras-25.12.3-1.el10_2.x86_64
 kio-gdrive-25.12.3-1.el10_2.x86_64
 kdnssd-25.12.3-1.el10_2.x86_64
 s3fs-fuse-1.97-1.el10_2.x86_64
 linuxconsoletools-1.8.1-9.el10_1.x86_64
+steam-devices-1.0.0.101^git20260625.22ec85e-1.el10_2.noarch
 sdl2-compat-2.32.50-1.el10.x86_64
+kmod-game-controllers-0.0-1.el10_2.elrepo.x86_64
 libva-2.22.0-2.el10.x86_64
 intel-media-driver-25.2.6-1.el10.x86_64
 libva-intel-driver-2.4.1^20241027gitd30e013-1.el10.x86_64
 libva-nvidia-driver-0.0.18-1.el10_2.x86_64
 ffmpeg-7.1.5-1.el10.x86_64
 libavcodec-freeworld-7.1.5-1.el10.x86_64
+gstreamer1-plugin-libav-1.24.11-1.el10_1.x86_64
 gstreamer1-plugins-bad-freeworld-1.26.7-1.el10.x86_64
 exfatprogs-1.2.8-1.el10.x86_64
 ntfs-3g-2022.10.3-10.el10_2.x86_64
@@ -578,6 +585,7 @@ absent: virt-manager
 absent: libvirt-daemon-kvm
 absent: chromium
 absent: firefox
+absent: falkon
 ```
 
 KIO slaves present from `kio-extras`:
@@ -598,4 +606,12 @@ hid-logitech-hidpp.ko.xz
 hid-logitech.ko.xz
 hid-sony.ko.xz
 hid-wiimote.ko.xz
+```
+
+ELRepo `kmod-game-controllers` weak-updates links for the image kernel:
+
+```text
+/lib/modules/6.12.0-211.69.1.el10_2.x86_64/weak-updates/game-controllers/hid-nintendo.ko
+/lib/modules/6.12.0-211.69.1.el10_2.x86_64/weak-updates/game-controllers/hid-playstation.ko
+/lib/modules/6.12.0-211.69.1.el10_2.x86_64/weak-updates/game-controllers/xpad.ko
 ```
