@@ -3,12 +3,13 @@ FROM ghcr.io/ublue-os/bazzite:stable-44 AS plasma-nm-builder
 # plasma-nm 6.7.5 draws "network-unavailable" for Tun/Veth devices, which is
 # exactly what a container uplink is (pasta tap / netavark veth). Rebuild the
 # Fedora SRPM with a small patch so the tray reflects the managed connection.
-RUN dnf5 install -y dnf5-plugins rpm-build && dnf5 clean all
+RUN dnf5 install -y dnf5-plugins rpm-build curl && dnf5 clean all
 COPY build/plasma-nm /tmp/plasma-nm
 # /root is a dangling symlink to /var/roothome on this base, so keep the
 # rpmbuild tree under /tmp and point rpmbuild at it explicitly.
 RUN mkdir -p /tmp/srpm /tmp/rpmbuild/BUILD /tmp/rpmbuild/RPMS /tmp/rpmbuild/SOURCES /tmp/rpmbuild/SPECS /tmp/rpmbuild/SRPMS && \
-    dnf5 download --source plasma-nm --destdir /tmp/srpm && \
+    curl -fsSL -o /tmp/srpm/plasma-nm-6.7.5-1.fc44.src.rpm \
+        https://kojipkgs.fedoraproject.org/packages/plasma-nm/6.7.5/1.fc44/src/plasma-nm-6.7.5-1.fc44.src.rpm && \
     rpm -i --define "_topdir /tmp/rpmbuild" /tmp/srpm/plasma-nm-*.src.rpm && \
     sed -i 's/^Release:.*/Release: 1%{?dist}.webtop1/' /tmp/rpmbuild/SPECS/plasma-nm.spec && \
     cp /tmp/plasma-nm/0001-plasma-nm-treat-tun-veth-as-wired.patch /tmp/rpmbuild/SOURCES/ && \
@@ -125,6 +126,11 @@ RUN useradd -m -u 1000 -G wheel webtop && \
 # ping_group_range in /etc/sysctl.d/50-webtop-ping.conf.
 # Steam's runtime calls /sbin/ldconfig; Fedora 44 ships /usr/bin/ldconfig only,
 # which makes the client abort in surface_linux.cpp (glXChooseVisual).
+# The workstation tailscaled unit calls /usr/sbin/tailscaled and WARP's
+# firewall engine calls /usr/sbin/nft, but Fedora installs both in /usr/bin;
+# link them or the services fail (203/EXEC / Firewall ENOENT).
+# bootc-style /etc persistence: enable etc-overlay-sync so image /etc updates
+# reach the persisted volume; the factory nsswitch copy is updated above.
 RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
     systemctl disable cardwired.service 2>/dev/null || true; \
     chmod +x /usr/local/bin/start-webtop.sh \
@@ -133,20 +139,10 @@ RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
               /usr/local/bin/webtop-nm-uplink && \
     (setcap -r /usr/bin/kwin_wayland || true) && \
     ([ -e /usr/sbin/ldconfig ] || ln -s ../bin/ldconfig /usr/sbin/ldconfig) && \
-    # The workstation tailscaled unit calls /usr/sbin/tailscaled, but the
-    # Fedora package installs /usr/bin/tailscaled; without this link the
-    # service fails with 203/EXEC even with /dev/net/tun.
     ln -sf ../bin/tailscaled /usr/sbin/tailscaled && \
-    # Cloudflare WARP's firewall engine hardcodes /usr/sbin/nft, while Fedora
-    # installs /usr/bin/nft; without this link Connect fails with
-    # Firewall(ApplyError("No such file or directory")).
     ln -sf ../bin/nft /usr/sbin/nft && \
     systemctl enable webtop.service webtop-nm-uplink.service \
                      webtop-flatpak-appstream.service; \
-    # bootc-style /etc persistence: /etc is a volume, and the base image ships
-    # etc-overlay-sync to seed it from /usr/share/factory/etc at boot. Enable it
-    # so image updates reach the persisted /etc. The factory copy of
-    # nsswitch.conf is updated above so the DNS fix is not reverted.
     systemctl enable etc-overlay-sync.service 2>/dev/null || true
 
 ENTRYPOINT [ "/usr/lib/systemd/systemd" ]
