@@ -24,8 +24,9 @@ podman run -d \
   --security-opt seccomp=unconfined \
   --security-opt label=disable \
   --security-opt unmask=all \
-  --volume webtop-home:/home/webtop \
-  --volume webtop-flatpak:/var/lib/flatpak \
+  --shm-size 1g \
+  --volume webtop-var:/var \
+  --volume webtop-etc:/etc \
   -p 3000:3000 \
   ghcr.io/braccae/webtop:latest
 ```
@@ -37,6 +38,7 @@ podman run -d \
 | `--cap-add SYS_ADMIN` | FUSE mounting (AppImages) needs it in the container's user namespace; `fusermount3` is setuid so the unprivileged session can use it. `--privileged` is **not** required. |
 | `--cap-add NET_ADMIN` | Lets NetworkManager own the pasta tap instead of only *assuming* it, so the desktop network indicator reports a real connection. See [Network indicator](#network-indicator). |
 | `--pids-limit=8192` | Headroom for the session's threads. Podman's default limit is 2048, and systemd caps `webtop.service` at 15% of that (307 tasks) unless the unit raises it. With the shipped unit the service is unbounded, but the container ceiling still applies. |
+| `--shm-size=1g` | CEF/Chromium (Steam, Discover, Bazaar) needs more than the 64 MB default `/dev/shm`; otherwise `steamwebhelper` crash-loops. For pods, pass `--shm-size=1g` to `podman pod create`. |
 | `--security-opt seccomp=unconfined` | `bwrap` must create user/PID namespaces (blocked by the default seccomp profile). |
 | `--security-opt label=disable` | `bwrap` cannot mount `devpts`/`proc` under the container SELinux label. |
 | `--security-opt unmask=all` | Podman's masked `/proc` paths prevent `bwrap` from mounting a fresh `/proc` inside its sandbox. |
@@ -80,10 +82,21 @@ sudo flatpak install -y flathub org.kde.kcalc
 flatpak run org.kde.kcalc
 ```
 
-Persistence:
+### Persistence (bootc layout)
 
-* system installs live in `/var/lib/flatpak` → volume `webtop-flatpak`
-* `flatpak install --user` installs live in the home volume (`webtop-home`)
+The image is built from a bootc base, so the root filesystem is read-only,
+`/home` is a symlink to `/var/home`, and only `/var` and `/etc` are writable.
+Persist exactly those two volumes:
+
+* `/var` → home (`/var/home`), system Flatpak installs, the AppStream cache,
+  WARP registration, container state and logs.
+* `/etc` → configuration. `etc-overlay-sync.service` seeds `/etc` from
+  `/usr/share/factory/etc` at boot and merges image updates into the persisted
+  copy, while leaving runtime-owned files (`machine-id`, `hostname`,
+  `resolv.conf`) alone.
+
+Do not mount a separate `/home` volume: it shadows `/var/home` and breaks the
+bootc layout.
 
 Without `--cap-add SYS_ADMIN` + `--security-opt label=disable` Flatpak fails at
 launch with:

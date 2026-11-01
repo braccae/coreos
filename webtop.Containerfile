@@ -107,6 +107,9 @@ RUN rm -f /etc/nginx/conf.d/default.conf
 RUN mkdir -p /etc/NetworkManager/conf.d && \
     printf '[main]\ndns=none\n' > /etc/NetworkManager/conf.d/99-webtop-dns.conf && \
     sed -i 's/^hosts:.*/hosts:      files dns/' /etc/nsswitch.conf && \
+    if [ -d /usr/share/factory/etc ]; then \
+        cp -a /etc/nsswitch.conf /usr/share/factory/etc/nsswitch.conf; \
+    fi && \
     systemctl disable systemd-resolved.service 2>/dev/null; true
 
 # Webtop User setup
@@ -131,6 +134,11 @@ RUN systemctl disable plasmalogin.service sddm.service 2>/dev/null || true; \
     (setcap -r /usr/bin/kwin_wayland || true) && \
     ([ -e /usr/sbin/ldconfig ] || ln -s ../bin/ldconfig /usr/sbin/ldconfig) && \
     systemctl enable webtop.service webtop-nm-uplink.service \
-                     webtop-flatpak-appstream.service
+                     webtop-flatpak-appstream.service; \
+    # bootc-style /etc persistence: /etc is a volume, and the base image ships
+    # etc-overlay-sync to seed it from /usr/share/factory/etc at boot. Enable it
+    # so image updates reach the persisted /etc. The factory copy of
+    # nsswitch.conf is updated above so the DNS fix is not reverted.
+    systemctl enable etc-overlay-sync.service 2>/dev/null || true
 
 ENTRYPOINT [ "/usr/lib/systemd/systemd" ]
