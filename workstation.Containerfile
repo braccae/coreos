@@ -1,4 +1,4 @@
-FROM ghcr.io/ublue-os/bazzite:stable-44 AS base
+FROM ghcr.io/ublue-os/bazzite:stable-45 AS base
 
 COPY repos/ /etc/yum.repos.d/
 RUN rm -rv /etc/yum.repos.d/wazuh.repo /etc/yum.repos.d/crowdsec.repo
