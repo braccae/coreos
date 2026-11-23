@@ -124,3 +124,47 @@ install-dev-mode:
         nodejs \
         nodejs-npm \
         gh
+
+install-libkrunfw:
+    #!/usr/bin/env bash
+    # Install libkrunfw (guest kernel payload for libkrun).
+    # AlmaLinux 10 AppStream ships `crun-krun` and `libkrun`, which dynamically
+    # dlopen `libkrunfw.so.5` at runtime, but neither EL10 AppStream nor EPEL 10
+    # packages `libkrunfw`. Install the matching upstream `libkrun/libkrunfw`
+    # release shared library into /usr/lib64/ so `podman --runtime=krun` and
+    # Quadlets using `krun` work out of the box on both x86_64 and aarch64.
+    set -euo pipefail
+
+    LIBKRUNFW_VERSION="5.6.4"
+    ARCH="$(uname -m)"
+
+    case "${ARCH}" in
+        x86_64)
+            SHA256="25a5554137dcc11dd71246627264f67539154ee783aa8450acfa79139e802e64"
+            ;;
+        aarch64)
+            SHA256="c031d9b582b766b921701e2427c0feb318e63c38207796ef196b613f311de98e"
+            ;;
+        *)
+            echo "ERROR: Unsupported architecture for libkrunfw: ${ARCH}" >&2
+            exit 1
+            ;;
+    esac
+
+    TARBALL="/tmp/libkrunfw-${ARCH}.tgz"
+    URL="https://github.com/libkrun/libkrunfw/releases/download/v${LIBKRUNFW_VERSION}/libkrunfw-${ARCH}.tgz"
+
+    echo "==> Downloading libkrunfw v${LIBKRUNFW_VERSION} (${ARCH})"
+    curl -fsSL "${URL}" -o "${TARBALL}"
+    echo "${SHA256}  ${TARBALL}" | sha256sum -c -
+
+    tar -xzf "${TARBALL}" --no-same-owner --strip-components=2 -C /usr/lib64/
+    rm -f "${TARBALL}"
+
+    ldconfig
+    restorecon -R /usr/lib64/libkrunfw.so* 2>/dev/null || true
+
+    ldconfig -p | grep -q "libkrunfw\.so\.5"
+    test -e /usr/lib64/libkrunfw.so.5
+    echo "==> libkrunfw v${LIBKRUNFW_VERSION} installed in /usr/lib64"
+
