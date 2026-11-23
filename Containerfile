@@ -148,7 +148,14 @@ RUN dnf install -y \
     podman-docker \
     podman-compose \
     fuse-overlayfs \
+    crun-krun \
+    libkrun \
+    passt \
+    passt-selinux \
     && dnf clean all
+
+COPY build/justfile /tmp/
+RUN just -f /tmp/justfile install-libkrunfw && rm -f /tmp/justfile
 
 # Nix is deliberately NOT part of the base image: it ships only in the dx
 # variant (dx.Containerfile), installed with every unit disabled. See
