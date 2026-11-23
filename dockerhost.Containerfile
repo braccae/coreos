@@ -1,39 +1,20 @@
-FROM ghcr.io/braccae/alma:latest as base
+FROM ghcr.io/braccae/alma:latest AS base
 
 FROM base AS builder
 
-RUN dnf install -y \
-    git \
-    gettext \
-    nodejs \
-    make \
-    libappstream-glib \
-    libappstream-glib-devel \
-    rpm-build
-
-RUN rm -rv /root
-WORKDIR /tmp/build
-
-RUN git clone https://github.com/chabad360/cockpit-docker.git \
-    && cd cockpit-docker \
-    && NODE_ENV=production make rpm
+# --- Build cockpit-docker RPM from source -----------------------------------
+RUN --mount=type=bind,source=build/justfile,target=/tmp/build.justfile \
+    just -f /tmp/build.justfile build-cockpit-docker /tmp/cockpit-docker-rpms && \
+    just -f /tmp/build.justfile cleanup-dnf
 
 FROM base AS final
+LABEL containers.bootc 1
 
-# --allowerasing: the Alma base ships podman-docker, whose `docker` command
-# conflicts with docker-ce. Let the transaction replace the shim with the real
-# engine instead of failing the build.
-RUN dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo \
-    && dnf install -y --allowerasing \
-    docker-ce \
-    docker-ce-cli \
-    containerd.io \
-    docker-buildx-plugin \
-    docker-compose-plugin \
-    && systemctl enable docker
-
-# COPY --from=builder /usr/local/share/cockpit/docker /usr/share/cockpit/docker
-
-RUN --mount=type=bind,from=builder,source=/tmp/build/cockpit-docker,target=/tmp/build/cockpit-docker \
-    rpm -i --nodeps \
-    /tmp/build/cockpit-docker/*.rpm
+# --- Install Docker CE + cockpit-docker RPM, refresh factory /etc, and lint -
+RUN --mount=type=bind,source=build/justfile,target=/tmp/build.justfile \
+    --mount=type=bind,from=builder,source=/tmp/cockpit-docker-rpms,target=/tmp/cockpit-docker-rpms \
+    just -f /tmp/build.justfile install-docker && \
+    just -f /tmp/build.justfile install-cockpit-docker /tmp/cockpit-docker-rpms && \
+    just -f /tmp/build.justfile cleanup-dnf && \
+    just -f /tmp/build.justfile snapshot-factory-etc && \
+    bootc container lint

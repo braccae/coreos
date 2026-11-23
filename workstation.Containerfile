@@ -1,72 +1,44 @@
+# Workstation (Bazzite / Fedora) — KDE Plasma bootc desktop image with ZFS kmods.
+ARG KMODS_IMAGE=ghcr.io/braccae/kmods:latest
+
 FROM ghcr.io/ublue-os/bazzite:stable-44 AS base
-
-COPY repos/ /etc/yum.repos.d/
-RUN rm -rv /etc/yum.repos.d/wazuh.repo /etc/yum.repos.d/crowdsec.repo
-
-COPY build/justfile /tmp/
-
-FROM ghcr.io/braccae/kmods:latest AS kmods
+FROM ${KMODS_IMAGE} AS kmods
 
 FROM base AS final
+ARG TARGETARCH
 LABEL containers.bootc 1
 
-RUN dnf5 install -y \
-    qemu-guest-agent \
-    just \
-    && dnf clean all
+# --- Repositories & workstation package groups ------------------------------
+# Bind-mount build/justfile and repos/ so no build-time scripts, unused repo
+# files (wazuh/crowdsec/proxmox/adoptium), or temp artifacts land in the image.
+# All package groups share a single DNF metadata pass and clean caches in-layer.
+RUN --mount=type=bind,source=build/justfile,target=/tmp/build.justfile \
+    --mount=type=bind,source=repos,target=/tmp/repos \
+    dnf5 install -y qemu-guest-agent just && \
+    just -f /tmp/build.justfile setup-repos ublue /tmp/repos && \
+    just -f /tmp/build.justfile install-java && \
+    just -f /tmp/build.justfile install-misc-tools && \
+    just -f /tmp/build.justfile install-virt-tools && \
+    just -f /tmp/build.justfile install-dev-mode && \
+    just -f /tmp/build.justfile install-kde-utils && \
+    just -f /tmp/build.justfile install-cloudflare-warp false && \
+    just -f /tmp/build.justfile cleanup-dnf
 
-COPY build/scripts /tmp/build_scripts
-# RUN bash /tmp/build_scripts/wazuh-agent.sh
+# --- ZFS kernel modules & initramfs -----------------------------------------
+# Bind-mount the prebuilt kmods tree so RPMs are never copied into a layer.
+# install-zfs-kmods runs depmod and rebuild-initramfs only when the kmods match
+# the active kernel.
+RUN --mount=type=bind,source=build/justfile,target=/tmp/build.justfile \
+    --mount=type=bind,from=kmods,source=/zfs/bazzite,target=/tmp/kmods \
+    just -f /tmp/build.justfile install-zfs-kmods "/tmp/kmods/${TARGETARCH}" bazzite && \
+    just -f /tmp/build.justfile cleanup-dnf
 
-ARG TARGETARCH
-COPY --from=kmods /zfs/bazzite/${TARGETARCH}/ /tmp/rpms/
-RUN if [ -f /tmp/rpms/kernel-version.txt ]; then \
-        KMOD_KERNEL=$(cat /tmp/rpms/kernel-version.txt) && \
-        echo "kmods built for kernel: ${KMOD_KERNEL}" && \
-        CURRENT_KERNEL=$(just -f /tmp/justfile get-active-kernel) && \
-        echo "Current base kernel: ${CURRENT_KERNEL}" && \
-        if [ "$CURRENT_KERNEL" = "$KMOD_KERNEL" ]; then \
-            dnf5 remove -y zfs-fuse && \
-            dnf5 install -y /tmp/rpms/*.rpm && \
-            echo "Correcting ZFS kernel module dependencies..." && \
-            depmod -a \
-            --filesyms /usr/lib/modules/${CURRENT_KERNEL}/System.map \
-            ${CURRENT_KERNEL} && \
-            echo "✓ ZFS modules installed and depmod completed successfully for kernel ${CURRENT_KERNEL}"; \
-        else \
-            echo "WARNING: Kernel version mismatch! (Current: ${CURRENT_KERNEL}, Kmods: ${KMOD_KERNEL}). Skipping ZFS installation."; \
-        fi; \
-    else \
-        echo "WARNING: No ZFS kernel modules found in the kmods image for Workstation ${TARGETARCH}. Skipping ZFS installation."; \
-    fi && \
-    dnf clean all
-
-RUN export BOOTC_KERNEL_VERSION=$(just -f /tmp/justfile get-active-kernel) && \
-    cd /usr/lib/modules/$BOOTC_KERNEL_VERSION && \
-    mkdir /var/roothome && \
-    dracut -f --kver $BOOTC_KERNEL_VERSION $BOOTC_KERNEL_VERSION && \
-    rm -rfv /var/roothome
-
-WORKDIR /tmp
-
-RUN mkdir -p /var/lib/alternatives && \
-    just install-ublue-repos
-
-RUN just install-java && \
-    just install-misc-tools && \
-    just install-virt-tools && \
-    just install-dev-mode && \
-    just install-kde-utils && \
-    just install-cloudflare-warp \
-    && dnf clean all
-
+# --- Local rootfs overlays (late for optimal layer caching) -----------------
 COPY rootfs/btrfs_config/ /
-# COPY rootfs/non_btrfs/ /
-# COPY rootfs/common/ /
 COPY rootfs/workstation/ /
 
-RUN systemctl enable tailscaled
-
-RUN bootc container lint
+# --- Final service enablement & bootc lint ----------------------------------
+RUN systemctl enable tailscaled && \
+    bootc container lint
 
 ENTRYPOINT [ "/sbin/init" ]
