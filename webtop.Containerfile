@@ -1,5 +1,5 @@
 # Webtop (Fedora / Bazzite) — remote KDE Plasma desktop streamed with Selkies.
-FROM ghcr.io/ublue-os/bazzite:stable-44 AS plasma-nm-builder
+FROM ghcr.io/ublue-os/bazzite:stable-45 AS plasma-nm-builder
 
 # plasma-nm 6.7.5 draws "network-unavailable" for Tun/Veth devices, which is
 # exactly what a container uplink is (pasta tap / netavark veth). Separate the
