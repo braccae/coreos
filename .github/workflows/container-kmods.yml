@@ -2,13 +2,17 @@ name: Kmods Container
 
 on:
   push:
-    branches: ["main", "feat/kmods-kernel-check"]
+    branches: ["main"]
     paths:
       - "kmods.Containerfile"
       - "kmods-bundle.Containerfile"
       - "build/scripts/build-zfs.sh"
       - ".github/workflows/container-kmods.yml"
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   REGISTRY: ghcr.io
@@ -43,6 +47,8 @@ jobs:
       - name: Build Kmods
         uses: redhat-actions/buildah-build@719e3c40d8af9790c23eca13f7daa339f2867034 # v2
         id: build
+        env:
+          LOCALMOK: ${{ secrets.LOCALMOK }}
         with:
           context: .
           containerfiles: ./kmods.Containerfile

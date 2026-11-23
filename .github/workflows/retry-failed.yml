@@ -7,11 +7,14 @@ on:
       - "Kmods Container"
       - "Alma Container"
       - "Workstation Container"
+      - "Workstation Alma Container"
       - "K3s Container"
       - "Installer Container"
       - "Dockerhost Container"
+      - "DX Container"
       - "HCI Container"
-      - "SELinux Policy"
+      - "Webtop Container"
+      - "Webtop Alma Container"
       - "Build and push qcow2 image"
     types:
       - completed

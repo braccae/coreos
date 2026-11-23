@@ -1,0 +1,415 @@
+name: Reusable Container Build
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: "Base image repository name (e.g., alma, workstation, webtop)"
+        required: true
+        type: string
+      variant_tag:
+        description: "Rolling tag published on the default branch (e.g., latest, dx, hci)"
+        required: true
+        type: string
+      containerfile:
+        description: "Containerfile path relative to repository root"
+        required: true
+        type: string
+      image_desc:
+        description: "OCI image description"
+        required: true
+        type: string
+      keywords:
+        description: "ArtifactHub comma-separated keywords"
+        required: false
+        type: string
+        default: "bootc,alma"
+      architectures:
+        description: "JSON array of target architectures (amd64 and/or arm64)"
+        required: false
+        type: string
+        default: '["amd64","arm64"]'
+      is_bootc:
+        description: "Whether the image is a bootc OS image (adds containers.bootc=1 and bootc chunkah flags)"
+        required: false
+        type: boolean
+        default: true
+      rechunk:
+        description: "Whether to rechunk the built image using quay.io/coreos/chunkah:latest"
+        required: false
+        type: boolean
+        default: false
+      rechunk_max_layers:
+        description: "Maximum layer count passed to chunkah --max-layers"
+        required: false
+        type: number
+        default: 128
+      free_disk_space:
+        description: "Run ublue-os/remove-unwanted-software before building"
+        required: false
+        type: boolean
+        default: false
+      use_btrfs_storage:
+        description: "Mount compressed BTRFS storage at /var/lib/containers"
+        required: false
+        type: boolean
+        default: false
+      disable_fuse_overlayfs:
+        description: "Passed to redhat-actions/buildah-build disable-fuse-overlayfs"
+        required: false
+        type: boolean
+        default: false
+      extra_args:
+        description: "Additional newline-separated arguments passed to redhat-actions/buildah-build"
+        required: false
+        type: string
+        default: ""
+      pass_mok_secret:
+        description: "Expose LOCALMOK secret to buildah via --secret id=LOCALMOK,env=LOCALMOK"
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SIGNING_SECRET:
+        required: false
+      LOCALMOK:
+        required: false
+    outputs:
+      manifest_digest:
+        description: "Digest of the pushed multi-arch manifest"
+        value: ${{ jobs.create-manifest.outputs.digest }}
+      image_repo:
+        description: "Full lowercase OCI image repository path"
+        value: ${{ jobs.build-metadata.outputs.image_repo }}
+
+env:
+  REGISTRY: ghcr.io
+  ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/23002397?v=4&size=64"
+
+jobs:
+  build-metadata:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+      image_repo: ${{ steps.prep.outputs.image_repo }}
+      image_registry: ${{ steps.prep.outputs.image_registry }}
+      image_name: ${{ steps.prep.outputs.image_name }}
+      is_default_branch: ${{ steps.prep.outputs.is_default_branch }}
+      extra_args: ${{ steps.prep.outputs.extra_args }}
+      matrix: ${{ steps.prep.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Prepare build metadata and matrix
+        id: prep
+        env:
+          ARCHITECTURES: ${{ inputs.architectures }}
+          IMAGE_NAME_INPUT: ${{ inputs.image_name }}
+          VARIANT_TAG: ${{ inputs.variant_tag }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
+          INPUT_EXTRA_ARGS: ${{ inputs.extra_args }}
+          PASS_MOK_SECRET: ${{ inputs.pass_mok_secret }}
+        run: |
+          set -euo pipefail
+
+          DATE_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "date=${DATE_UTC}" >> "${GITHUB_OUTPUT}"
+
+          MATRIX="$(jq -c '
+            map(
+              if . == "amd64" then
+                {arch: "amd64", platform: "linux/amd64", runner: "ubuntu-24.04"}
+              elif . == "arm64" then
+                {arch: "arm64", platform: "linux/arm64", runner: "ubuntu-24.04-arm"}
+              else
+                error("Unsupported architecture: \(.)")
+              end
+            )
+          ' <<< "${ARCHITECTURES}")"
+          echo "matrix=${MATRIX}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" && -n "${GITHUB_HEAD_REF:-}" ]]; then
+            BRANCH_NAME="${GITHUB_HEAD_REF}"
+          else
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          fi
+
+          if [[ "${GITHUB_REF}" == "refs/heads/${DEFAULT_BRANCH}" || "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            IMAGE_NAME="${IMAGE_NAME_INPUT}"
+            DEFAULT_TAG="${VARIANT_TAG}"
+            IS_DEFAULT_BRANCH="true"
+          else
+            SAFE_BRANCH="${BRANCH_NAME//\//-}"
+            SAFE_BRANCH="$(printf '%s' "${SAFE_BRANCH}" | tr '_' '-' | tr -cd 'a-zA-Z0-9.-' | sed 's/^-*//;s/-*$//')"
+            IMAGE_NAME="${IMAGE_NAME_INPUT}-${SAFE_BRANCH}"
+            DEFAULT_TAG="${SAFE_BRANCH}"
+            IS_DEFAULT_BRANCH="false"
+          fi
+
+          OWNER_LOWER="${REPO_OWNER,,}"
+          IMAGE_NAME_LOWER="${IMAGE_NAME,,}"
+          IMAGE_REGISTRY="${REGISTRY}/${OWNER_LOWER}"
+          IMAGE_REPO="${IMAGE_REGISTRY}/${IMAGE_NAME_LOWER}"
+
+          echo "image_name=${IMAGE_NAME_LOWER}" >> "${GITHUB_OUTPUT}"
+          echo "image_registry=${IMAGE_REGISTRY}" >> "${GITHUB_OUTPUT}"
+          echo "image_repo=${IMAGE_REPO}" >> "${GITHUB_OUTPUT}"
+          echo "default_tag=${DEFAULT_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "is_default_branch=${IS_DEFAULT_BRANCH}" >> "${GITHUB_OUTPUT}"
+
+          EXTRA_ARGS="${INPUT_EXTRA_ARGS:-}"
+          if [ "${PASS_MOK_SECRET}" = "true" ]; then
+            if [ -n "${EXTRA_ARGS}" ]; then
+              EXTRA_ARGS="${EXTRA_ARGS}"$'\n'"--secret id=LOCALMOK,env=LOCALMOK"
+            else
+              EXTRA_ARGS="--secret id=LOCALMOK,env=LOCALMOK"
+            fi
+          fi
+          {
+            echo "extra_args<<__EXTRA_ARGS_EOF__"
+            printf '%s\n' "${EXTRA_ARGS}" | sed '/^[[:space:]]*$/d'
+            echo "__EXTRA_ARGS_EOF__"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        with:
+          images: ${{ steps.prep.outputs.image_repo }}
+          tags: |
+            type=raw,value=${{ inputs.variant_tag }},enable={{is_default_branch}}
+            type=sha,format=short
+            type=ref,event=branch
+            type=ref,event=pr
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+          labels: |
+            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/README.md
+            org.opencontainers.image.created=${{ steps.prep.outputs.date }}
+            org.opencontainers.image.description=${{ inputs.image_desc }}
+            org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}/blob/main/${{ inputs.containerfile }}
+            org.opencontainers.image.title=${{ steps.prep.outputs.image_name }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
+            org.opencontainers.image.version=${{ steps.prep.outputs.default_tag }}
+            io.artifacthub.package.deprecated=false
+            io.artifacthub.package.keywords=${{ inputs.keywords }}
+            io.artifacthub.package.license=Apache-2.0
+            io.artifacthub.package.logo-url=${{ env.ARTIFACTHUB_LOGO_URL }}
+            io.artifacthub.package.prerelease=false
+            ${{ inputs.is_bootc && 'containers.bootc=1' || '' }}
+          sep-tags: " "
+          sep-annotations: " "
+
+  build:
+    needs: build-metadata
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.build-metadata.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Free disk space
+        if: ${{ inputs.free_disk_space }}
+        uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
+
+      - name: Setup BTRFS container storage
+        if: ${{ inputs.use_btrfs_storage }}
+        uses: ublue-os/container-storage-action@911baca08baf30c8654933e9e9723cb399892140
+        continue-on-error: true
+        with:
+          target-dir: /var/lib/containers
+          mount-opts: compress-force=zstd:2
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Image
+        id: build
+        uses: redhat-actions/buildah-build@719e3c40d8af9790c23eca13f7daa339f2867034 # v2
+        env:
+          LOCALMOK: ${{ inputs.pass_mok_secret && secrets.LOCALMOK || '' }}
+        with:
+          context: .
+          containerfiles: ./${{ inputs.containerfile }}
+          platforms: ${{ matrix.platform }}
+          image: ${{ needs.build-metadata.outputs.image_name }}
+          tags: ${{ inputs.variant_tag }}-${{ matrix.arch }}
+          labels: ${{ needs.build-metadata.outputs.labels }}
+          disable-fuse-overlayfs: ${{ inputs.disable_fuse_overlayfs }}
+          extra-args: ${{ needs.build-metadata.outputs.extra_args }}
+
+      - name: Rechunk Image (coreos/chunkah)
+        if: ${{ inputs.rechunk }}
+        env:
+          IMAGE_NAME: ${{ needs.build-metadata.outputs.image_name }}
+          ARCH_TAG: ${{ inputs.variant_tag }}-${{ matrix.arch }}
+          IS_BOOTC: ${{ inputs.is_bootc }}
+          RECHUNK_MAX_LAYERS: ${{ inputs.rechunk_max_layers }}
+        run: |
+          set -euo pipefail
+          unset SOURCE_DATE_EPOCH
+          TARGET_IMG="localhost/${IMAGE_NAME}:${ARCH_TAG}"
+          CFG_FILE="$(mktemp)"
+          OUT_DIR="$(mktemp -d "${RUNNER_TEMP}/chunkah.XXXXXX")"
+          trap 'rm -f "${CFG_FILE}"; rm -rf "${OUT_DIR}"' EXIT
+
+          podman inspect "${TARGET_IMG}" > "${CFG_FILE}"
+
+          CHUNKAH_ARGS=(
+            build
+            --verbose
+            --compressed
+            --max-layers "${RECHUNK_MAX_LAYERS}"
+            --config /chunkah-config.json
+            --output oci:/run/out/chunked
+          )
+          if [ "${IS_BOOTC}" = "true" ]; then
+            CHUNKAH_ARGS+=(
+              --prune /sysroot/
+              --label ostree.commit-
+              --label ostree.final-diffid-
+            )
+          fi
+
+          podman run --rm \
+            --mount="type=image,src=${TARGET_IMG},target=/chunkah" \
+            -v "${CFG_FILE}:/chunkah-config.json:ro" \
+            -v "${OUT_DIR}:/run/out" \
+            quay.io/coreos/chunkah:latest \
+            "${CHUNKAH_ARGS[@]}"
+
+          # Free raw image layers before importing rechunked OCI layout
+          podman rmi -f "${TARGET_IMG}"
+          CHUNKED_ID="$(podman pull -q "oci:${OUT_DIR}/chunked")"
+          podman tag "${CHUNKED_ID}" "${TARGET_IMG}"
+
+      - name: Push To Registry
+        if: github.event_name != 'pull_request'
+        id: push-to-registry
+        uses: redhat-actions/push-to-registry@94ade333c38ecc0e60e94785125d9a52ca423b37 # v2
+        with:
+          image: ${{ needs.build-metadata.outputs.image_name }}
+          tags: ${{ inputs.variant_tag }}-${{ matrix.arch }}
+          registry: ${{ needs.build-metadata.outputs.image_registry }}
+
+      - name: Write build info
+        if: github.event_name != 'pull_request'
+        env:
+          ARCH: ${{ matrix.arch }}
+          DIGEST: ${{ steps.push-to-registry.outputs.digest }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          mkdir -p "build-info/${ARCH}"
+          printf '%s\n' "${DIGEST}" > "build-info/${ARCH}/digest.txt"
+          printf '%s\n' "${PLATFORM}" > "build-info/${ARCH}/platform.txt"
+
+      - name: Upload artifact for manifest creation
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: build-info-${{ matrix.arch }}
+          path: build-info/
+          retention-days: 1
+
+  create-manifest:
+    needs: [build-metadata, build]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.push-manifest.outputs.digest }}
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: build-info-*
+          path: build-info
+          merge-multiple: true
+
+      - name: Create and push multi-arch manifest
+        id: push-manifest
+        env:
+          IMAGE_REPO: ${{ needs.build-metadata.outputs.image_repo }}
+          TAGS: ${{ needs.build-metadata.outputs.tags }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          ARCH_DIRS=(build-info/*/)
+          if [ "${#ARCH_DIRS[@]}" -eq 0 ]; then
+            echo "::error::No arch build-info directories found under build-info/"
+            exit 1
+          fi
+
+          MANIFEST_DIGEST=""
+          for IMAGE_TAG in ${TAGS}; do
+            echo "Creating and pushing manifest for ${IMAGE_TAG}"
+            podman manifest rm "${IMAGE_TAG}" 2>/dev/null || true
+            podman manifest create "${IMAGE_TAG}"
+            for ARCH_DIR in "${ARCH_DIRS[@]}"; do
+              ARCH="$(basename "${ARCH_DIR}")"
+              DIGEST="$(tr -d '[:space:]' < "${ARCH_DIR}/digest.txt")"
+              if [ -z "${DIGEST}" ]; then
+                echo "::error::Empty digest for arch ${ARCH}"
+                exit 1
+              fi
+              podman manifest add "${IMAGE_TAG}" \
+                --arch "${ARCH}" \
+                --os linux \
+                "${IMAGE_REPO}@${DIGEST}"
+            done
+            rm -f /tmp/manifest.digest
+            podman manifest push --all --digestfile /tmp/manifest.digest "${IMAGE_TAG}" "docker://${IMAGE_TAG}"
+            MANIFEST_DIGEST="$(tr -d '[:space:]' < /tmp/manifest.digest)"
+            echo "Pushed ${IMAGE_TAG} -> ${MANIFEST_DIGEST}"
+          done
+
+          if [ -z "${MANIFEST_DIGEST}" ]; then
+            echo "::error::No tags were pushed"
+            exit 1
+          fi
+          echo "digest=${MANIFEST_DIGEST}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign multi-arch manifest
+        if: needs.build-metadata.outputs.is_default_branch == 'true'
+        env:
+          COSIGN_EXPERIMENTAL: "false"
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+          IMAGE_REPO: ${{ needs.build-metadata.outputs.image_repo }}
+          MANIFEST_DIGEST: ${{ steps.push-manifest.outputs.digest }}
+        run: |
+          set -euo pipefail
+          if [ -z "${COSIGN_PRIVATE_KEY:-}" ]; then
+            echo "SIGNING_SECRET is not set; skipping manifest signing."
+            exit 0
+          fi
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY "${IMAGE_REPO}@${MANIFEST_DIGEST}"

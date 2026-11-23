@@ -1,130 +1,437 @@
-set shell := ["bash", "-c"]
+# ==============================================================================
+# Container Build Justfile — central build tasks for all Containerfiles
+# ==============================================================================
+#
+# Invoked during container builds via:
+#   just -f /tmp/build.justfile <recipe> [args...]
+#
+# All internal self-calls MUST use `just -f "{{justfile()}}"` so recipes work
+# safely from any working directory (Alma images ship a system-wide `/justfile`
+# that bare `just` would otherwise pick up).
+#
+# Package-installing sub-recipes intentionally do NOT clean DNF caches so
+# callers can chain multiple `install-*` recipes in a single `RUN` layer
+# sharing downloaded metadata, then call `cleanup-dnf` once at the end.
+# ==============================================================================
 
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# List all available build recipes
+default:
+    @just -f "{{justfile()}}" --list
+
+# ==============================================================================
+# 1. Core Helpers & Utilities
+# ==============================================================================
+
+# Print the active kernel version (directory under /usr/lib/modules containing vmlinuz)
+[group('helpers')]
 get-active-kernel:
-	@for d in /usr/lib/modules/*/; do v=$(basename "$d"); if [ -f "${d}vmlinuz" ]; then printf "%s\n" "$v"; exit 0; fi; done; echo "ERROR: no active kernel found" >&2; exit 1
+    @for d in /usr/lib/modules/*/; do v=$(basename "$d"); if [ -f "${d}vmlinuz" ]; then printf "%s\n" "$v"; exit 0; fi; done; echo "ERROR: no active kernel found" >&2; exit 1
 
+# Print the active kernel base version (everything before the first '-')
+[group('helpers')]
 get-active-kernel-base:
-	@FULL_VER=$(just get-active-kernel); BASE_VER=$(echo "$FULL_VER" | cut -d- -f1); printf "%s\n" "$BASE_VER"
+    @FULL_VER=$(just -f "{{justfile()}}" get-active-kernel); printf "%s\n" "$FULL_VER" | cut -d- -f1
 
-install-ublue-repos:
+# Download assets from the latest GitHub release matching all comma-separated substrings (case-insensitive)
+[group('helpers')]
+get-gh-release url tags="" out_dir=".":
     #!/usr/bin/env bash
-    dnf5 install -y dnf-plugins-core
-    # Terra
-    dnf5 config-manager addrepo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
-    dnf install terra-release -y
-    # Github CLI
-    dnf5 config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
-    # ACT local gihub actions
-    dnf -y copr enable goncalossilva/act
-    # VSCode
-    rpm --import https://packages.microsoft.com/keys/microsoft.asc
-    # # Tailscale
-    # dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
-    dnf copr enable -y scottames/ghostty
+    set -euo pipefail
 
-install-cloudflare-warp:
-    # Bazzite/ublue images ship /opt as a symlink to var/opt, and /var/opt does
-    # not exist, so rpm cannot create /opt/cloudflare-warp (cpio: mkdir failed).
-    mkdir -p /var/opt
-    dnf5 install -y --setopt=install_weak_deps=False cloudflare-warp
-    systemctl disable warp-svc
+    REPO_URL="{{url}}"
+    TAGS="{{tags}}"
+    OUT_DIR="{{out_dir}}"
 
-install-ansible:
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "ERROR: jq is required by get-gh-release" >&2
+        exit 1
+    fi
+
+    # Extract owner/repo from a GitHub URL (handling trailing slash and .git suffix)
+    if [[ "$REPO_URL" == *github.com/* ]]; then
+        OWNER_REPO="${REPO_URL#*github.com/}"
+    else
+        OWNER_REPO="$REPO_URL"
+    fi
+    OWNER_REPO="${OWNER_REPO%/}"
+    OWNER_REPO="${OWNER_REPO%.git}"
+    OWNER_REPO="${OWNER_REPO%/}"
+
+    if [[ ! "$OWNER_REPO" =~ ^[^/]+/[^/]+$ ]]; then
+        echo "ERROR: Invalid GitHub repository URL: ${REPO_URL}" >&2
+        exit 1
+    fi
+
+    # Parse comma-separated tags, trimming whitespace and skipping empty entries
+    SEARCH_TAGS=()
+    if [ -n "$TAGS" ]; then
+        IFS=',' read -ra RAW_TAGS <<< "$TAGS"
+        for tag in "${RAW_TAGS[@]}"; do
+            tag="${tag#"${tag%%[![:space:]]*}"}"
+            tag="${tag%"${tag##*[![:space:]]}"}"
+            if [ -n "$tag" ]; then
+                SEARCH_TAGS+=("$tag")
+            fi
+        done
+    fi
+
+    TEMP_JSON_FILE="$(mktemp)"
+    trap 'rm -f "$TEMP_JSON_FILE"' EXIT
+
+    API_URL="https://api.github.com/repos/${OWNER_REPO}/releases/latest"
+    echo "==> Fetching latest release info for '${OWNER_REPO}'..."
+    if [ "${#SEARCH_TAGS[@]}" -gt 0 ]; then
+        echo "    Matching assets containing all tags (case-insensitive): ${SEARCH_TAGS[*]}"
+    fi
+
+    CURL_ARGS=(
+        -sL
+        -o "$TEMP_JSON_FILE"
+        -w "%{http_code}"
+        -H "Accept: application/vnd.github.v3+json"
+        -H "User-Agent: build-justfile-get-gh-release"
+    )
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        CURL_ARGS+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+    fi
+
+    HTTP_STATUS="$(curl "${CURL_ARGS[@]}" "$API_URL")"
+    if [ "$HTTP_STATUS" -ne 200 ]; then
+        echo "ERROR: Failed to fetch release info for '${OWNER_REPO}'. HTTP Status: ${HTTP_STATUS}" >&2
+        if [ -s "$TEMP_JSON_FILE" ]; then
+            echo "Response from GitHub:" >&2
+            jq -r '.message // empty' "$TEMP_JSON_FILE" 2>/dev/null || cat "$TEMP_JSON_FILE" >&2
+        fi
+        exit 1
+    fi
+
+    TAG_NAME="$(jq -r '.tag_name' "$TEMP_JSON_FILE")"
+    echo "    Latest release tag: ${TAG_NAME}"
+
+    DOWNLOAD_URLS=()
+    while IFS= read -r ASSET_NAME; do
+        [ -n "$ASSET_NAME" ] || continue
+        MATCH=true
+        LOWER_ASSET_NAME="${ASSET_NAME,,}"
+        for SEARCH_TAG in "${SEARCH_TAGS[@]}"; do
+            LOWER_TAG="${SEARCH_TAG,,}"
+            # Literal substring match (NOT regex =~, which breaks on dots like .rpm)
+            if [[ "$LOWER_ASSET_NAME" != *"$LOWER_TAG"* ]]; then
+                MATCH=false
+                break
+            fi
+        done
+        if [ "$MATCH" = true ]; then
+            ASSET_URL="$(jq -r --arg name "$ASSET_NAME" '.assets[] | select(.name == $name) | .browser_download_url' "$TEMP_JSON_FILE")"
+            if [ -n "$ASSET_URL" ]; then
+                DOWNLOAD_URLS+=("$ASSET_URL")
+            fi
+        fi
+    done < <(jq -r '.assets[].name' "$TEMP_JSON_FILE")
+
+    if [ "${#DOWNLOAD_URLS[@]}" -eq 0 ]; then
+        echo "ERROR: No assets found matching all tags: ${SEARCH_TAGS[*]:-<none>}" >&2
+        echo "Available assets in ${TAG_NAME}:" >&2
+        jq -r '.assets[].name' "$TEMP_JSON_FILE" >&2
+        exit 1
+    fi
+
+    mkdir -p "$OUT_DIR"
+    for ASSET_URL in "${DOWNLOAD_URLS[@]}"; do
+        FILENAME="$(basename "$ASSET_URL")"
+        echo "  -> Downloading ${FILENAME} into ${OUT_DIR}..."
+        curl -fsSL -o "${OUT_DIR}/${FILENAME}" "$ASSET_URL"
+    done
+    echo "==> Downloaded ${#DOWNLOAD_URLS[@]} asset(s) from ${OWNER_REPO}@${TAG_NAME}"
+
+# Clean DNF/DNF5 caches, PackageKit/app-info caches, and package manager logs
+[group('helpers')]
+cleanup-dnf:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -v dnf5 >/dev/null 2>&1; then
+        dnf5 clean all || true
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf clean all || true
+    fi
+    rm -rf /var/cache/dnf/* \
+           /var/cache/PackageKit/* \
+           /var/cache/app-info/* \
+           /var/log/dnf*.log \
+           /var/log/hawkey.log || true
+
+# Refresh /usr/share/factory/etc from /etc and strip runtime-owned files
+[group('helpers')]
+snapshot-factory-etc:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # etc-overlay-sync.service restores this snapshot over /etc on every container
+    # boot. Runtime-owned files must NOT be baked into the snapshot: copying a
+    # stale copy back over /etc re-clobbers the value the runtime just generated.
+    # The most damaging case is machine-id — systemd writes it during early boot,
+    # and a re-zeroed id kills user@UID.service and every D-Bus session bus that
+    # needs a machine id (code 49 / "Invalid machine ID"). hostname and resolv.conf
+    # are likewise owned by the container runtime, and the build-time hostname must
+    # not leak into every instance. Keep this list in sync with etc-overlay-sync.
+    rm -rf /usr/share/factory/etc
+    mkdir -p /usr/share/factory/etc
+    cp -a /etc/. /usr/share/factory/etc/
+    rm -f /usr/share/factory/etc/machine-id \
+          /usr/share/factory/etc/machine-info \
+          /usr/share/factory/etc/hostname \
+          /usr/share/factory/etc/resolv.conf
+
+# Compile and install a custom SELinux policy module from a (potentially read-only) source directory
+[group('helpers')]
+install-selinux-module src_dir name *relabel_paths:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    SRC_DIR="{{src_dir}}"
+    NAME="{{name}}"
+    RELABEL_PATHS=({{relabel_paths}})
+
+    TMPDIR="$(mktemp -d)"
+    trap 'rm -rf "$TMPDIR"' EXIT
+
+    cp -a "${SRC_DIR}/." "${TMPDIR}/"
+    chmod -R u+w "${TMPDIR}"
+
+    if [ -f "${TMPDIR}/Makefile" ]; then
+        make -C "${TMPDIR}"
+    else
+        make -C "${TMPDIR}" -f /usr/share/selinux/devel/Makefile "${NAME}.pp"
+    fi
+
+    mkdir -p /usr/share/selinux/packages
+    cp "${TMPDIR}/${NAME}.pp" "/usr/share/selinux/packages/${NAME}.pp"
+    semodule -i "${TMPDIR}/${NAME}.pp"
+
+    if [ "${#RELABEL_PATHS[@]}" -gt 0 ]; then
+        for p in "${RELABEL_PATHS[@]}"; do
+            restorecon -RF "$p" || true
+        done
+    fi
+
+# Rebuild initramfs for the active kernel using dracut
+[group('helpers')]
+rebuild-initramfs:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    CREATED_ROOTHOME=false
+    if [ ! -d /var/roothome ]; then
+        mkdir -p /var/roothome
+        CREATED_ROOTHOME=true
+    fi
+    cleanup() {
+        if [ "$CREATED_ROOTHOME" = true ]; then
+            rm -rf /var/roothome
+        fi
+    }
+    trap cleanup EXIT
+
+    KVER="$(just -f "{{justfile()}}" get-active-kernel)"
+    dracut -f --kver "$KVER"
+
+# ==============================================================================
+# 2. Repository Setup
+# ==============================================================================
+
+# Configure package repositories for a given target (alma | ublue | docker | elrepo)
+[group('repos')]
+setup-repos target repos_dir="/tmp/repos":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    TARGET="{{target}}"
+    REPOS_DIR="{{repos_dir}}"
+
+    case "$TARGET" in
+        alma)
+            RHEL_VER="$(rpm -E %rhel)"
+            EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-${RHEL_VER}.noarch.rpm"
+            RPMFUSION_FREE_URL="https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-${RHEL_VER}.noarch.rpm"
+            RPMFUSION_NONFREE_URL="https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-${RHEL_VER}.noarch.rpm"
+            dnf install -y --nogpgcheck \
+                "$EPEL_URL" \
+                "$RPMFUSION_FREE_URL" \
+                "$RPMFUSION_NONFREE_URL"
+            curl -fsSL https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo \
+                -o /etc/yum.repos.d/tailscale.repo
+            for repo_file in cloudflare-warp.repo crowdsec.repo wazuh.repo; do
+                if [ -f "${REPOS_DIR}/${repo_file}" ]; then
+                    cp "${REPOS_DIR}/${repo_file}" "/etc/yum.repos.d/${repo_file}"
+                fi
+            done
+            rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
+            ;;
+        ublue)
+            for repo_file in cloudflare-warp.repo code.repo; do
+                if [ -f "${REPOS_DIR}/${repo_file}" ]; then
+                    cp "${REPOS_DIR}/${repo_file}" "/etc/yum.repos.d/${repo_file}"
+                fi
+            done
+            mkdir -p /var/lib/alternatives
+            dnf5 install -y dnf-plugins-core
+            # Terra
+            dnf5 config-manager addrepo --from-repofile=https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo
+            dnf5 install -y terra-release
+            # GitHub CLI
+            dnf5 config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
+            # ACT local GitHub Actions + Ghostty terminal
+            dnf5 -y copr enable goncalossilva/act
+            dnf5 -y copr enable scottames/ghostty
+            # VSCode
+            rpm --import https://packages.microsoft.com/keys/microsoft.asc
+            ;;
+        docker)
+            dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+            ;;
+        elrepo)
+            # ELRepo is used for prebuilt weak-modules only; kernel-ml is never installed.
+            dnf install -y --nogpgcheck https://www.elrepo.org/elrepo-release-10.el10.elrepo.noarch.rpm
+            ;;
+        *)
+            echo "ERROR: Unknown repo target '${TARGET}'. Expected one of: alma, ublue, docker, elrepo" >&2
+            exit 1
+            ;;
+    esac
+
+# ==============================================================================
+# 3. Alma Base & Server Task Groups
+# ==============================================================================
+
+# Install core AlmaLinux base OS packages (excluding cockpit-* and just)
+[group('alma-base')]
+install-base-packages:
     dnf install -y \
-        ansible \
-        python3-ansible-lint \
-        ansible-core-doc \
-        ansible-bender \
-        ansible-builder \
-        ansible-collection-ansible-netcommon \
-        ansible-collection-ansible-netcommon-doc \
-        ansible-collection-ansible-posix \
-        ansible-collection-ansible-utils \
-        ansible-collection-community-crypto \
-        ansible-collection-community-docker \
-        ansible-collection-community-general \
-        ansible-collection-community-kubernetes \
-        ansible-collection-community-mysql \
-        ansible-collection-community-postgresql \
-        ansible-collection-community-rabbitmq \
-        ansible-collection-containers-podman \
-        ansible-collection-kubernetes-core \
-        ansible-collection-community-libvirt
-
-install-java:
-    dnf install -y \
-        java-21-openjdk
-
-install-kde-utils:
-    dnf install -y \
-        kmail \
-        merkuro \
-        konsole \
-        plasma-discover-flatpak \
-        plasma-discover-rpm-ostree \
-        yakuake \
-        qt6-qtlocation \
-        chromium-qt6-ui \
-        fedora-chromium-config-kde \
-        kde-partitionmanager \
-        qt6-qtwebsockets \
-        qt6-qtwebsockets-devel
-
-install-misc-tools:
-    dnf install -y \
-        waypipe \
-        tailscale \
+        qemu-guest-agent \
+        container-selinux \
         zsh \
-        input-leap \
-        rclone \
-        mpv \
-        sqlite-devel \
-        ghostty \
-        chromium \
-        chromium-headless \
-        chromedriver \
         tuned \
         realmd \
         sssd \
-        sqlite \
+        tailscale \
         borgbackup \
+        restic \
+        firewalld \
+        sqlite \
+        fuse \
         rsync \
-        bees \
+        python3-psycopg2 \
+        python3-pcp \
+        xdg-user-dirs \
+        python3-pip \
         git \
         tmux \
+        unzip \
         samba \
         samba-common-tools \
         samba-usershares \
-        bat
-
-install-game-mode:
-    #!/usr/bin/env bash
-    dnf copr enable -y rankyn/xivlauncher
-    dnf install -y \
-        XIVLauncher
-
-install-virt-tools:
-    dnf install -y \
-        virt-manager \
-        qemu-kvm \
-        qemu-tools \
-        qemu-img \
-        qemu-device-display-virtio-gpu-gl \
-        qemu-device-display-virtio-gpu-pci-gl \
-        qemu-device-display-virtio-gpu \
-        qemu-audio-pipewire \
-        qemu-char-spice \
-        qemu-device-usb-redirect
-
-
-install-dev-mode:
-    dnf install -y \
-        code \
-        pnpm \
+        samba-client \
+        cifs-utils \
         nodejs \
+        nodejs-full-i18n \
         nodejs-npm \
-        gh
+        btrfs-progs
 
+# Install SELinux administration/build tools and verify targeted policy integrity
+[group('alma-base')]
+install-selinux-tools:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # SELinux utilities — see https://github.com/SELinuxProject/selinux/wiki/Tools
+    dnf install -y \
+        setroubleshoot-server \
+        policycoreutils \
+        policycoreutils-python-utils \
+        policycoreutils-restorecond \
+        libselinux-utils \
+        checkpolicy \
+        make
+    dnf -y reinstall \
+        selinux-policy-targeted \
+        policycoreutils \
+        policycoreutils-python-utils
+
+# Install Cockpit components for a profile (base | zfs | hci | docker)
+[group('alma-base')]
+install-cockpit profile="base":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    PROFILE="{{profile}}"
+    case "$PROFILE" in
+        base)
+            # cockpit-ws runs as a quadlet container (rootfs/hci/etc/containers/systemd/cockpit-ws.container.builtin),
+            # so the host ships cockpit-bridge and plugins rather than cockpit-ws.
+            dnf install -y \
+                cockpit-system \
+                cockpit-bridge \
+                cockpit-networkmanager \
+                cockpit-podman \
+                cockpit-ostree \
+                cockpit-selinux \
+                cockpit-storaged \
+                cockpit-files
+            ;;
+        zfs)
+            TMPDIR="$(mktemp -d)"
+            trap 'rm -rf "$TMPDIR"' EXIT
+            git clone https://github.com/45drives/cockpit-zfs-manager.git "${TMPDIR}/cockpit-zfs-manager"
+            cp -r "${TMPDIR}/cockpit-zfs-manager/zfs" /usr/share/cockpit
+            curl -fsSL https://raw.githubusercontent.com/45drives/scripts/refs/heads/main/cockpit_font_fix/fix-cockpit.sh | bash
+            ;;
+        hci)
+            dnf install -y cockpit-machines
+            TMPDIR="$(mktemp -d)"
+            CREATED_ROOTHOME=false
+            if [ ! -d /var/roothome ]; then
+                mkdir -p /var/roothome
+                CREATED_ROOTHOME=true
+            fi
+            cleanup() {
+                rm -rf "$TMPDIR"
+                if [ "$CREATED_ROOTHOME" = true ]; then
+                    rm -rf /var/roothome
+                fi
+            }
+            trap cleanup EXIT
+
+            just -f "{{justfile()}}" get-gh-release https://github.com/45Drives/cockpit-identities "el9,noarch,.rpm" "$TMPDIR"
+            just -f "{{justfile()}}" get-gh-release https://github.com/45Drives/cockpit-file-sharing "el9,noarch,.rpm" "$TMPDIR"
+            dnf install -y "${TMPDIR}"/*.rpm
+            ;;
+        docker)
+            just -f "{{justfile()}}" install-cockpit-docker
+            ;;
+        *)
+            echo "ERROR: Unknown cockpit profile '${PROFILE}'. Expected one of: base, zfs, hci, docker" >&2
+            exit 1
+            ;;
+    esac
+
+# Install Podman, libkrun/crun-krun, passt, and upstream libkrunfw
+[group('alma-base')]
+install-podman-krun:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dnf install -y \
+        podman \
+        podman-docker \
+        podman-compose \
+        fuse-overlayfs \
+        crun-krun \
+        libkrun \
+        passt \
+        passt-selinux
+    just -f "{{justfile()}}" install-libkrunfw
+
+# Install verified upstream libkrunfw shared library into /usr/lib64
+[group('alma-base')]
 install-libkrunfw:
     #!/usr/bin/env bash
     # Install libkrunfw (guest kernel payload for libkrun).
@@ -168,3 +475,943 @@ install-libkrunfw:
     test -e /usr/lib64/libkrunfw.so.5
     echo "==> libkrunfw v${LIBKRUNFW_VERSION} installed in /usr/lib64"
 
+# Install Astral uv into /usr/bin (unmanaged mode avoids shell profile edits on bootc)
+[group('alma-base')]
+install-uv:
+    curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/usr/bin" sh
+
+# Install rclone via the official upstream installer
+[group('alma-base')]
+install-rclone:
+    curl -fsSL https://rclone.org/install.sh | bash
+
+# Install Wazuh agent and relocate /var/ossec to /usr/ossec for bootc immutability
+[group('alma-base')]
+install-wazuh:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
+    if [ ! -f /etc/yum.repos.d/wazuh.repo ]; then
+        cat > /etc/yum.repos.d/wazuh.repo << 'EOF'
+    [wazuh]
+    gpgcheck=1
+    gpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH
+    enabled=1
+    name=EL-$releasever - Wazuh
+    baseurl=https://packages.wazuh.com/4.x/yum/
+    priority=1
+    EOF
+    fi
+    dnf install -y wazuh-agent
+    mv /var/ossec /usr/ossec
+    sed -i 's|/var/ossec|/usr/ossec|g' /usr/lib/systemd/system/wazuh-agent.service
+
+# Install CrowdSec engine and nftables firewall bouncer
+[group('alma-base')]
+install-crowdsec:
+    dnf install -y \
+        crowdsec \
+        crowdsec-firewall-bouncer-nftables
+
+# Install the Hermes Agent CLI system-wide under /usr/local/lib/hermes-agent
+[group('alma-base')]
+install-hermes:
+    #!/usr/bin/env bash
+    # Install the Hermes Agent CLI system-wide into the base image.
+    #
+    # Why this shape (all verified empirically against the real base image, see
+    # commit 800f622):
+    #   * The upstream installer (https://hermes-agent.nousresearch.com/install.sh)
+    #     is interactive and per-user by default. We run it non-interactively as
+    #     root so the CLI lands in the *image*, not in a user's home.
+    #   * HERMES_INSTALL_DIR = where the git checkout + launchers live.
+    #   * HERMES_HOME        = where config, state and the committed dependency
+    #     environment live. Keeping it *equal to the install dir* means the sealed
+    #     dependency facts (/usr/local/lib/hermes-agent/installs/<key>/facts.json)
+    #     resolve for a bare `podman run ... hermes`, not just for a login shell.
+    #     The Containerfile bakes the same value as `ENV HERMES_HOME` so runtime
+    #     exec inherits it (this mirrors the upstream image's `ENV HERMES_HOME`).
+    #   * --skip-browser --skip-computer-use: this is a server/OS image, not a
+    #     browser host. The CLI, gateway and agent runtime remain fully functional.
+    #
+    # The published launcher hardcodes absolute paths under the install dir, so the
+    # system-wide publish is a *symlink*, not a copy.
+    set -euo pipefail
+
+    export HERMES_INSTALL_DIR=/usr/local/lib/hermes-agent
+    export HERMES_HOME=/usr/local/lib/hermes-agent
+
+    # In the Alma bootc base /root is a symlink to /var/roothome, which does not
+    # exist yet. The installer needs a writable HOME to stage its downloads, so
+    # create the real directory and point HOME at it for the duration of the build.
+    CREATED_ROOTHOME=false
+    if [ ! -d /var/roothome ]; then
+        mkdir -p /var/roothome
+        CREATED_ROOTHOME=true
+    fi
+    cleanup() {
+        if [ "$CREATED_ROOTHOME" = true ]; then
+            rm -rf /var/roothome
+        fi
+    }
+    trap cleanup EXIT
+    export HOME=/var/roothome
+
+    echo "==> Installing Hermes Agent CLI into ${HERMES_INSTALL_DIR}"
+    curl -fsSL https://hermes-agent.nousresearch.com/install.sh \
+        | bash -s -- --non-interactive --skip-browser --skip-computer-use
+
+    # Publish the CLI on the default PATH for every user without shell rc edits.
+    ln -sf "${HERMES_INSTALL_DIR}/.hermes/bin/hermes" /usr/local/bin/hermes
+
+    # The install tree is read/execute-only for non-root users. (Runtime state under
+    # HERMES_HOME is owned by root, matching the upstream "one owner" model; a
+    # non-root user needs its own install or write access to HERMES_HOME.)
+    chmod -R a+rX "${HERMES_INSTALL_DIR}"
+
+    # Best-effort SELinux relabel of the new tree. The targeted policy does not know
+    # these paths yet, so never fail the build on it.
+    restorecon -R "${HERMES_INSTALL_DIR}" /usr/local/bin/hermes 2>/dev/null || true
+
+    # Drop the staging HOME before verifying the CLI so we prove it does not rely on it.
+    if [ "$CREATED_ROOTHOME" = true ]; then
+        rm -rf /var/roothome
+        CREATED_ROOTHOME=false
+    fi
+
+    # Prove the install works at build time (fails the build if the CLI is broken).
+    /usr/local/bin/hermes --version
+
+    echo "==> Hermes Agent CLI installed and published at /usr/local/bin/hermes"
+
+# Install Cloudflare WARP client (skipping weak GUI deps) and configure warp-svc enablement
+[group('alma-base')]
+install-cloudflare-warp enable="false":
+    #!/usr/bin/env bash
+    # Cloudflare ships a single RPM bundling warp-cli, warp-svc and a desktop GUI.
+    # The GUI's hard Requires pull WebKitGTK/GStreamer, so weak dependencies are
+    # skipped to trim ~245 MB; warp-cli/warp-svc never use them.
+    # Bazzite/ublue images ship /opt as a symlink to var/opt, and /var/opt does
+    # not exist, so rpm cannot create /opt/cloudflare-warp (cpio: mkdir failed).
+    # The RPM %post enables warp-svc.service; toggle it according to `enable`.
+    set -euo pipefail
+
+    mkdir -p /var/opt
+    if ! rpm -q cloudflare-warp >/dev/null 2>&1; then
+        dnf install -y --setopt=install_weak_deps=False cloudflare-warp
+    fi
+
+    case "{{enable}}" in
+        true|1|yes)
+            systemctl enable warp-svc
+            ;;
+        false|0|no)
+            systemctl disable warp-svc
+            ;;
+        *)
+            echo "ERROR: Invalid enable value '{{enable}}'. Expected 'true' or 'false'." >&2
+            exit 1
+            ;;
+    esac
+
+# Install prebuilt ZFS kmod RPMs if they match the active kernel, run depmod, and rebuild initramfs
+[group('alma-base')]
+install-zfs-kmods rpms_dir="/tmp/rpms" label="image":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    RPMS_DIR="{{rpms_dir}}"
+    LABEL="{{label}}"
+
+    if [ ! -f "${RPMS_DIR}/kernel-version.txt" ]; then
+        echo "WARNING: No ZFS kernel modules found in ${RPMS_DIR} for ${LABEL}. Skipping ZFS installation."
+        exit 0
+    fi
+
+    KMOD_KERNEL="$(cat "${RPMS_DIR}/kernel-version.txt")"
+    echo "kmods built for kernel: ${KMOD_KERNEL}"
+    CURRENT_KERNEL="$(just -f "{{justfile()}}" get-active-kernel)"
+    echo "Current base kernel: ${CURRENT_KERNEL}"
+
+    if [ "$CURRENT_KERNEL" != "$KMOD_KERNEL" ]; then
+        echo "WARNING: Kernel version mismatch for ${LABEL}! (Current: ${CURRENT_KERNEL}, Kmods: ${KMOD_KERNEL}). Skipping ZFS installation."
+        exit 0
+    fi
+
+    if rpm -q zfs-fuse >/dev/null 2>&1; then
+        dnf remove -y zfs-fuse
+    fi
+    dnf install -y "${RPMS_DIR}"/*.rpm
+
+    echo "Correcting ZFS kernel module dependencies..."
+    if [ -f "/usr/lib/modules/${CURRENT_KERNEL}/System.map" ]; then
+        depmod -a --filesyms "/usr/lib/modules/${CURRENT_KERNEL}/System.map" "${CURRENT_KERNEL}"
+    else
+        depmod -a "${CURRENT_KERNEL}"
+    fi
+    echo "✓ ZFS modules installed and depmod completed successfully for kernel ${CURRENT_KERNEL}"
+
+    just -f "{{justfile()}}" rebuild-initramfs
+
+# ==============================================================================
+# 4. Alma Variant Task Groups
+# ==============================================================================
+
+# Install Docker CE engine (replacing podman-docker shim) and enable docker.service
+[group('alma-variants')]
+install-docker:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just -f "{{justfile()}}" setup-repos docker
+    # --allowerasing: the Alma base ships podman-docker, whose `docker` command
+    # conflicts with docker-ce. Let the transaction replace the shim with the real
+    # engine instead of failing the build.
+    dnf install -y --allowerasing \
+        docker-ce \
+        docker-ce-cli \
+        containerd.io \
+        docker-buildx-plugin \
+        docker-compose-plugin
+    systemctl enable docker
+
+# Build the chabad360/cockpit-docker RPM from source and copy resulting RPMs to out_dir
+[group('alma-variants')]
+build-cockpit-docker out_dir="/tmp/cockpit-docker-rpms":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    OUT_DIR="{{out_dir}}"
+    dnf install -y \
+        git \
+        gettext \
+        nodejs \
+        make \
+        libappstream-glib \
+        libappstream-glib-devel \
+        rpm-build
+
+    # On Alma bootc, /root is a dangling symlink to /var/roothome, which breaks
+    # rpmbuild's default ~/rpmbuild directory creation.
+    rm -rf /root
+
+    TMPDIR="$(mktemp -d)"
+    trap 'rm -rf "$TMPDIR"' EXIT
+
+    git clone https://github.com/chabad360/cockpit-docker.git "${TMPDIR}/cockpit-docker"
+    (
+        cd "${TMPDIR}/cockpit-docker"
+        NODE_ENV=production make rpm
+    )
+
+    mkdir -p "$OUT_DIR"
+    cp "${TMPDIR}/cockpit-docker"/*.rpm "${OUT_DIR}/"
+
+# Install built cockpit-docker RPMs from rpms_dir
+[group('alma-variants')]
+install-cockpit-docker rpms_dir="/tmp/cockpit-docker-rpms":
+    rpm -i --nodeps "{{rpms_dir}}"/*.rpm
+
+# Install Nix from EPEL and seed persistent /var/lib/nix from /nix
+[group('alma-variants')]
+install-nix:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Nix ships only in the dx image (EPEL repository is inherited from base).
+    PKGS=(nix)
+    rpm -q checkpolicy >/dev/null 2>&1 || PKGS+=(checkpolicy)
+    rpm -q make >/dev/null 2>&1 || PKGS+=(make)
+    dnf install -y "${PKGS[@]}"
+
+    # /nix sits on the read-only composefs deployment root, so the store would be
+    # lost on every image update. Seed the persistent backing directory
+    # /var/lib/nix from the freshly installed /nix; `just setup-nix` merges the
+    # deployment's store into it and then bind-mounts it over /nix.
+    mkdir -p /var/lib/nix
+    cp -a /nix/. /var/lib/nix/
+
+# Install QEMU/KVM/libvirt virtualization stack, distrobox, and NFS/idmap utilities for HCI
+[group('alma-variants')]
+install-hci-virt:
+    dnf install -y \
+        qemu-kvm \
+        qemu-img \
+        qemu-kvm-core \
+        qemu-kvm-common \
+        qemu-kvm-audio-pa \
+        qemu-kvm-block-blkio \
+        qemu-kvm-block-curl \
+        qemu-kvm-block-rbd \
+        qemu-kvm-device-display-virtio-gpu \
+        qemu-kvm-device-display-virtio-gpu-pci \
+        qemu-kvm-device-usb-host \
+        qemu-kvm-device-usb-redirect \
+        qemu-kvm-ui-spice \
+        qemu-kvm-tools \
+        qemu-pr-helper \
+        libvirt-daemon \
+        libvirt-daemon-driver-qemu \
+        libvirt-daemon-driver-interface \
+        libvirt-daemon-driver-network \
+        libvirt-daemon-driver-nodedev \
+        libvirt-daemon-driver-nwfilter \
+        libvirt-daemon-driver-secret \
+        libvirt-daemon-driver-storage \
+        libvirt-daemon-driver-storage-core \
+        libvirt-daemon-driver-storage-disk \
+        libvirt-daemon-driver-storage-iscsi \
+        libvirt-daemon-driver-storage-logical \
+        libvirt-daemon-driver-storage-mpath \
+        libvirt-daemon-driver-storage-rbd \
+        libvirt-daemon-driver-storage-scsi \
+        libvirt-daemon-config-network \
+        libvirt-daemon-config-nwfilter \
+        libvirt-daemon-kvm \
+        libvirt-client \
+        libvirt-client-qemu \
+        distrobox \
+        attr \
+        nfs-utils \
+        libnfsidmap \
+        sssd-nfs-idmap
+
+# Install k3s-selinux, NFS/idmap prerequisites, and k3s binary into /usr/bin
+[group('alma-variants')]
+install-k3s:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dnf install -y \
+        attr \
+        nfs-utils \
+        libnfsidmap \
+        sssd-nfs-idmap \
+        https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.latest.1/k3s-selinux-1.6-1.coreos.noarch.rpm
+    curl -sfL https://get.k3s.io | \
+        INSTALL_K3S_SKIP_ENABLE=true \
+        INSTALL_K3S_SKIP_START=true \
+        INSTALL_K3S_SKIP_SELINUX_RPM=true \
+        INSTALL_K3S_SELINUX_WARN=true \
+        INSTALL_K3S_BIN_DIR=/usr/bin \
+        sh -
+
+# Install Anaconda/dracut/grub2/lorax packages for ISO installer builds
+[group('alma-variants')]
+install-anaconda:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dnf install -y \
+        anaconda \
+        anaconda-install-env-deps \
+        anaconda-dracut \
+        dracut-config-generic \
+        dracut-network \
+        net-tools \
+        squashfs-tools \
+        grub2-efi-x64-cdboot \
+        python3-mako \
+        'lorax-templates-*' \
+        biosdevname \
+        prefixdevname
+    # shim-x64 is marked installed but the files are not in the expected place for
+    # osbuild's org.osbuild.grub2.iso stage (workaround via reinstall until
+    # https://github.com/osbuild/osbuild/pull/2202 is merged and efi_src_dir set).
+    dnf reinstall -y shim-x64
+    # lorax wants to create a symlink in /mnt -> /var/mnt, which may not exist yet
+    # (see https://gitlab.com/fedora/bootc/base-images/-/merge_requests/294).
+    mkdir -p /var/mnt
+
+# ==============================================================================
+# 5. Desktop / Workstation / Webtop Task Groups
+# ==============================================================================
+
+# --- Bazzite / Fedora Workstation ---------------------------------------------
+
+# Install Java 21 OpenJDK
+[group('workstation-bazzite')]
+install-java:
+    dnf install -y \
+        java-21-openjdk
+
+# Install KDE PIM, Konsole/Yakuake, Discover plugins, and Qt6 utilities
+[group('workstation-bazzite')]
+install-kde-utils:
+    dnf install -y \
+        kmail \
+        merkuro \
+        konsole \
+        plasma-discover-flatpak \
+        plasma-discover-rpm-ostree \
+        yakuake \
+        qt6-qtlocation \
+        chromium-qt6-ui \
+        fedora-chromium-config-kde \
+        kde-partitionmanager \
+        qt6-qtwebsockets \
+        qt6-qtwebsockets-devel
+
+# Install miscellaneous workstation CLI/GUI utilities
+[group('workstation-bazzite')]
+install-misc-tools:
+    dnf install -y \
+        waypipe \
+        tailscale \
+        zsh \
+        input-leap \
+        rclone \
+        mpv \
+        sqlite-devel \
+        ghostty \
+        chromium \
+        chromium-headless \
+        chromedriver \
+        tuned \
+        realmd \
+        sssd \
+        sqlite \
+        borgbackup \
+        rsync \
+        bees \
+        git \
+        tmux \
+        samba \
+        samba-common-tools \
+        samba-usershares \
+        bat
+
+# Install virt-manager and QEMU/KVM desktop virtualization packages
+[group('workstation-bazzite')]
+install-virt-tools:
+    dnf install -y \
+        virt-manager \
+        qemu-kvm \
+        qemu-tools \
+        qemu-img \
+        qemu-device-display-virtio-gpu-gl \
+        qemu-device-display-virtio-gpu-pci-gl \
+        qemu-device-display-virtio-gpu \
+        qemu-audio-pipewire \
+        qemu-char-spice \
+        qemu-device-usb-redirect
+
+# Install workstation developer tools (VS Code, Node/pnpm, GitHub CLI)
+[group('workstation-bazzite')]
+install-dev-mode:
+    dnf install -y \
+        code \
+        pnpm \
+        nodejs \
+        nodejs-npm \
+        gh
+
+# Install Ansible and common Ansible collections
+[group('workstation-bazzite')]
+install-ansible:
+    dnf install -y \
+        ansible \
+        python3-ansible-lint \
+        ansible-core-doc \
+        ansible-bender \
+        ansible-builder \
+        ansible-collection-ansible-netcommon \
+        ansible-collection-ansible-netcommon-doc \
+        ansible-collection-ansible-posix \
+        ansible-collection-ansible-utils \
+        ansible-collection-community-crypto \
+        ansible-collection-community-docker \
+        ansible-collection-community-general \
+        ansible-collection-community-kubernetes \
+        ansible-collection-community-mysql \
+        ansible-collection-community-postgresql \
+        ansible-collection-community-rabbitmq \
+        ansible-collection-containers-podman \
+        ansible-collection-kubernetes-core \
+        ansible-collection-community-libvirt
+
+# Install gaming extras (XIVLauncher via COPR)
+[group('workstation-bazzite')]
+install-game-mode:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dnf copr enable -y rankyn/xivlauncher
+    dnf install -y \
+        XIVLauncher
+
+# --- AlmaLinux Workstation ----------------------------------------------------
+
+# Install KDE Plasma Workspaces comps group on AlmaLinux (Plasma Login Manager, Flatpak-only Discover)
+[group('workstation-alma')]
+install-alma-kde:
+    # sddm/sddm-kcm: Plasma Login Manager is the Wayland greeter.
+    # plasma-discover-packagekit / offline-updates: RPM installs and offline
+    # updates are not supported on bootc; Discover is Flatpak-only.
+    # PackageKit-command-not-found / gstreamer-plugin: not useful on bootc;
+    # codecs are shipped directly.
+    dnf -y group install \
+        "KDE Plasma Workspaces" \
+        --exclude=sddm \
+        --exclude=sddm-kcm \
+        --exclude=plasma-discover-packagekit \
+        --exclude=plasma-discover-offline-updates \
+        --exclude=PackageKit-command-not-found \
+        --exclude=PackageKit-gstreamer-plugin
+
+# Install core desktop pins, GPU/CPU/audio firmware, Mesa/VA-API drivers, and multimedia codecs on Alma
+[group('workstation-alma')]
+install-alma-desktop-core:
+    # Most of these are already pulled by the group; they are pinned so the base
+    # keeps its intended features if comps changes. GPU/CPU firmware and the
+    # VA-API drivers are listed explicitly because EL10's linux-firmware wrapper
+    # pulls no subpackages and the media stack must not depend on comps ordering.
+    dnf install -y \
+        plasma-login-manager \
+        flatpak \
+        flatpak-selinux \
+        plasma-discover-flatpak \
+        xdg-desktop-portal-kde \
+        wireplumber \
+        breeze-gtk-common \
+        breeze-gtk-gtk3 \
+        breeze-gtk-gtk4 \
+        kio-extras \
+        kio-admin \
+        kio-gdrive \
+        kdenetwork-filesharing \
+        plasma-print-manager \
+        plasma-nm \
+        kscreen \
+        kinfocenter \
+        plasma-systemmonitor \
+        kf6-kwallet \
+        bluedevil \
+        kdnssd \
+        dolphin \
+        dolphin-plugins \
+        konqueror \
+        linux-firmware \
+        amd-gpu-firmware \
+        intel-gpu-firmware \
+        nvidia-gpu-firmware \
+        amd-ucode-firmware \
+        microcode_ctl \
+        alsa-sof-firmware \
+        alsa-firmware \
+        alsa-ucm \
+        alsa-tools-firmware \
+        fwupd \
+        libva \
+        libva-intel-driver \
+        libva-intel-hybrid-driver \
+        intel-media-driver \
+        libva-nvidia-driver \
+        mesa-dri-drivers \
+        mesa-libEGL \
+        mesa-libGL \
+        mesa-vulkan-drivers \
+        vulkan-loader \
+        libvdpau \
+        ffmpeg \
+        libavcodec-freeworld \
+        libheif-freeworld \
+        gstreamer1-plugin-libav \
+        gstreamer1-plugins-bad-freeworld \
+        gstreamer1-plugins-ugly
+
+# Install filesystems, printing/scanning, wireless/WWAN/BT firmware, laptop sensors, smartcards, and archives on Alma
+[group('workstation-alma')]
+install-alma-desktop-peripherals:
+    # Filesystems (exFAT, NTFS, APFS, MTP, iOS, SMB), printing/scanning, wireless/
+    # WWAN/Bluetooth plugins & firmware, laptop sensors/fingerprint/smartcards/
+    # cameras, Zeroconf, S3, game controllers, archives, and remote apps.
+    dnf install -y \
+        exfatprogs \
+        ntfs-3g \
+        ntfsprogs \
+        apfs-fuse \
+        dosfstools \
+        fuse \
+        fuse3 \
+        libmtp \
+        gvfs \
+        gvfs-fuse \
+        gvfs-mtp \
+        gvfs-smb \
+        gvfs-gphoto2 \
+        ifuse \
+        libimobiledevice \
+        libimobiledevice-utils \
+        usbmuxd \
+        bluez \
+        bluez-cups \
+        cups-filters \
+        cups-filters-driverless \
+        cups-browsed \
+        hplip \
+        cups \
+        cups-pk-helper \
+        ipp-usb \
+        sane-backends \
+        sane-backends-drivers-scanners \
+        sane-airscan \
+        iwlwifi-mvm-firmware \
+        iwlwifi-dvm-firmware \
+        iwlegacy-firmware \
+        qcom-firmware \
+        libertas-firmware \
+        dvb-firmware \
+        intel-vsc-firmware \
+        NetworkManager-wifi \
+        NetworkManager-bluetooth \
+        NetworkManager-wwan \
+        wpa_supplicant \
+        wireless-regdb \
+        ModemManager \
+        bluez-obexd \
+        iw \
+        ethtool \
+        pciutils \
+        usbutils \
+        iio-sensor-proxy \
+        libwacom \
+        bolt \
+        fprintd \
+        fprintd-pam \
+        tuned-ppd \
+        lm_sensors \
+        smartmontools \
+        pcsc-lite \
+        pcsc-lite-ccid \
+        opensc \
+        v4l-utils \
+        libcamera-tools \
+        avahi \
+        avahi-tools \
+        nss-mdns \
+        s3fs-fuse \
+        linuxconsoletools \
+        steam-devices \
+        sdl2-compat \
+        libevdev \
+        waypipe \
+        distrobox \
+        7zip \
+        unrar \
+        zip \
+        bsdtar
+
+# Install ELRepo kmod-game-controllers and link into weak-updates without rebuilding initramfs
+[group('workstation-alma')]
+install-elrepo-game-controllers:
+    #!/usr/bin/env bash
+    # ELRepo ships the in-tree xpad/hid-playstation/hid-nintendo modules that the
+    # EL10 kernel package omits. The package is built for an older kernel; the
+    # weak-modules call links it into the image kernel's weak-updates directory.
+    # Scriptlets are skipped to avoid dracut trying to build an initramfs in the
+    # container; game controllers are runtime-only modules.
+    set -euo pipefail
+    just -f "{{justfile()}}" setup-repos elrepo
+    dnf install -y --setopt=tsflags=noscripts kmod-game-controllers
+    find /lib/modules/*/extra/game-controllers -name '*.ko' | \
+        /usr/sbin/weak-modules --add-modules --no-initramfs
+
+# Configure Alma workstation defaults: graphical target, desktop services, mDNS firewall rule, fingerprint auth
+[group('workstation-alma')]
+configure-alma-workstation:
+    #!/usr/bin/env bash
+    # Graphical boot via Plasma Login Manager (Alias=display-manager.service).
+    # Services that are D-Bus or udev activated (bolt, fprintd, iio-sensor-proxy,
+    # ipp-usb) need no enablement; the units below are the ones that do:
+    #   cups.socket/cups-browsed  driverless + discovered printers and scanners
+    #   avahi-daemon.socket       mDNS/DNS-SD discovery (also for remote CUPS)
+    #   tuned-ppd.service         power-profiles API for Plasma's powerdevil
+    #   pcscd.socket              smartcard readers
+    # firewalld blocks mDNS on the public zone, which breaks automatic printer and
+    # scanner discovery; allow the service permanently. Fingerprint login needs
+    # the authselect feature in addition to fprintd-pam.
+    set -euo pipefail
+    systemctl set-default graphical.target
+    systemctl enable \
+        plasmalogin.service \
+        cups.socket \
+        cups-browsed.service \
+        avahi-daemon.socket \
+        bluetooth.service \
+        tuned-ppd.service \
+        ModemManager.service \
+        pcscd.socket
+    firewall-offline-cmd --zone=public --add-service=mdns
+    authselect enable-feature with-fingerprint
+
+# --- Webtop (Fedora/Bazzite & AlmaLinux) --------------------------------------
+
+# Fetch plasma-nm SRPM and install its build dependencies (cacheable layer before patching)
+[group('webtop')]
+prepare-plasma-nm-builddeps version="6.7.5" release="1.fc44":
+    #!/usr/bin/env bash
+    # plasma-nm draws "network-unavailable" for Tun/Veth devices, which is
+    # exactly what a container uplink is (pasta tap / netavark veth). Prepare the
+    # SRPM and its builddeps in /tmp/rpmbuild because /root is a dangling symlink
+    # to /var/roothome on this base.
+    set -euo pipefail
+
+    VERSION="{{version}}"
+    RELEASE="{{release}}"
+
+    dnf5 install -y dnf5-plugins rpm-build curl
+    mkdir -p /tmp/srpm \
+             /tmp/rpmbuild/BUILD \
+             /tmp/rpmbuild/RPMS \
+             /tmp/rpmbuild/SOURCES \
+             /tmp/rpmbuild/SPECS \
+             /tmp/rpmbuild/SRPMS
+    curl -fsSL -o "/tmp/srpm/plasma-nm-${VERSION}-${RELEASE}.src.rpm" \
+        "https://kojipkgs.fedoraproject.org/packages/plasma-nm/${VERSION}/${RELEASE}/src/plasma-nm-${VERSION}-${RELEASE}.src.rpm"
+    rpm -i --define "_topdir /tmp/rpmbuild" /tmp/srpm/plasma-nm-*.src.rpm
+    dnf5 builddep -y /tmp/rpmbuild/SPECS/plasma-nm.spec
+
+# Apply local tun/veth patch to plasma-nm and build binary RPMs into /tmp/rpmbuild/RPMS
+[group('webtop')]
+build-plasma-nm patch_dir="/tmp/plasma-nm":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    PATCH_DIR="{{patch_dir}}"
+    if [ ! -f /tmp/rpmbuild/SPECS/plasma-nm.spec ]; then
+        just -f "{{justfile()}}" prepare-plasma-nm-builddeps
+    fi
+
+    sed -i 's/^Release:.*/Release: 1%{?dist}.webtop1/' /tmp/rpmbuild/SPECS/plasma-nm.spec
+    cp "${PATCH_DIR}/0001-plasma-nm-treat-tun-veth-as-wired.patch" /tmp/rpmbuild/SOURCES/
+    if ! grep -q '^Patch0: 0001-plasma-nm-treat-tun-veth-as-wired.patch' /tmp/rpmbuild/SPECS/plasma-nm.spec; then
+        sed -i '/^Release:/a Patch0: 0001-plasma-nm-treat-tun-veth-as-wired.patch' /tmp/rpmbuild/SPECS/plasma-nm.spec
+    fi
+    rpmbuild -bb --nodeps --define "_topdir /tmp/rpmbuild" /tmp/rpmbuild/SPECS/plasma-nm.spec
+
+# Upgrade only already-installed plasma-nm subpackages from built RPMs
+[group('webtop')]
+install-plasma-nm rpms_dir="/tmp/plasma-nm-rpms":
+    #!/usr/bin/env bash
+    # Upgrade only the plasma-nm subpackages the base image already has; the SRPM
+    # also emits VPN plugins/debuginfo that should not be pulled in. dnf5's
+    # "upgrade <rpm>" ignores local files, so install each existing package by path.
+    set -euo pipefail
+
+    RPMS_DIR="{{rpms_dir}}"
+    rpms=()
+    for rpm_file in "${RPMS_DIR}"/*/plasma-nm-*.rpm; do
+        [ -e "$rpm_file" ] || continue
+        name="$(rpm -qp --qf '%{NAME}' "$rpm_file")"
+        case "$name" in
+            *-debuginfo) continue ;;
+        esac
+        if rpm -q "$name" >/dev/null 2>&1; then
+            rpms+=("$rpm_file")
+        fi
+    done
+
+    if [ "${#rpms[@]}" -eq 0 ]; then
+        echo "ERROR: No matching installed plasma-nm RPMs found under ${RPMS_DIR}" >&2
+        exit 1
+    fi
+    rpm -Uvh --replacepkgs --oldpackage "${rpms[@]}"
+
+# Install runtime dependencies for the Fedora/Bazzite webtop image
+[group('webtop')]
+install-webtop-fedora-deps:
+    # Runtime dependencies: nginx front-end, mesa for the compositor and AMD
+    # VA-API, the Intel iHD VA-API driver for Arc/Gen graphics, pciutils, xauth
+    # for KWin's Xwayland, and venv/pip tooling for Selkies.
+    dnf5 install -y \
+        nginx \
+        python3-pip \
+        mesa-dri-drivers \
+        libva-intel-media-driver \
+        pciutils \
+        vte291 \
+        jq \
+        tar \
+        gzip \
+        ca-certificates \
+        curl \
+        xorg-x11-xauth \
+        vulkan-tools
+
+# Install Selkies streaming server into a private /opt/selkies venv (via uv or python3 venv+pip)
+[group('webtop')]
+install-selkies version="2.1.0" use_uv="false":
+    #!/usr/bin/env bash
+    # selkies 2.1 brings its own Wayland compositor (pixelflux), audio engine
+    # (pcmflux), and bundled web dashboard. Install from PyPI into a private
+    # /opt/selkies venv.
+    set -euo pipefail
+
+    VERSION="{{version}}"
+    export UV_CACHE_DIR=/tmp/uv-cache
+    mkdir -p /var/opt
+
+    case "{{use_uv}}" in
+        true|1|yes)
+            uv venv /opt/selkies --python python3
+            uv pip install --python /opt/selkies/bin/python --no-cache "selkies==${VERSION}"
+            ;;
+        false|0|no)
+            # Use /usr/bin/python3 explicitly: rootfs/common/ copies usr/sbin/,
+            # which turns Bazzite's /usr/sbin -> bin symlink into a real
+            # directory, so a venv built from /usr/sbin/python3 would break.
+            /usr/bin/python3 -m venv /opt/selkies
+            /opt/selkies/bin/pip install --no-cache-dir "selkies==${VERSION}"
+            ;;
+        *)
+            echo "ERROR: Invalid use_uv value '{{use_uv}}'. Expected 'true' or 'false'." >&2
+            exit 1
+            ;;
+    esac
+    rm -rf /tmp/uv-cache
+
+# Configure Fedora/Bazzite webtop: interposer symlink, nginx, container DNS, webtop user, units, compat symlinks
+[group('webtop')]
+configure-webtop-fedora:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Upstream ships the joystick interposer as a copy of the input one.
+    ln -sf selkies_input_interposer.so /usr/lib/selkies_joystick_interposer.so
+
+    # Replace nginx default config
+    rm -f /etc/nginx/conf.d/default.conf
+
+    # Container DNS: keep podman's /etc/resolv.conf and resolve through it directly.
+    # NetworkManager would replace it with container DHCP DNS (169.254.1.1) and
+    # Fedora's nsswitch stops at "resolve [!UNAVAIL=return]" before reaching "dns".
+    mkdir -p /etc/NetworkManager/conf.d
+    printf '[main]\ndns=none\n' > /etc/NetworkManager/conf.d/99-webtop-dns.conf
+    sed -i 's/^hosts:.*/hosts:      files dns/' /etc/nsswitch.conf
+    if [ -d /usr/share/factory/etc ]; then
+        cp -a /etc/nsswitch.conf /usr/share/factory/etc/nsswitch.conf
+    fi
+    systemctl disable systemd-resolved.service 2>/dev/null || true
+
+    # Webtop user setup
+    if ! id webtop >/dev/null 2>&1; then
+        useradd -m -u 1000 -G wheel webtop
+    fi
+    usermod -U webtop
+    passwd -d webtop
+    echo "webtop ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/webtop
+
+    # Disable display managers & hardware-specific units inside the container
+    systemctl disable plasmalogin.service sddm.service 2>/dev/null || true
+    systemctl disable cardwired.service 2>/dev/null || true
+
+    chmod +x /usr/local/bin/start-webtop.sh \
+             /usr/local/bin/webtop-gpu-report \
+             /usr/local/bin/webtop-appimage-run \
+             /usr/local/bin/webtop-nm-uplink \
+             /usr/local/bin/webtop-entrypoint \
+             /usr/local/bin/webtop-wait-tailscale
+
+    # Strip kwin_wayland file caps that cause EPERM in rootless containers
+    setcap -r /usr/bin/kwin_wayland || true
+
+    # Compat symlinks: Steam calls /sbin/ldconfig, tailscaled unit calls
+    # /usr/sbin/tailscaled, and WARP firewall calls /usr/sbin/nft, while Fedora
+    # installs all three under /usr/bin.
+    [ -e /usr/sbin/ldconfig ] || ln -s ../bin/ldconfig /usr/sbin/ldconfig
+    ln -sf ../bin/tailscaled /usr/sbin/tailscaled
+    ln -sf ../bin/nft /usr/sbin/nft
+
+    systemctl enable \
+        webtop.service \
+        webtop-nm-uplink.service \
+        webtop-flatpak-appstream.service
+    systemctl enable etc-overlay-sync.service 2>/dev/null || true
+
+# Install KDE Plasma 6 desktop, Wayland/Xwayland, Mesa, and PipeWire packages for Alma webtop
+[group('webtop')]
+install-webtop-alma-deps:
+    # plasma-workspace/plasma-desktop/kwin are 6.6.x in EPEL 10. Xwayland and mesa
+    # are needed for X11 client apps; pipewire + wireplumber are the audio stack.
+    # dbus-daemon provides /usr/bin/dbus-run-session on EL 10.
+    dnf install -y \
+        plasma-workspace \
+        plasma-desktop \
+        kwin \
+        kdecoration \
+        plasma-breeze \
+        breeze-icon-theme \
+        polkit-kde \
+        konsole \
+        qt6-qtwayland \
+        xorg-x11-server-Xwayland \
+        libxcvt \
+        mesa-dri-drivers \
+        mesa-libEGL \
+        dejavu-sans-fonts \
+        pipewire \
+        wireplumber \
+        pipewire-pulseaudio \
+        pulseaudio-utils \
+        alsa-utils \
+        dbus-daemon
+
+# Configure Alma webtop: core user, factory /etc sync, KDE defaults, XDG dirs, webtop.service, kwin caps
+[group('webtop')]
+configure-webtop-alma:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Create `core` user (base image ships no user; `core` is normally provisioned
+    # by bootc-image-builder). Materialize video/render lines in /etc/group first
+    # because systemd-sysusers groups resolve via NSS but useradd/usermod validate
+    # against /etc/group directly. Refresh factory /etc account files so
+    # etc-overlay-sync.service does not discard `core` in container mode.
+    if ! getent group core >/dev/null 2>&1; then
+        groupadd -g 1000 core
+    fi
+    if ! id core >/dev/null 2>&1; then
+        useradd -m -u 1000 -g 1000 -G wheel -s /bin/bash core
+    fi
+    grep -q '^video:'  /etc/group || echo 'video:x:39:'   >> /etc/group
+    grep -q '^render:' /etc/group || echo 'render:x:105:' >> /etc/group
+    usermod -aG video,render core
+    echo 'core:webtop' | chpasswd
+    echo "core ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/core
+    mkdir -p /usr/share/factory/etc/sudoers.d
+    cp -a /etc/passwd /etc/group /etc/shadow /etc/gshadow /usr/share/factory/etc/
+    cp -a /etc/sudoers.d/core /usr/share/factory/etc/sudoers.d/core
+    rm -f /usr/share/factory/etc/machine-id
+
+    # Seed streaming-friendly KDE defaults: disable screen locking, pick Breeze
+    # look-and-feel, and hide wl-clipboard helper windows from taskbar/switcher.
+    # Compositing is deliberately NOT disabled (KWin on Wayland stops producing
+    # frames when kwinrc turns it off).
+    mkdir -p /home/core/.config
+    printf '[Daemon]\nAutolock=false\n' > /home/core/.config/kscreenlockerrc
+    printf '[KDE]\nLookAndFeelPackage=org.kde.breeze.desktop\n' > /home/core/.config/kdeglobals
+    cat > /home/core/.config/kwinrulesrc << 'EOF'
+    [General]
+    count=1
+    rules=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+
+    [aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee]
+    Description=wl-clipboard support
+    wmclass=wl-(copy|paste)
+    wmclassmatch=3
+    skiptaskbar=true
+    skiptaskbarrule=2
+    skipswitcher=true
+    skipswitcherrule=2
+    fsplevel=3
+    fsplevelrule=2
+    noborder=true
+    noborderrule=2
+    EOF
+    chown -R core:core /home/core/.config
+
+    # Selkies' dashboard uploads into $HOME/Desktop; create XDG dirs up front.
+    mkdir -p /home/core/Desktop /home/core/Downloads /etc/webtop-alma
+    chown -R core:core /home/core
+    chmod +x /usr/local/bin/start-webtop.sh /usr/local/bin/socket-activate-shim
+    systemctl enable webtop.service
+
+    # EPEL's kwin_wayland ships cap_sys_nice=ep. Rootless containers drop that
+    # capability, causing execve to fail with EPERM even for root.
+    setcap -r /usr/bin/kwin_wayland /usr/bin/kwin_wayland_wrapper 2>/dev/null || true
