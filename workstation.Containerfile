@@ -1,7 +1,7 @@
 # Workstation (Bazzite / Fedora) — KDE Plasma bootc desktop image with ZFS kmods.
 ARG KMODS_IMAGE=ghcr.io/braccae/kmods:latest
 
-FROM ghcr.io/ublue-os/bazzite:stable-44 AS base
+FROM ghcr.io/ublue-os/bazzite:stable-45 AS base
 FROM ${KMODS_IMAGE} AS kmods
 
 FROM base AS final
