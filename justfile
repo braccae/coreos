@@ -785,3 +785,58 @@ test-vm-bootc image='alma' tag='latest' memory=_VM_MEMORY vcpus=_VM_VCPUS: check
 
     write_result "pass"
     echo "PASS: ${MODE} ${IMAGE_REF}"
+
+# ==============================================================================
+# Image Equivalence Testing (Old vs. New Containerfile Builds)
+# ==============================================================================
+
+# Compare two local podman images semantically and across merged rootfs.
+# Usage: just compare-images <old_image> <new_image> [extra_flags...]
+compare-images old_image new_image *ARGS:
+    ./build/scripts/compare-images.sh {{ARGS}} "{{old_image}}" "{{new_image}}"
+
+# Build a variant from base_ref (default: origin/main) and current workspace,
+# then compare them for functional equivalence.
+# Usage: just compare-variant <variant> [base_ref=origin/main] [cleanup=true]
+compare-variant variant base_ref='origin/main' cleanup='true':
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    VARIANT="{{variant}}"
+    BASE_REF="{{base_ref}}"
+    CLEANUP="{{cleanup}}"
+
+    if [[ "$VARIANT" == "alma" || "$VARIANT" == "base" ]]; then
+        CFILE="Containerfile"
+    else
+        CFILE="${VARIANT}.Containerfile"
+    fi
+
+    if [[ ! -f "$CFILE" ]]; then
+        echo "ERROR: Containerfile not found: ${CFILE}" >&2
+        exit 1
+    fi
+
+    OLD_IMG="localhost/compare-old:${VARIANT}"
+    NEW_IMG="localhost/compare-new:${VARIANT}"
+    OLD_CTX="$(mktemp -d "${TMPDIR:-/tmp}/compare-old-ctx.XXXXXX")"
+
+    on_exit() {
+        rm -rf "$OLD_CTX"
+        if [[ "$CLEANUP" == "true" ]]; then
+            podman rmi -f "$OLD_IMG" "$NEW_IMG" >/dev/null 2>&1 || true
+        fi
+    }
+    trap on_exit EXIT
+
+    echo "==> Extracting ${BASE_REF} build context to ${OLD_CTX}"
+    git archive "$BASE_REF" | tar -x -C "$OLD_CTX"
+
+    echo "==> Building OLD image (${BASE_REF} / ${CFILE}) -> ${OLD_IMG}"
+    podman build -f "${OLD_CTX}/${CFILE}" -t "$OLD_IMG" "$OLD_CTX"
+
+    echo "==> Building NEW image (workspace / ${CFILE}) -> ${NEW_IMG}"
+    podman build -f "$CFILE" -t "$NEW_IMG" .
+
+    echo "==> Running image equivalence comparison"
+    ./build/scripts/compare-images.sh "$OLD_IMG" "$NEW_IMG"
