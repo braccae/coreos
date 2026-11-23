@@ -64,7 +64,6 @@ This project builds upon bootc-compatible base images to create customized, immu
 ├── hci.Containerfile         # HCI image (AlmaLinux-based)
 ├── workstation.Containerfile # Workstation image (Bazzite-based)
 ├── workstation-alma.Containerfile # Workstation image (AlmaLinux-based)
-├── laptop.Containerfile      # Laptop image (Bazzite-based)
 ├── dockerhost.Containerfile  # Docker Host image
 ├── webtop.Containerfile      # Desktop environment in container
 ├── rootfs/                   # Filesystem overlays

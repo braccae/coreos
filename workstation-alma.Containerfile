@@ -72,7 +72,6 @@ RUN dnf install -y \
         alsa-tools-firmware \
         fwupd \
         libva \
-        libva-utils \
         libva-intel-driver \
         libva-intel-hybrid-driver \
         intel-media-driver \

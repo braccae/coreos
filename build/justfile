@@ -86,10 +86,8 @@ install-misc-tools:
         tuned \
         realmd \
         sssd \
-        tailscale \
         sqlite \
         borgbackup \
-        rclone \
         rsync \
         bees \
         git \

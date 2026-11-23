@@ -109,7 +109,7 @@ The bootc ostree sysroot preparation requires filesystem-aware mount and compose
   - Helper script: `start-webtop.sh` (Selkies compositor -> nested KWin -> Plasma session).
 
 ### 6. `rootfs/workstation/` (Bazzite Workstation Overlay)
-- **Target**: [workstation.Containerfile](workstation.Containerfile) and [laptop.Containerfile](laptop.Containerfile).
+- **Target**: [workstation.Containerfile](workstation.Containerfile).
 - **Purpose**: Configures desktop memory management (`zram-generator.conf` enabling ZRAM swap) and desktop application security policies (`com.bitwarden.Bitwarden.policy`).
 
 ### 7. `rootfs/workstation-alma/` (AlmaLinux Workstation Overlay)
@@ -137,7 +137,6 @@ The table below documents which Containerfile copies which `rootfs` subdirectory
 | [kmods.Containerfile](kmods.Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | None | N/A | Builds ZFS kernel modules into a scratch image. |
 | [kmods-bundle.Containerfile](kmods-bundle.Containerfile) | `scratch` | None | N/A | Bundles pre-built multi-arch RPM trees from `zfs/`. |
 | `test.Containerfile` | Configurable | None (Scratch) | N/A | Local developer scratch containerfile. |
-| [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | `rootfs/workstation/` | `/` | Copies workstation overlay on top of Bazzite DX GNOME. |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/common/`<br>`rootfs/webtop/` | `/`<br>`/` | Selkies 2.1 in a pinned venv; nested KWin session; nginx front door on 3000. |
 | [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/btrfs_config/`<br>`rootfs/workstation/` | `/`<br>`/` | Production image (freeze lifted). Lines 63-64 (`non_btrfs/`, `common/`) are commented out. |
 | [workstation-alma.Containerfile](workstation-alma.Containerfile) | `ghcr.io/braccae/alma:latest` | `rootfs/workstation-alma/` | `/` | Inherits `rootfs/common/` and `rootfs/non_btrfs/` from the Alma base; adds the Flathub remote, ZRAM, and polkit workstation files. |

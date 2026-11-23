@@ -7,7 +7,6 @@ on:
       - "Kmods Container"
       - "Alma Container"
       - "Workstation Container"
-      - "Laptop Container"
       - "K3s Container"
       - "Installer Container"
       - "Dockerhost Container"

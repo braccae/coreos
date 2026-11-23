@@ -10,7 +10,7 @@ Follow these rules and references when working in this repository.
 This repository maintains bootable container (`bootc`) operating system images, build automation, filesystem overlays, and disk image generation recipes.
 
 - **Primary Stack**: AlmaLinux 10 bootc (`quay.io/almalinuxorg/almalinux-bootc:10`), publishing to `ghcr.io/braccae/alma:latest`.
-- **Variants**: Specialized Alma-derived servers (HCI, Docker host, k3s, dev workstation, kmods, installer) and Fedora/Bazzite-derived workstations (`laptop`, `webtop`, `workstation`).
+- **Variants**: Specialized Alma-derived servers (HCI, Docker host, k3s, dev workstation, kmods, installer) and Fedora/Bazzite-derived workstations (`webtop`, `workstation`).
 - **Disk Artifacts**: Bootable `qcow2` virtual machine images and `bootc-installer` ISOs generated via `quay.io/centos-bootc/bootc-image-builder:latest`.
 
 ---
@@ -114,7 +114,6 @@ Summary of all 12 Containerfiles in this repository:
 | [kmods.Containerfile](kmods.Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | Compiles & signs ZFS kernel modules | Alma | `container-kmods.yml` |
 | [kmods-bundle.Containerfile](kmods-bundle.Containerfile) | `scratch` | Multi-arch bundle of compiled ZFS RPMs | Alma | `container-kmods.yml` |
 | `test.Containerfile` | Configurable | Ephemeral local scratch testing (git-ignored) | Alma | None |
-| [laptop.Containerfile](laptop.Containerfile) | `ghcr.io/ublue-os/bazzite-dx-gnome` | Bazzite GNOME mobile workstation | Bazzite | `container-laptop.yml` |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Remote KDE Wayland desktop in container | Bazzite | `container-webtop.yml` |
 | [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | Production KDE desktop (Bazzite F44) | Bazzite | `container-workstation.yml` |
 
