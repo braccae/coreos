@@ -71,7 +71,7 @@ install-kde-utils:
         qt6-qtwebsockets-devel
 
 install-misc-tools:
-    dnf install -y --skip-unavailable \
+    dnf install -y \
         waypipe \
         tailscale \
         zsh \
