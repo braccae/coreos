@@ -1,6 +1,7 @@
-FROM ghcr.io/ublue-os/bazzite-dx-gnome
+FROM ghcr.io/ublue-os/bazzite-dx-gnome:stable-44
 
 COPY repos/ /etc/yum.repos.d/
+RUN rm -rv /etc/yum.repos.d/wazuh.repo /etc/yum.repos.d/crowdsec.repo
 COPY rootfs/workstation/ /
 COPY build/justfile /tmp/
 

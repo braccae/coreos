@@ -71,7 +71,7 @@ install-kde-utils:
         qt6-qtwebsockets-devel
 
 install-misc-tools:
-    dnf install -y \
+    dnf install -y --skip-unavailable \
         waypipe \
         tailscale \
         zsh \
@@ -86,10 +86,8 @@ install-misc-tools:
         tuned \
         realmd \
         sssd \
-        tailscale \
         sqlite \
         borgbackup \
-        rclone \
         rsync \
         bees \
         git \
