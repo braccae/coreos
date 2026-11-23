@@ -108,7 +108,7 @@ The bootc ostree sysroot preparation requires filesystem-aware mount and compose
   - `etc/systemd/system/webtop.service`: Systemd service orchestrating the desktop startup sequence.
   - Helper script: `start-webtop.sh` (Selkies compositor -> nested KWin -> Plasma session).
 
-#### 6. `rootfs/workstation/` (Bazzite Workstation Overlay)
+### 6. `rootfs/workstation/` (Bazzite Workstation Overlay)
 - **Target**: [workstation.Containerfile](workstation.Containerfile).
 - **Purpose**: Configures desktop memory management (`zram-generator.conf` enabling ZRAM swap) and desktop application security policies (`com.bitwarden.Bitwarden.policy`).
 
@@ -135,7 +135,7 @@ The table below documents which Containerfile copies which `rootfs` subdirectory
 | [installer.Containerfile](installer.Containerfile) | `ghcr.io/braccae/coreos:workstation` | None | N/A | Inherits from `$installer_base`. |
 | [k3s.Containerfile](k3s.Containerfile) | `ghcr.io/braccae/alma:latest` | Inherited from base | N/A | Inherits `common` from base; installs k3s binary and systemd service directly. |
 | [kmods.Containerfile](kmods.Containerfile) | `quay.io/almalinuxorg/almalinux-bootc:10` | None | N/A | Builds ZFS kernel modules into a scratch image. |
-| [kmods-bundle.Containerfile](kmods-bundle.Containerfile) | `scratch` | None | N/A | Bundles pre-built multi-arch RPM trees from `zfs/`. |\
+| [kmods-bundle.Containerfile](kmods-bundle.Containerfile) | `scratch` | None | N/A | Bundles pre-built multi-arch RPM trees from `zfs/`. |
 | `test.Containerfile` | Configurable | None (Scratch) | N/A | Local developer scratch containerfile. |
 | [webtop.Containerfile](webtop.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/common/`<br>`rootfs/webtop/` | `/`<br>`/` | Selkies 2.1 in a pinned venv; nested KWin session; nginx front door on 3000. |
 | [workstation.Containerfile](workstation.Containerfile) | `ghcr.io/ublue-os/bazzite:stable-44` | `rootfs/btrfs_config/`<br>`rootfs/workstation/` | `/`<br>`/` | Production image (freeze lifted). Lines 63-64 (`non_btrfs/`, `common/`) are commented out. |
